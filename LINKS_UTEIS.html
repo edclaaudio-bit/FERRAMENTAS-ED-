@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Links Úteis</title>
+    <style>
+        /* Adaptando ao tema principal do Index.html */
+        :root {
+            --primary-color: #082161; 
+            --accent-color: #17a2b8;  
+            --background-light: #f0f2f5; 
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            padding: 20px; 
+            background-color: #ffffff; 
+            color: #333;
+        }
+
+        h1 { 
+            color: var(--primary-color); 
+            border-bottom: 3px solid var(--accent-color); 
+            padding-bottom: 10px; 
+            margin-bottom: 30px; 
+            font-size: 1.8em;
+        }
+
+        .link-group { 
+            margin-bottom: 40px; 
+            padding: 20px; 
+            border: 1px solid #eee; 
+            border-radius: 10px; 
+            background-color: var(--background-light); 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        h2 { 
+            color: var(--primary-color); 
+            font-size: 1.4em; 
+            margin-top: 0; 
+            margin-bottom: 15px;
+        }
+
+        ul { 
+            list-style: none; 
+            padding: 0; 
+        }
+
+        li { 
+            margin-bottom: 15px; 
+        }
+
+        li a { 
+            color: var(--accent-color); 
+            text-decoration: none; 
+            font-weight: 600; 
+            display: block; 
+            padding: 10px; 
+            border: 1px solid var(--accent-color);
+            border-radius: 5px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        li a:hover { 
+            background-color: var(--accent-color);
+            color: white;
+            text-decoration: none;
+        }
+
+        .note { 
+            font-size: 0.9em; 
+            color: #777; 
+            margin-top: 5px; 
+            padding-left: 10px;
+        }
+
+        .external-icon::after {
+            content: ' 🔗';
+        }
+    </style>
+</head>
+<body>
+    <h1>Links Úteis e Formulários</h1>
+    
+    <div class="link-group">
+        <h2>Solicitação de Treinamento</h2>
+        <ul>
+            <li>
+                <a href="https://forms.office.com/r/GKePZH3eRX" target="_blank" rel="noopener noreferrer" class="external-icon">
+                    FORMS PARA SOLICITAÇÃO DE TREINAMENTO FINAL DE SEMANA
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="link-group">
+        <h2>Monitoria de Qualidade</h2>
+        <ul>
+            <li>
+                <a href="https://forms.office.com/?redirecturl=https%3a%2f%2fforms.office.com%2fPages%2fDesignPageV2.aspx%3fsubpage%3ddesign%26FormId%3d3sowKWgX0kCiNl48v3rIpEh5uvXHg21OqpACZTTbVz5UREJBNjVWODNHTUhFWUpLOTNLQU9FWUZLVy4u%26Token%3d5edd71e09cc9434b800308f3526494e5&auth_pvr=OrgId-" target="_blank" rel="noopener noreferrer" class="external-icon">
+                    Link Atendimento Telefone (LIGAÇÕES – Colaboração)
+                </a>
+            </li>
+            <li>
+                <span class="note">Link telefone canal digital: MONITORIA DE QUALIDADE - DIGITAL – Colaboração (Link não fornecido no pedido)</span>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="link-group">
+        <h2>Avaliação Operacional (Pelo Líder)</h2>
+        <ul>
+            <li>
+                <a href="https://forms.office.com/r/iABJquMDsj" target="_blank" rel="noopener noreferrer" class="external-icon">
+                    Avaliação operacional pelo líder – 45 dias
+                </a>
+            </li>
+            <li>
+                <a href="https://forms.office.com/r/pMauur2rur" target="_blank" rel="noopener noreferrer" class="external-icon">
+                    Avaliação operacional pelo líder – 90 dias
+                </a>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>

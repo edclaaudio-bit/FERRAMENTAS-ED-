@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora Automática de NS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
+  <div id="app" class="w-full max-w-3xl bg-white rounded-2xl shadow-lg p-6 relative"></div>
+
+  <script>
+    function renderCalculator() {
+      const app = document.getElementById('app');
+
+      app.innerHTML = `
+        <h1 class='text-2xl font-bold mb-4 text-indigo-700'>Calculadora automática de NS</h1>
+        <p class='text-sm text-gray-600 mb-6'>Informe os valores e veja automaticamente seu NS atual, quanto falta para atingir a meta e quantas ligações adicionais são necessárias, considerando uma média de atendimento até 60s.</p>
+
+        <div class='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
+          <label class='block'>
+            <div class='text-xs text-gray-700'>Ligações atendidas (total)</div>
+            <input id='total' type='number' placeholder='Ex: 4200' class='mt-1 w-full border rounded p-2' />
+          </label>
+          <label class='block'>
+            <div class='text-xs text-gray-700'>Atendidas até 60s</div>
+            <input id='ate60' type='number' placeholder='Ex: 3500' class='mt-1 w-full border rounded p-2' />
+          </label>
+          <label class='block'>
+            <div class='text-xs text-gray-700'>Meta NS (%)</div>
+            <input id='meta' type='number' value='85' class='mt-1 w-full border rounded p-2' />
+          </label>
+          <label class='block'>
+            <div class='text-xs text-gray-700'>Média esperada das novas atendidas ≤60s (%)</div>
+            <input id='media' type='number' value='90' class='mt-1 w-full border rounded p-2' />
+          </label>
+        </div>
+
+        <div class="flex gap-3 mb-4">
+          <button id='calcular' class='px-4 py-2 bg-indigo-600 text-white rounded shadow hover:bg-indigo-700 transition'>Calcular</button>
+          <button id='limpar' class='px-4 py-2 border rounded hover:bg-gray-100 transition'>Limpar</button>
+        </div>
+
+        <div id='resultado' class='mt-6 text-sm text-gray-800'></div>
+
+        <footer class='absolute bottom-2 right-4 text-xs text-gray-400 italic select-none'>
+          Desenvolvido por <span class='text-indigo-600 font-semibold'>Claudio Carvalho</span>
+        </footer>
+      `;
+
+      document.getElementById('calcular').addEventListener('click', doCalc);
+      document.getElementById('limpar').addEventListener('click', () => {
+        document.getElementById('total').value = '';
+        document.getElementById('ate60').value = '';
+        document.getElementById('meta').value = 85;
+        document.getElementById('media').value = 90;
+        document.getElementById('resultado').innerHTML = '';
+      });
+
+      function doCalc() {
+        const total = parseFloat(document.getElementById('total').value) || 0;
+        const ate60 = parseFloat(document.getElementById('ate60').value) || 0;
+        const meta = (parseFloat(document.getElementById('meta').value) || 0) / 100;
+        const media = (parseFloat(document.getElementById('media').value) || 0) / 100;
+
+        if (total === 0) {
+          document.getElementById('resultado').innerHTML = `<div class='text-red-600'>Informe pelo menos o total de ligações.</div>`;
+          return;
+        }
+
+        const nsAtual = ate60 / total;
+        const faltam60 = Math.max(0, Math.ceil(meta * total - ate60));
+
+        let adicional = null;
+        let possivel = true;
+
+        if (media <= meta) {
+          possivel = false;
+        } else {
+          adicional = Math.ceil((meta * total - ate60) / (media - meta));
+        }
+
+        let html = `<div class='mt-4'><strong>NS atual:</strong> ${(nsAtual * 100).toFixed(2)}%</div>`;
+        html += `<div>Faltam <strong>${faltam60}</strong> atendidas ≤60s para atingir ${(meta * 100).toFixed(2)}% (mantendo total atual).</div>`;
+
+        if (possivel && adicional !== null && adicional > 0) {
+          const totalNovo = total + adicional;
+          const ate60Novo = ate60 + Math.round(adicional * media);
+          const nsNovo = (ate60Novo / totalNovo) * 100;
+
+          html += `<div class='mt-3'>Para atingir ${(meta * 100).toFixed(2)}%, considerando ${(media * 100).toFixed(1)}% das novas ≤60s, será necessário atender aproximadamente <strong>${adicional}</strong> ligações adicionais.</div>`;
+          html += `<div class='text-gray-600 text-xs'>Estimativa final: ${nsNovo.toFixed(2)}% com total de ${totalNovo} ligações (${ate60Novo} atendidas ≤60s).</div>`;
+        } else if (possivel && adicional === 0) {
+          html += `<div class='mt-3 text-green-700'>Você já atinge a meta com os números atuais.</div>`;
+        } else {
+          html += `<div class='mt-3 text-yellow-700'>Com a média esperada de ${(media * 100).toFixed(1)}%, não é possível atingir ${(meta * 100).toFixed(2)}%. A média precisa ser superior à meta.</div>`;
+        }
+
+        document.getElementById('resultado').innerHTML = html;
+      }
+    }
+
+    renderCalculator();
+  </script>
+</body>
+</html>

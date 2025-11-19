@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Central de Ferramentas Operacionais</title>
+    <style>
+        /* Variáveis de Cores (Paleta Profissional) */
+        :root {
+            --primary-color: #082161; /* Azul Marinho Escuro */
+            --accent-color: #17a2b8;  /* Ciano/Azul Claro (Ação) */
+            --background-light: #f0f2f5; /* Fundo Cinza Claro Suave */
+            --text-color: #333;
+            --sidebar-width: 280px;
+            --sidebar-collapsed-width: 60px;
+        }
+
+        /* Estilos Básicos para o "App" */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-light);
+            display: flex;
+            min-height: 100vh;
+            color: var(--text-color);
+        }
+
+        /* Menu de Navegação (Sidebar) */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px 0; 
+            box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+            flex-shrink: 0;
+            transition: width 0.3s ease-in-out, transform 0.3s ease-in-out;
+            overflow-x: hidden;
+            z-index: 100;
+        }
+
+        /* Estado Colapsado no Desktop */
+        .sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+
+        .sidebar.collapsed .tool-name,
+        .sidebar.collapsed .footer-text { 
+            opacity: 0;
+            width: 0;
+            transition: opacity 0.1s;
+        }
+
+        .sidebar.collapsed .tool-icon {
+            margin-right: 0;
+        }
+        
+        /* Logo */
+        .logo-area {
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 0 20px 15px 20px;
+            margin-bottom: 20px;
+            transition: justify-content 0.3s;
+        }
+        
+        .logo-area h2 {
+            margin: 0;
+            font-size: 1.2em;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .logo-area .logo-link {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-icon {
+            font-size: 1.5em;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        /* Links da Ferramenta */
+        .tool-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .tool-links li a {
+            display: flex;
+            align-items: center;
+            color: white;
+            text-decoration: none;
+            padding: 12px 20px;
+            margin: 4px 0;
+            border-radius: 0 6px 6px 0; 
+            transition: background-color 0.2s ease, border-left 0.2s ease;
+            white-space: nowrap; 
+        }
+
+        .tool-links li a:hover {
+            background-color: #2a3d76; 
+        }
+        
+        .tool-links li a.active {
+            background-color: var(--accent-color); 
+            font-weight: 600;
+            box-shadow: inset 5px 0 0 var(--accent-color), 0 2px 5px rgba(0, 0, 0, 0.3);
+            border-left: 5px solid white; 
+        }
+        
+        .tool-icon {
+            font-size: 1.1em;
+            margin-right: 15px;
+            flex-shrink: 0;
+            transition: margin-right 0.3s;
+        }
+
+        .sidebar.collapsed .tool-links li a {
+            padding: 12px 18px; 
+        }
+        
+        /* Área de Conteúdo Principal */
+        .content-area {
+            flex-grow: 1;
+            padding: 0;
+            background-color: #ffffff;
+            transition: margin-left 0.3s ease-in-out;
+        }
+
+        .content-area iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* Botão de Toggle da Sidebar */
+        .toggle-button {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 1.2em;
+            z-index: 101;
+            transition: background-color 0.2s, left 0.3s ease-in-out;
+        }
+        
+        .toggle-button:hover {
+             background-color: var(--accent-color);
+        }
+
+        /* Rodapé no Menu */
+        .sidebar-footer {
+            position: absolute; 
+            bottom: 20px; 
+            left: 20px; 
+            font-size: 0.8em; 
+            opacity: 0.7; 
+            transition: opacity 0.3s; 
+            pointer-events: none;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        /* Reposiciona o botão quando a sidebar está expandida no desktop */
+        @media (min-width: 769px) {
+            .sidebar.collapsed + .toggle-button {
+                left: 10px;
+            }
+            .sidebar + .toggle-button {
+                left: 20px;
+            }
+        }
+
+        /* Responsividade (Mobile) */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                height: 100vh;
+                top: 0;
+                left: 0;
+                width: var(--sidebar-width);
+                transform: translateX(-100%);
+                box-shadow: 3px 0 10px rgba(0,0,0,0.5);
+                padding-top: 60px;
+                width: var(--sidebar-width) !important;
+            }
+            
+            .sidebar.visible {
+                transform: translateX(0);
+            }
+
+            .toggle-button {
+                display: block;
+                left: 10px;
+                top: 10px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+
+    <button class="toggle-button" id="toggle-sidebar" title="Expandir Menu">☰</button>
+
+    <div class="sidebar" id="sidebar">
+        <div class="logo-area">
+            <a href="javascript:void(0)" class="logo-link" onclick="window.location.reload()">
+                <span class="logo-icon">📊</span>
+                <h2>Central Operacional</h2>
+            </a>
+        </div>
+        
+        <ul class="tool-links">
+            <li>
+                <a href="javascript:void(0)" onclick="selectTool(this, 'Escala Diária.html')">
+                    <span class="tool-icon">📅</span>
+                    <span class="tool-name">Escala Diária</span>
+                </a>
+            </li>
+            <li>
+                <a href="javascript:void(0)" onclick="selectTool(this, 'PERFORMANCE DIÁRIA.html')">
+                    <span class="tool-icon">📈</span>
+                    <span class="tool-name">Performance Diária</span>
+                </a>
+            </li>
+            <li>
+                <a href="javascript:void(0)" onclick="selectTool(this, 'CALCULADORA DE NS.html')">
+                    <span class="tool-icon">🧮</span>
+                    <span class="tool-name">Calculadora de NS</span>
+                </a>
+            </li>
+            <li>
+                <a href="javascript:void(0)" onclick="selectTool(this, 'ACOMPANHAMENTO DE METAS.html')">
+                    <span class="tool-icon">🎯</span>
+                    <span class="tool-name">Acompanhamento de Metas</span>
+                </a>
+            </li>
+            <li>
+                <a href="javascript:void(0)" onclick="selectTool(this, 'AJUSTE DE PONTO.html')">
+                    <span class="tool-icon">⏰</span>
+                    <span class="tool-name">Ajuste de Ponto</span>
+                </a>
+            </li>
+            <li>
+                <a href="javascript:void(0)" onclick="selectTool(this, 'CHAMADAS ATENDIDAS - MÉTRICA DE RECHAMADAS.html')">
+                    <span class="tool-icon">📞</span>
+                    <span class="tool-name">Métrica de Rechamadas</span>
+                </a>
+            </li>
+            <li>
+                <a href="javascript:void(0)" onclick="selectTool(this, 'NUMEROS QUE LIGARAM 3 VEZES OU MAIS.html')">
+                    <span class="tool-icon">📵</span>
+                    <span class="tool-name">Chamadas Recorrentes</span>
+                </a>
+            </li>
+            <li>
+                <a href="javascript:void(0)" onclick="selectTool(this, 'CONSOLIDADO DIÁRIO E DETALHADO DE BAIXA DURAÇÃO.html')">
+                    <span class="tool-icon">📉</span>
+                    <span class="tool-name">Relatório Baixa Duração</span>
+                </a>
+            </li>
+            <li>
+                <a href="javascript:void(0)" onclick="selectTool(this, 'Ferramenta de Auditoria de Pesquisa de Satisfação.html')">
+                    <span class="tool-icon">⭐</span>
+                    <span class="tool-name">Auditoria de Satisfação</span>
+                </a>
+            </li>
+            
+            <li>
+                <a href="javascript:void(0)" onclick="selectTool(this, 'LINKS_UTEIS.html')">
+                    <span class="tool-icon">🔗</span>
+                    <span class="tool-name">Links Úteis</span>
+                </a>
+            </li>
+            
+        </ul>
+        
+        <div class="sidebar-footer">
+            <span class="footer-text">v1.0.0</span>
+        </div>
+    </div>
+
+    <div class="content-area">
+        <iframe id="content-iframe" src="Bem_Vindo.html"></iframe>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('sidebar');
+            const toggleButton = document.getElementById('toggle-sidebar');
+            const iframe = document.getElementById('content-iframe');
+            const toolLinks = document.querySelectorAll('.tool-links a');
+            const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+            // --- Toggle da Sidebar (Expandir/Recolher) ---
+            toggleButton.addEventListener('click', () => {
+                if (isMobile) {
+                    sidebar.classList.toggle('visible');
+                    if (sidebar.classList.contains('visible')) {
+                        toggleButton.innerHTML = '✕'; 
+                        toggleButton.title = 'Recolher Menu';
+                    } else {
+                        toggleButton.innerHTML = '☰';
+                        toggleButton.title = 'Mostrar Menu';
+                    }
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    if (sidebar.classList.contains('collapsed')) {
+                        toggleButton.innerHTML = '☰'; 
+                        toggleButton.title = 'Expandir Menu';
+                    } else {
+                        toggleButton.innerHTML = '✕';
+                        toggleButton.title = 'Recolher Menu';
+                    }
+                }
+            });
+            // --------------------------------------------------
+
+            // Inicialmente, colapsa a barra lateral no desktop.
+            if (!isMobile) {
+                sidebar.classList.add('collapsed');
+                toggleButton.innerHTML = '☰'; 
+                toggleButton.title = 'Expandir Menu';
+            } else {
+                toggleButton.innerHTML = '☰'; 
+                toggleButton.title = 'Mostrar Menu';
+            }
+
+            // Função para gerenciar o estado 'active' do link, carregar o conteúdo e recolher a barra
+            window.selectTool = function(selectedLink, filename) { 
+                // Remove 'active' de todos
+                toolLinks.forEach(link => link.classList.remove('active'));
+
+                // Adiciona 'active' ao link clicado
+                selectedLink.classList.add('active');
+                
+                // Carrega o arquivo HTML no iframe
+                iframe.src = filename;
+
+                // 1. Mobile: Oculta a barra completamente
+                if (isMobile) {
+                    sidebar.classList.remove('visible');
+                    toggleButton.innerHTML = '☰';
+                    toggleButton.title = 'Mostrar Menu';
+                }
+                // 2. Desktop: Colapsa a barra
+                if (!isMobile) {
+                    sidebar.classList.add('collapsed');
+                    toggleButton.innerHTML = '☰'; 
+                    toggleButton.title = 'Expandir Menu';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

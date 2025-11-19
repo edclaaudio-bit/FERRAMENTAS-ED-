@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chamadas Atendidas - Métrica de Rechamadas</title>
+    <style>
+        /* Variáveis de Cores (Paleta Profissional) */
+        :root {
+            --primary-color: #00796b; /* Verde-azulado escuro (Teal) */
+            --secondary-color: #455a64; /* Cinza escuro (Blue Gray) */
+            --background-light: #f5f5f5;
+            --background-white: #ffffff;
+            --border-color: #cfd8dc;
+            --text-color: #37474f;
+            /* Nova cor para destaque da coluna % 1º Contato (amarelo) */
+            --highlight-color: #fffb00; 
+        }
+
+        /* Estilos Globais */
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-light);
+            color: var(--text-color);
+        }
+        
+        /* Layout Principal */
+        .page-wrapper {
+            max-width: 1200px;
+            margin: 30px auto;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+        }
+        h1 {
+            margin: 0;
+            font-size: 2.2em;
+            font-weight: 500;
+        }
+
+        .container {
+            background-color: var(--background-white);
+            padding: 30px;
+        }
+
+        /* Área de Input */
+        #input-area {
+            padding: 15px;
+            border: 1px dashed var(--border-color);
+            border-radius: 5px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background-color: #fafafa;
+        }
+        #csvFile {
+            padding: 5px;
+            border-radius: 3px;
+        }
+        #status {
+            font-weight: 600;
+            flex-grow: 1;
+        }
+        #relatorio-container {
+            display: none;
+            margin-top: 20px;
+        }
+
+        /* Tabela */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95em;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px 8px;
+            text-align: center;
+        }
+        th {
+            background-color: var(--secondary-color);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            /* Estilo para simular a cor da imagem */
+            background-color: var(--highlight-color);
+            color: var(--text-color);
+        }
+        td:first-child { text-align: left; font-weight: 500; }
+        tr:nth-child(even) { background-color: #fcfcfc; }
+        
+        /* Linha de Total */
+        .total-row td {
+            font-weight: bold;
+            background-color: #e0f2f1; /* Tom claro do primary color */
+            color: var(--primary-color);
+            border-top: 3px solid var(--primary-color);
+        }
+
+        /* Botões e Filtros */
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        #downloadBtn, #filterInput {
+            padding: 10px 18px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            font-size: 0.9em;
+        }
+        #downloadBtn {
+            background-color: #28a645; /* Verde de sucesso */
+            color: white;
+            cursor: pointer;
+            border: none;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        #downloadBtn:hover {
+            background-color: #1f8b34;
+        }
+        #filterInput {
+            width: 300px;
+        }
+
+        /* Mensagens */
+        .error { color: #d32f2f; }
+        .success { color: #2e7d32; }
+
+        /* Rodapé */
+        .footer {
+            text-align: center;
+            padding: 15px;
+            font-size: 0.8em;
+            color: #78909c;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="page-wrapper">
+        <div class="header">
+            <h1>Chamadas Atendidas - Métrica de Rechamadas</h1>
+        </div>
+
+        <div class="container">
+            <div id="input-area">
+                <label for="csvFile">Selecione o arquivo CSV:</label>
+                <input type="file" id="csvFile" accept=".csv" required>
+                <p id="status">Aguardando arquivo...</p>
+            </div>
+
+            <div id="relatorio-container">
+                <div class="actions">
+                    <input type="text" id="filterInput" placeholder="🔍 Filtrar por nome da Fila..." onkeyup="filtrarTabela()">
+                    <button id="downloadBtn" onclick="exportarTabelaCSV()">⬇️ Baixar Relatório (CSV)</button>
+                </div>
+                
+                <table id="relatorio-chamadas">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left;">FILA</th>
+                            <th>TOTAL ATENDIDAS</th>
+                            <th>1 Contato</th>
+                            <th>% 1º Contato</th>
+                            <th>2 Contatos</th>
+                            <th>3+ Contatos</th>
+                            <th>MÉDIA</th> </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                    <tfoot>
+                        </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Desenvolvido por Claudio Carvalho
+    </div>
+
+    <script>
+        document.getElementById('csvFile').addEventListener('change', carregarCSV);
+
+        const STATUS_ELEM = document.getElementById('status');
+        const RELATORIO_CONTAINER = document.getElementById('relatorio-container');
+        const TABELA_BODY = document.querySelector('#relatorio-chamadas tbody');
+        const TABELA_FOOT = document.querySelector('#relatorio-chamadas tfoot');
+        
+        // Colunas essenciais no seu CSV (deve corresponder aos nomes da linha 6)
+        const COLUNAS = {
+            nomeFila: 'nomeFila',
+            numero: 'numero',
+            isAtendida: 'isAtendida'
+        };
+
+        function carregarCSV(event) {
+            const arquivo = event.target.files[0];
+            if (!arquivo) return;
+
+            STATUS_ELEM.textContent = "Processando...";
+            RELATORIO_CONTAINER.style.display = 'none';
+            TABELA_BODY.innerHTML = '';
+            TABELA_FOOT.innerHTML = '';
+
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const textoCSV = e.target.result;
+                    const dados = parseCSV(textoCSV);
+                    
+                    if (dados.length === 0) {
+                        STATUS_ELEM.innerHTML = '<span class="error">Erro: Nenhum dado válido foi processado. Verifique se as colunas estão corretas ou se há dados no arquivo.</span>';
+                        return;
+                    }
+
+                    const relatorio = gerarRelatorio(dados);
+                    exibirRelatorio(relatorio);
+                    
+                } catch (error) {
+                    STATUS_ELEM.innerHTML = `<span class="error">Erro ao processar o arquivo. Detalhes: ${error.message}</span>`;
+                    console.error("Erro de processamento:", error);
+                }
+            };
+
+            reader.onerror = function() {
+                STATUS_ELEM.innerHTML = '<span class="error">Erro na leitura do arquivo.</span>';
+            };
+
+            reader.readAsText(arquivo, 'UTF-8');
+        }
+
+        /**
+         * Parsea o CSV de forma robusta, lidando com o cabeçalho na linha 6 e campos entre aspas.
+         */
+        function parseCSV(csvText) {
+            const linhas = csvText.trim().split(/\r\n|\n|\r/);
+            
+            if (linhas.length < 6) {
+                throw new Error("O arquivo CSV tem menos de 6 linhas. O cabeçalho esperado na linha 6 não foi encontrado.");
+            }
+            
+            const linhaCabecalho = linhas[5]; 
+            const linhasDados = linhas.slice(6);
+            
+            // 1. Extrair e limpar o cabeçalho (remove aspas e espaços)
+            const cabecalho = linhaCabecalho.split(';').map(col => col.replace(/"/g, '').trim());
+            const numColunas = cabecalho.length;
+
+            // 2. Processar os dados
+            const dadosFormatados = [];
+            const quotedStringPlaceholder = '###QTS###';
+            
+            linhasDados.forEach(linha => {
+                if (linha.trim() === '') return;
+
+                const quotedStrings = [];
+                let tempLine = linha.replace(/"(.*?)"/g, (match, p1) => {
+                    quotedStrings.push(p1.replace(/;/g, '###SC###')); 
+                    return quotedStringPlaceholder;
+                });
+
+                let valores = tempLine.split(';');
+
+                let quoteIndex = 0;
+                valores = valores.map(val => {
+                    if (val === quotedStringPlaceholder) {
+                        return (quotedStrings[quoteIndex++] || '').replace(/###SC###/g, ';').trim();
+                    }
+                    return val.trim();
+                });
+                
+                if (valores.length !== numColunas) {
+                    return; 
+                }
+
+                let linhaObj = {};
+                cabecalho.forEach((col, i) => {
+                    linhaObj[col] = valores[i];
+                });
+                dadosFormatados.push(linhaObj);
+            });
+            
+            return dadosFormatados;
+        }
+
+
+        function gerarRelatorio(dados) {
+            const resultadosPorFila = {};
+            
+            // Checa se as colunas essenciais foram lidas
+            const primeiraLinha = dados[0] || {};
+            const colunasOK = (COLUNAS.nomeFila in primeiraLinha) && 
+                              (COLUNAS.numero in primeiraLinha) && 
+                              (COLUNAS.isAtendida in primeiraLinha);
+            
+            if (!colunasOK) {
+                const colunasEncontradas = Object.keys(primeiraLinha).join(', ');
+                throw new Error(`As colunas essenciais (${COLUNAS.nomeFila}, ${COLUNAS.numero}, ${COLUNAS.isAtendida}) não foram encontradas. Colunas lidas: ${colunasEncontradas}.`);
+            }
+
+            // 1. Processar os dados brutos e agrupar por Fila
+            dados.forEach(chamada => {
+                const fila = chamada[COLUNAS.nomeFila];
+                const numero = chamada[COLUNAS.numero];
+                
+                const isAtendida = chamada[COLUNAS.isAtendida].toLowerCase() === 'sim' || chamada[COLUNAS.isAtendida] === '1';
+                
+                // Processar apenas chamadas atendidas
+                if (!fila || !numero || !isAtendida) return;
+
+                if (!resultadosPorFila[fila]) {
+                    resultadosPorFila[fila] = {
+                        totalAtendidas: 0,
+                        contagemPorNumero: {}
+                    };
+                }
+                
+                resultadosPorFila[fila].totalAtendidas++;
+                resultadosPorFila[fila].contagemPorNumero[numero] = 
+                    (resultadosPorFila[fila].contagemPorNumero[numero] || 0) + 1;
+            });
+
+            const relatorioFinal = [];
+            let totalGeralAtendidas = 0;
+            let totalGeralNumerosUnicos = 0; // Mantido para cálculo da média geral
+            let totalGeral1x = 0;
+            let totalGeral2x = 0;
+            let totalGeral3xMais = 0;
+
+            // 2. Calcular as métricas por Fila
+            for (const fila in resultadosPorFila) {
+                const dadosFila = resultadosPorFila[fila];
+                const contagens = dadosFila.contagemPorNumero;
+                
+                const numerosUnicos = Object.keys(contagens).length;
+                const totalAtendidas = dadosFila.totalAtendidas;
+                const mediaChamadas = numerosUnicos > 0 ? totalAtendidas / numerosUnicos : 0;
+                
+                let contatos1x = 0;
+                let contatos2x = 0;
+                let contatos3xMais = 0;
+                
+                for (const numero in contagens) {
+                    const contagem = contagens[numero];
+                    if (contagem === 1) {
+                        contatos1x++;
+                    } else if (contagem === 2) {
+                        contatos2x++;
+                    } else if (contagem >= 3) {
+                        contatos3xMais++;
+                    }
+                }
+                
+                // Cálculo da % 1º Contato: (Números Únicos com 1 contato / Total de Chamadas Atendidas)
+                // Usando números únicos com 1 contato / Total Atendidas para replicar a lógica visual da imagem (76% = 533/701)
+                const percent1x = totalAtendidas > 0 ? (contatos1x / totalAtendidas) * 100 : 0;
+
+                totalGeralAtendidas += totalAtendidas;
+                totalGeralNumerosUnicos += numerosUnicos;
+                totalGeral1x += contatos1x;
+                totalGeral2x += contatos2x;
+                totalGeral3xMais += contatos3xMais;
+
+                relatorioFinal.push({
+                    fila: fila,
+                    atendidas: totalAtendidas,
+                    unicos: numerosUnicos, // Mantido apenas para o cálculo da média
+                    media: mediaChamadas.toFixed(2),
+                    contatos1x: contatos1x,
+                    percent1x: `${percent1x.toFixed(0)}%`, // Formatado como string de porcentagem
+                    contatos2x: contatos2x,
+                    contatos3xMais: contatos3xMais
+                });
+            }
+            
+            // Cálculo da média geral
+            const mediaGeral = totalGeralNumerosUnicos > 0 ? totalGeralAtendidas / totalGeralNumerosUnicos : 0;
+            // Cálculo da % 1º Contato Geral: (Total 1 Contato / Total Atendidas)
+            const percent1xGeral = totalGeralAtendidas > 0 ? (totalGeral1x / totalGeralAtendidas) * 100 : 0;
+
+
+            return {
+                dados: relatorioFinal.sort((a, b) => b.atendidas - a.atendidas),
+                totais: {
+                    atendidas: totalGeralAtendidas,
+                    unicos: totalGeralNumerosUnicos,
+                    media: mediaGeral.toFixed(2),
+                    contatos1x: totalGeral1x,
+                    percent1x: `${percent1xGeral.toFixed(0)}%`,
+                    contatos2x: totalGeral2x,
+                    contatos3xMais: totalGeral3xMais
+                }
+            };
+        }
+
+        function exibirRelatorio(relatorio) {
+            TABELA_BODY.innerHTML = '';
+            TABELA_FOOT.innerHTML = '';
+
+            relatorio.dados.forEach(item => {
+                const newRow = TABELA_BODY.insertRow();
+                newRow.setAttribute('data-fila', item.fila.toLowerCase());
+                // Ordem: FILA | TOTAL ATENDIDAS | 1 Contato | % 1º Contato | 2 Contatos | 3+ Contatos | MÉDIA
+                newRow.innerHTML = `
+                    <td style="text-align: left;">${item.fila}</td>
+                    <td>${item.atendidas}</td>
+                    <td>${item.contatos1x}</td>
+                    <td>${item.percent1x}</td>
+                    <td>${item.contatos2x}</td>
+                    <td>${item.contatos3xMais}</td>
+                    <td>${item.media}</td>
+                `;
+            });
+            
+            const totalRow = TABELA_FOOT.insertRow();
+            totalRow.classList.add('total-row');
+            // Ordem: FILA | TOTAL ATENDIDAS | 1 Contato | % 1º Contato | 2 Contatos | 3+ Contatos | MÉDIA
+            totalRow.innerHTML = `
+                <td style="text-align: left;">**TOTAL GERAL**</td>
+                <td>${relatorio.totais.atendidas}</td>
+                <td>${relatorio.totais.contatos1x}</td>
+                <td>${relatorio.totais.percent1x}</td>
+                <td>${relatorio.totais.contatos2x}</td>
+                <td>${relatorio.totais.contatos3xMais}</td>
+                <td>${relatorio.totais.media}</td>
+            `;
+            
+            STATUS_ELEM.innerHTML = '<span class="success">Relatório gerado com sucesso!</span>';
+            RELATORIO_CONTAINER.style.display = 'block';
+        }
+        
+        // --- FUNÇÕES DE FILTRO E DOWNLOAD (Mantidas sem alteração) ---
+
+        function filtrarTabela() {
+            const input = document.getElementById("filterInput");
+            const filter = input.value.toUpperCase();
+            const tr = TABELA_BODY.getElementsByTagName("tr");
+
+            for (let i = 0; i < tr.length; i++) {
+                const fila = tr[i].getAttribute('data-fila');
+                if (fila) {
+                    if (fila.toUpperCase().indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }       
+            }
+        }
+        
+        function exportarTabelaCSV() {
+            const nomeArquivo = 'Chamadas_Atendidas_Rechamadas.csv';
+            const tabela = document.getElementById('relatorio-chamadas');
+            let csv = [];
+            
+            // Adiciona o cabeçalho (TH)
+            let row = [];
+            tabela.querySelectorAll('thead th').forEach(th => {
+                row.push(`"${th.innerText.replace(/"/g, '""')}"`);
+            });
+            csv.push(row.join(';'));
+
+            // Adiciona os dados do corpo (Tbody) - apenas visíveis (filtrados)
+            tabela.querySelectorAll('tbody tr').forEach(tr => {
+                if (tr.style.display !== 'none') {
+                    let row = [];
+                    tr.querySelectorAll('td').forEach(td => {
+                        row.push(`"${td.innerText.replace(/"/g, '""')}"`);
+                    });
+                    csv.push(row.join(';'));
+                }
+            });
+
+            // Adiciona a linha de totais (Tfoot)
+            tabela.querySelectorAll('tfoot tr').forEach(tr => {
+                let row = [];
+                tr.querySelectorAll('td').forEach(td => {
+                    row.push(`"${td.innerText.replace(/"/g, '""')}"`);
+                });
+                csv.push(row.join(';'));
+            });
+
+            // Cria o link de download
+            const csvFile = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv.join('\n')], { type: 'text/csv;charset=utf-8;' }); // Adiciona BOM para caracteres especiais em Excel
+            const downloadLink = document.createElement("a");
+            downloadLink.download = nomeArquivo;
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+            downloadLink.style.display = "none";
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+
+    </script>
+
+</body>
+</html>

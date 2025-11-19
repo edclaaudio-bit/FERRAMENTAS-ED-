@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Chamadas Recorrentes</title>
+    <style>
+        /* Design Limpo e Profissional */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #007bff;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Estilo do Input de Arquivo */
+        input[type="file"] {
+            display: block;
+            margin: 15px 0 25px 0;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            width: 100%;
+            box-sizing: border-box;
+            background-color: #f8f9fa;
+        }
+
+        /* Controles (Exportar, etc.) */
+        .controls {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+
+        .controls button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        #exportButton {
+            background-color: #28a745; /* Verde */
+            color: white;
+        }
+        #exportButton:hover {
+            background-color: #218838;
+        }
+
+
+        /* Estilo da Tabela de Relatório */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 2px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 12px 10px;
+            text-align: left;
+        }
+        
+        /* Botões de Ordenação */
+        th button.sort-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            margin-left: 5px;
+            padding: 0;
+            font-size: 14px;
+            vertical-align: middle;
+        }
+        th button.sort-btn:focus {
+            outline: none;
+        }
+
+
+        th {
+            background-color: #007bff;
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        /* Botão Excluir na Tabela */
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s;
+        }
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+
+
+        tr:nth-child(even) {
+            background-color: #f7f9fc;
+        }
+
+        tr:hover {
+            background-color: #e9f5ff;
+        }
+
+        .alert {
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            display: none; /* Inicialmente escondido */
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>📞 Relatório de Chamadas Recorrentes Atendidas (≥ 3)</h1>
+        <p>Faça o upload do seu arquivo CSV de detalhamento de chamadas para gerar o relatório.</p>
+
+        <input type="file" id="csvFile" accept=".csv" onchange="handleFileChange()">
+
+        <div id="loading" style="display: none; text-align: center; margin-top: 20px;">
+            <p>Processando dados, por favor aguarde...</p>
+        </div>
+
+        <div id="controlsContainer" class="controls" style="display: none;">
+             <button id="exportButton" onclick="exportToCSV()">Exportar para CSV</button>
+        </div>
+
+        <div id="reportContainer">
+        </div>
+
+        <div id="errorAlert" class="alert"></div>
+    </div>
+    
+    <div class="footer">
+        Desenvolvido por Claudio Carvalho
+    </div>
+
+    <script>
+        // Variável global para armazenar os dados do relatório após o processamento inicial
+        let currentReportData = [];
+        let sortDirection = 'asc'; // Estado inicial da ordenação
+        
+        // Índice onde o cabeçalho da tabela começa no seu arquivo (linha 6, portanto, índice 5 em arrays 0-based)
+        const HEADER_START_LINE_INDEX = 5;
+        const DELIMITER = ';'; // Separador de colunas no seu CSV
+
+        // Função para formatar a data de AAAA-MM-DD para DD/MM/AAAA
+        function formatDateToBR(dateString) {
+            if (!dateString || dateString.length < 10) return dateString;
+            // Assume-se que o formato original é YYYY-MM-DD
+            const parts = dateString.split('-');
+            if (parts.length === 3) {
+                // Se for YYYY-MM-DD
+                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+             // Tentativa de outro formato se for DD/MM/YYYY (deixando como está se não for YYYY-MM-DD)
+            return dateString;
+        }
+
+
+        // Função para identificar o índice correto das colunas a partir do cabeçalho
+        function getColumnIndices(header) {
+            const indices = {};
+            // Mapeamento dos nomes de coluna esperados
+            const colNames = {
+                'data': 'data',
+                'horaAtendimento': 'horaAtendimento',
+                'nomeFila': 'nomeFila',
+                'numero': 'numero',
+                'tipo': 'tipo'
+            };
+            
+            const columns = header.map(col => col.toLowerCase().trim()); // Normaliza para minúsculas
+
+            for (const key in colNames) {
+                // Procura a coluna ignorando case
+                const index = columns.findIndex(col => col === colNames[key].toLowerCase());
+                if (index === -1) {
+                    throw new Error(`Coluna obrigatória não encontrada: "${colNames[key]}". Verifique o cabeçalho do seu arquivo.`);
+                }
+                indices[key] = index;
+            }
+            return indices;
+        }
+
+        // Função principal que lida com o upload e processamento do arquivo
+        function handleFileChange() {
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+            const reportContainer = document.getElementById('reportContainer');
+            const loading = document.getElementById('loading');
+            const errorAlert = document.getElementById('errorAlert');
+            const controlsContainer = document.getElementById('controlsContainer');
+
+            reportContainer.innerHTML = '';
+            errorAlert.style.display = 'none';
+            controlsContainer.style.display = 'none';
+            currentReportData = [];
+            sortDirection = 'asc'; // Resetar ordenação
+
+            if (!file) {
+                return;
+            }
+
+            loading.style.display = 'block';
+
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    const lines = content.split('\n');
+                    
+                    // 1. Obter o cabeçalho a partir da linha 6 (índice 5)
+                    const headerLine = lines[HEADER_START_LINE_INDEX].replace(/"/g, '').trim();
+                    const header = headerLine.split(DELIMITER);
+                    const colIndices = getColumnIndices(header);
+
+                    // 2. Processar os dados (a partir da linha 7 - índice 6)
+                    const dataLines = lines.slice(HEADER_START_LINE_INDEX + 1);
+                    const callDetails = [];
+                    const phoneCounts = {};
+                    let idCounter = 1; // Para dar um ID único a cada item
+
+                    for (const line of dataLines) {
+                        if (!line.trim()) continue; 
+                        
+                        const values = line.split(DELIMITER).map(val => 
+                            val.replace(/^"|"$/g, '').trim()
+                        );
+
+                        if (values.length < header.length) continue;
+
+                        const tipoValue = values[colIndices.tipo] ? values[colIndices.tipo].toUpperCase() : '';
+
+                        // 3. Filtrar somente as chamadas atendidas
+                        if (tipoValue === 'ATENDIDA') {
+                            const call = {
+                                id: idCounter++, // Adiciona um ID único para exclusão
+                                data: values[colIndices.data],
+                                horaAtendimento: values[colIndices.horaAtendimento],
+                                nomeFila: values[colIndices.nomeFila],
+                                numero: values[colIndices.numero],
+                                tipo: values[colIndices.tipo] // Manter o tipo original para debug/confirmação
+                            };
+                            callDetails.push(call);
+                            
+                            // 4. Contar as ocorrências por número de telefone
+                            const num = call.numero;
+                            phoneCounts[num] = (phoneCounts[num] || 0) + 1;
+                        }
+                    }
+
+                    // 5. Identificar os números que ligaram 3 vezes ou mais
+                    const frequentCallers = Object.keys(phoneCounts).filter(num => phoneCounts[num] >= 3);
+
+                    // 6. Filtrar os detalhes das chamadas que pertencem aos ligadores frequentes
+                    const finalReportData = callDetails.filter(call => frequentCallers.includes(call.numero));
+                    
+                    // Armazena os dados no escopo global para manipulação (exclusão, exportação)
+                    currentReportData = finalReportData;
+                    
+                    // 7. Gerar o relatório
+                    renderReport();
+
+                } catch (error) {
+                    console.error("Erro no processamento:", error);
+                    errorAlert.textContent = `Erro ao processar o arquivo: ${error.message}. Certifique-se de que o arquivo está no formato correto, usa o delimitador "${DELIMITER}" e tem as colunas corretas.`;
+                    errorAlert.style.display = 'block';
+                } finally {
+                    loading.style.display = 'none';
+                }
+            };
+
+            reader.onerror = function() {
+                errorAlert.textContent = 'Não foi possível ler o arquivo.';
+                errorAlert.style.display = 'block';
+                loading.style.display = 'none';
+            };
+
+            reader.readAsText(file, 'UTF-8');
+        }
+        
+        // Função de ordenação
+        function sortReport(column) {
+            // Alterna a direção da ordenação
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+
+            currentReportData.sort((a, b) => {
+                let comparison = 0;
+                
+                // Ordena por Número de Telefone
+                if (column === 'numero') {
+                    comparison = a.numero.localeCompare(b.numero);
+                }
+                
+                // Aplica a direção da ordenação
+                return sortDirection === 'asc' ? comparison : comparison * -1;
+            });
+
+            renderReport();
+        }
+
+        // Função para remover uma linha da visualização e dos dados
+        function deleteRow(id) {
+            // Remove o item da lista global
+            currentReportData = currentReportData.filter(item => item.id !== id);
+            
+            // Renderiza o relatório novamente
+            renderReport();
+        }
+
+        // Função para criar a tabela de relatório a partir de currentReportData
+        function renderReport() {
+            const reportContainer = document.getElementById('reportContainer');
+            const controlsContainer = document.getElementById('controlsContainer');
+            
+            controlsContainer.style.display = currentReportData.length > 0 ? 'flex' : 'none';
+
+            if (currentReportData.length === 0) {
+                reportContainer.innerHTML = '<p style="text-align: center; margin-top: 30px; color: #dc3545; font-weight: bold;">Nenhuma chamada atendida de números que ligaram 3 vezes ou mais foi encontrada após a filtragem/exclusão.</p>';
+                return;
+            }
+
+            let html = '<h2>Resultados Encontrados</h2>';
+            html += `<table id="reportTable">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Hora Atendimento</th>
+                                <th>Fila</th>
+                                <th>Número de Telefone 
+                                    <button class="sort-btn" onclick="sortReport('numero')">
+                                        ${sortDirection === 'asc' ? '▲' : '▼'}
+                                    </button>
+                                </th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+            // Garante a ordenação atual antes de renderizar
+            const sortedData = [...currentReportData];
+            
+            // Garante que o relatório esteja ordenado por número de telefone ou pela ordenação definida pelo filtro
+            sortedData.sort((a, b) => {
+                let comparison = a.numero.localeCompare(b.numero);
+                return sortDirection === 'asc' ? comparison : comparison * -1;
+            });
+
+
+            sortedData.forEach(item => {
+                // A hora de atendimento vem formatada como 'HH:MM:SS (X)', precisamos limpar isso
+                const cleanHora = item.horaAtendimento.split(' ')[0];
+                
+                html += `<tr data-id="${item.id}">
+                            <td>${formatDateToBR(item.data)}</td>
+                            <td>${cleanHora}</td>
+                            <td>${item.nomeFila}</td>
+                            <td><strong>${item.numero}</strong></td>
+                            <td><button class="delete-btn" onclick="deleteRow(${item.id})">Excluir</button></td>
+                        </tr>`;
+            });
+
+            html += `   </tbody>
+                    </table>`;
+
+            reportContainer.innerHTML = html;
+        }
+        
+        // Função para exportar os dados ATUAIS para um arquivo CSV (simulando Excel)
+        function exportToCSV() {
+            if (currentReportData.length === 0) {
+                // Usa uma solução de alerta menos invasiva no contexto da iframe
+                const errorAlert = document.getElementById('errorAlert');
+                errorAlert.textContent = 'Não há dados para exportar.';
+                errorAlert.style.display = 'block';
+                setTimeout(() => errorAlert.style.display = 'none', 3000);
+                return;
+            }
+
+            // Cabeçalho do CSV (usando o mesmo formato da tabela)
+            const csvHeader = ["Data", "Hora Atendimento", "Fila", "Numero de Telefone"];
+            
+            // Mapeia os dados atuais para o formato CSV
+            const csvRows = currentReportData.map(item => {
+                // Limpa a hora e formata a data para a exportação
+                const cleanHora = item.horaAtendimento.split(' ')[0];
+                const formattedDate = formatDateToBR(item.data);
+                
+                // Escapa o número de telefone (garantindo que seja tratado como texto no Excel)
+                // Usando aspas duplas e o delimitador ';'
+                return [
+                    formattedDate,
+                    cleanHora,
+                    `"${item.nomeFila}"`,
+                    `"${item.numero}"`
+                ].join(DELIMITER);
+            });
+
+            // Combina o cabeçalho e as linhas
+            const csvContent = [
+                csvHeader.join(DELIMITER),
+                ...csvRows
+            ].join('\n');
+            
+            // Cria um Blob e dispara o download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            
+            // Verifica se o navegador suporta 'download'
+            if (link.download !== undefined) { 
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "relatorio_chamadas_recorrentes.csv");
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                 // Fallback simples para navegadores mais antigos
+                alert("Seu navegador não suporta download automático. O conteúdo CSV será copiado para o console.");
+                console.log(csvContent);
+            }
+        }
+
+    </script>
+</body>
+</html>

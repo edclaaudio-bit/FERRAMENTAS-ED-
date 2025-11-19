@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Auditoria de Satisfação Dinâmico</title>
+    <!-- Carrega Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Define a fonte Inter como padrão -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6; /* Fundo Suave */
+        }
+        .header-bg { background-color: #082161; } /* Azul Marinho Escuro */
+        .accent-color { color: #17a2b8; } /* Ciano/Azul Claro */
+        .accent-border { border-color: #17a2b8; }
+        
+        /* Cores NPS */
+        .detrator-bg { background-color: #fef2f2; } /* red-50 */
+        .detrator-text { color: #dc2626; } /* red-600 */
+        .neutro-bg { background-color: #fffbeb; } /* amber-50 */
+        .neutro-text { color: #f59e0b; } /* amber-600 */
+        .promotor-bg { background-color: #ecfdf5; } /* emerald-50 */
+        .promotor-text { color: #10b981; } /* emerald-600 */
+
+        th { cursor: pointer; }
+        th.sorted-asc::after { content: " ▲"; }
+        th.sorted-desc::after { content: " ▼"; }
+
+        /* Estilos de célula para alinhar a nota */
+        .cell-nota {
+            text-align: center;
+            font-weight: 600;
+        }
+
+        /* Estilo para a checkbox, garantindo que seja visível e clicável */
+        .audit-checkbox {
+            cursor: pointer;
+            width: 1.25rem;
+            height: 1.25rem;
+            accent-color: #ef4444; 
+        }
+
+        .checkbox-large {
+            width: 1.1rem;
+            height: 1.1rem;
+        }
+
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div class="container mx-auto max-w-7xl bg-white p-6 md:p-10 rounded-xl shadow-2xl">
+        
+        <!-- Cabeçalho do Relatório -->
+        <header class="mb-8 pb-4 border-b-2 accent-border">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
+                Relatório de Auditoria de Satisfação Dinâmico
+            </h1>
+            <p id="filterDescription" class="text-gray-500 mt-2">Filtro inicial aplicado: Detratores (Notas 1 e 2) na Pergunta 1 do CSV.</p>
+        </header>
+
+        <!-- Controles de Carregamento e Filtros -->
+        <section class="mb-8 p-4 bg-gray-50 rounded-lg border">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">1. Carregar Dados e Filtros</h2>
+            <div class="flex flex-col gap-6">
+
+                <!-- 1. Linha do Arquivo -->
+                <div>
+                    <label for="csvFileInput" class="block text-sm font-medium text-gray-700 mb-1">
+                        Selecione o arquivo 'satisfacaoclientes.csv'
+                    </label>
+                    <input type="file" id="csvFileInput" accept=".csv" class="w-full block text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-indigo-50 file:text-indigo-700
+                        hover:file:bg-indigo-100"
+                    >
+                </div>
+                
+                <!-- 2. Linha dos Filtros e Botão Processar -->
+                <div class="flex flex-col lg:flex-row gap-4 items-end">
+                    
+                    <!-- Filtro de Notas (Checkboxes) -->
+                    <div class="w-full lg:w-2/3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Notas para Auditoria (Critérios NPS)
+                        </label>
+                        <div class="flex flex-wrap gap-4 p-3 bg-white rounded-lg border border-gray-300 shadow-sm">
+                            
+                            <!-- Detratores (1 e 2) -->
+                            <div class="flex items-center space-x-2 detrator-bg p-2 rounded-lg border border-red-200">
+                                <span class="detrator-text font-semibold text-sm">DETRATORES:</span>
+                                <label for="note1" class="flex items-center detrator-text cursor-pointer">
+                                    <input type="checkbox" id="note1" value="1" checked class="checkbox-large text-red-600 focus:ring-red-500">
+                                    <span class="ml-1">1</span>
+                                </label>
+                                <label for="note2" class="flex items-center detrator-text cursor-pointer">
+                                    <input type="checkbox" id="note2" value="2" checked class="checkbox-large text-red-600 focus:ring-red-500">
+                                    <span class="ml-1">2</span>
+                                </label>
+                            </div>
+                            
+                            <!-- Neutros (3) -->
+                            <div class="flex items-center space-x-2 neutro-bg p-2 rounded-lg border border-amber-200">
+                                <span class="neutro-text font-semibold text-sm">NEUTROS:</span>
+                                <label for="note3" class="flex items-center neutro-text cursor-pointer">
+                                    <input type="checkbox" id="note3" value="3" class="checkbox-large text-amber-600 focus:ring-amber-500">
+                                    <span class="ml-1">3</span>
+                                </label>
+                            </div>
+
+                            <!-- Promotores (4 e 5) -->
+                            <div class="flex items-center space-x-2 promotor-bg p-2 rounded-lg border border-emerald-200">
+                                <span class="promotor-text font-semibold text-sm">PROMOTORES:</span>
+                                <label for="note4" class="flex items-center promotor-text cursor-pointer">
+                                    <input type="checkbox" id="note4" value="4" class="checkbox-large text-emerald-600 focus:ring-emerald-500">
+                                    <span class="ml-1">4</span>
+                                </label>
+                                <label for="note5" class="flex items-center promotor-text cursor-pointer">
+                                    <input type="checkbox" id="note5" value="5" class="checkbox-large text-emerald-600 focus:ring-emerald-500">
+                                    <span class="ml-1">5</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filtro por Operador -->
+                    <div class="w-full lg:w-1/3">
+                        <label for="operatorFilter" class="block text-sm font-medium text-gray-700 mb-1">
+                            Filtrar por Operador
+                        </label>
+                        <select id="operatorFilter" onchange="applyFiltersAndRender()" disabled
+                            class="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-200">
+                            <option value="all">-- Carregue o arquivo primeiro --</option>
+                        </select>
+                    </div>
+
+                    <!-- Botão Processar -->
+                    <button onclick="processFile()" class="w-full lg:w-auto px-6 py-2 bg-indigo-600 text-white font-semibold rounded-full hover:bg-indigo-700 transition duration-150 shadow-md whitespace-nowrap">
+                        Processar / Aplicar Filtros
+                    </button>
+                </div>
+            </div>
+            <div id="statusMessage" class="mt-3 text-sm text-gray-600">Aguardando arquivo...</div>
+        </section>
+
+        <!-- Seção de Totais e Resumo -->
+        <section class="mb-10">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">2. Resumo da Auditoria</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Card Total Geral -->
+                <div class="p-5 bg-blue-50 border-l-4 border-blue-500 rounded-lg shadow">
+                    <p class="text-sm font-medium text-blue-600">Total de Registros (CSV)</p>
+                    <p id="totalGeralCount" class="text-2xl font-bold text-gray-800 mt-1">0</p>
+                </div>
+                <!-- Card Registros Filtrados -->
+                <div class="p-5 bg-red-50 border-l-4 border-red-500 rounded-lg shadow">
+                    <p class="text-sm font-medium text-red-600">Total para Auditoria (<span id="filteredNotesSummary">Notas 1, 2</span>)</p>
+                    <p id="totalAuditoriaCount" class="text-2xl font-bold text-red-700 mt-1">0</p>
+                </div>
+                <!-- Card Percentual de Insatisfação -->
+                <div class="p-5 bg-red-100 border-l-4 border-red-700 rounded-lg shadow">
+                    <p class="text-sm font-medium text-red-800">Taxa de Ocorrência (Notas Filtradas)</p>
+                    <p id="insatisfacaoRate" class="text-2xl font-bold text-red-900 mt-1">0.00%</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tabela Detalhada de Insatisfação -->
+        <section>
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">3. Detalhamento dos Atendimentos Filtrados</h2>
+            <div class="overflow-x-auto rounded-lg shadow-lg border border-gray-200">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th onclick="sortTable(0)" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                Data
+                            </th>
+                            <th onclick="sortTable(1)" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                Hora
+                            </th>
+                            <th onclick="sortTable(2)" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                Operador
+                            </th>
+                            <th onclick="sortTable(3)" class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                Telefone
+                            </th>
+                            <th onclick="sortTable(4)" class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                Pergunta 1
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                Fila
+                            </th>
+                            <!-- Coluna de Auditoria -->
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                Auditado
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditoriaTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Linhas de dados serão inseridas aqui pelo JS -->
+                        <tr><td colspan="7" class="p-4 text-center text-gray-500">Nenhum dado carregado ou filtrado.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="noDataMessage" class="hidden mt-4 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg">
+                Nenhum registro correspondente aos critérios de nota e operador foi encontrado no arquivo carregado.
+            </div>
+        </section>
+        
+        <!-- Rodapé/Disclaimer atualizado -->
+        <footer class="mt-12 pt-6 border-t text-sm text-gray-400 text-center">
+            Ferramenta de Auditoria de Pesquisa de Satisfação - Desenvolvido por Claudio Carvalho.
+        </footer>
+
+    </div>
+
+    <script>
+        // Variáveis globais para rastrear a ordenação e os dados
+        let lastSortedColumnIndex = -1;
+        let sortDirection = 'asc';
+        let rawRecords = []; // Armazena todos os registros do CSV (bruto)
+        let filteredRecords = []; // Armazena registros filtrados (pela nota)
+        // Mapa para armazenar o estado de auditoria por ID de registro (chave: ID único, valor: booleano)
+        let auditStateMap = {}; 
+        let isDataLoaded = false; // Flag para saber se o arquivo já foi carregado
+
+        // --- Variáveis de Configuração ---
+        const COLUMN_INDICES = {
+            DATA_HORA: 1,
+            TELEFONE: 3,
+            NOME_ATENDENTE: 5,
+            FILA: 8,
+            PERGUNTA_1: 13, // Onde está a nota (1, 2, 3, 4, 5, etc.)
+            UNIQUE_ID: 2, 
+            MIN_COLUMNS: 17 // Número mínimo de colunas esperadas no CSV (total: 17)
+        };
+
+        const STATUS_MSG = document.getElementById('statusMessage');
+        const TABLE_BODY = document.getElementById('auditoriaTableBody');
+        const TOTAL_GERAL_COUNT = document.getElementById('totalGeralCount');
+        const TOTAL_AUDITORIA_COUNT = document.getElementById('totalAuditoriaCount');
+        const INSATISFACAO_RATE = document.getElementById('insatisfacaoRate');
+        const NO_DATA_MSG = document.getElementById('noDataMessage');
+        const OPERATOR_FILTER = document.getElementById('operatorFilter');
+        const FILTER_DESCRIPTION = document.getElementById('filterDescription');
+        const FILTERED_NOTES_SUMMARY = document.getElementById('filteredNotesSummary');
+
+
+        // --- Funções Auxiliares ---
+
+        /**
+         * Converte uma string de data/hora no formato YYYY-MM-DD HH:MM:SS para o formato DD/MM/YYYY HH:MM
+         * @param {string} dateTimeStr 
+         * @returns {object} {date: string, time: string}
+         */
+        function formatDateTime(dateTimeStr) {
+            if (!dateTimeStr) return { date: 'N/A', time: 'N/A' };
+            const [datePart, timePart] = dateTimeStr.split(' ');
+            if (!datePart || !timePart) return { date: 'N/A', time: 'N/A' };
+            
+            const [year, month, day] = datePart.split('-');
+            const [hour, minute] = timePart.split(':'); 
+            
+            if (year && month && day) {
+                return {
+                    date: `${day}/${month}/${year}`,
+                    time: `${hour}:${minute}`
+                };
+            }
+            return { date: 'N/A', time: 'N/A' };
+        }
+
+        /**
+         * Analisa o arquivo CSV e extrai os dados, de forma robusta.
+         * @param {string} text - Conteúdo do arquivo CSV
+         * @param {string} delimiter - Delimitador (e.g., ';')
+         * @returns {Array<Array<string>>}
+         */
+        function parseCSV(text, delimiter) {
+            text = text.trim().replace(/^\uFEFF/, '');
+            const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
+
+            let headerLineIndex = lines.findIndex(line => line.toLowerCase().startsWith('ura;data;uniqueid') || line.toLowerCase().startsWith('"ura;data;uniqueid'));
+            
+            if (headerLineIndex === -1) {
+                 headerLineIndex = 0; 
+            }
+
+            const dataLines = lines.slice(headerLineIndex + 1);
+
+            return dataLines.map(line => {
+                const values = line.split(delimiter);
+                
+                return values.map(value => {
+                    let cleanValue = value.trim();
+                    
+                    if (cleanValue.length > 1 && cleanValue.startsWith('"') && cleanValue.endsWith('"')) {
+                        cleanValue = cleanValue.slice(1, -1).trim();
+                    }
+                    
+                    return cleanValue;
+                });
+            }).filter(row => row.length >= COLUMN_INDICES.MIN_COLUMNS); 
+        }
+
+        /**
+         * Coleta as notas (strings) selecionadas nas checkboxes.
+         * @returns {Array<string>} - Array de notas selecionadas (ex: ['1', '2']).
+         */
+        function getSelectedNotes() {
+            const selectedNotes = [];
+            for (let i = 1; i <= 5; i++) {
+                const checkbox = document.getElementById(`note${i}`);
+                if (checkbox && checkbox.checked) {
+                    selectedNotes.push(checkbox.value);
+                }
+            }
+            return selectedNotes;
+        }
+
+        /**
+         * Preenche o dropdown do filtro de operador.
+         * @param {Array<Array<string>>} data - Registros já filtrados pela nota.
+         */
+        function populateOperatorFilter(data) {
+            const operators = new Set();
+            data.forEach(row => {
+                const operatorName = row[COLUMN_INDICES.NOME_ATENDENTE];
+                if (operatorName && operatorName !== 'N/A' && operatorName !== '') {
+                    operators.add(operatorName);
+                }
+            });
+
+            OPERATOR_FILTER.innerHTML = '<option value="all">Todos os Operadores</option>';
+            
+            Array.from(operators).sort().forEach(operator => {
+                const option = document.createElement('option');
+                option.value = operator;
+                option.textContent = operator;
+                OPERATOR_FILTER.appendChild(option);
+            });
+
+            OPERATOR_FILTER.disabled = false;
+        }
+
+        /**
+         * Aplica o filtro de operador e renderiza a tabela.
+         */
+        function applyFiltersAndRender() {
+            if (!isDataLoaded) {
+                STATUS_MSG.textContent = 'Carregue o arquivo CSV primeiro.';
+                return;
+            }
+
+            const selectedOperator = OPERATOR_FILTER.value;
+            let dataToRender = filteredRecords; // Começa com os dados já filtrados pela nota
+
+            if (selectedOperator !== 'all') {
+                dataToRender = filteredRecords.filter(row => {
+                    return row[COLUMN_INDICES.NOME_ATENDENTE] === selectedOperator;
+                });
+            }
+
+            renderTable(dataToRender);
+        }
+
+        /**
+         * Altera o estado de auditoria de um registro.
+         * @param {string} uniqueId - O ID único do registro.
+         * @param {boolean} isChecked - O novo estado (marcado/desmarcado).
+         */
+        function toggleAuditState(uniqueId, isChecked) {
+            auditStateMap[uniqueId] = isChecked;
+        }
+
+        /**
+         * Renderiza as linhas de dados na tabela de auditoria.
+         * @param {Array<Array<string>>} data - Dados já filtrados e prontos para exibição.
+         */
+        function renderTable(data) {
+            TABLE_BODY.innerHTML = ''; 
+            
+            if (data.length === 0) {
+                NO_DATA_MSG.classList.remove('hidden');
+                TABLE_BODY.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-500">Nenhum registro para exibir.</td></tr>';
+                return;
+            }
+            NO_DATA_MSG.classList.add('hidden');
+
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                const nota = row[COLUMN_INDICES.PERGUNTA_1];
+                
+                // Define a classe de cor da linha baseada na nota
+                let rowColorClass = '';
+                if (nota === '1' || nota === '2') {
+                    rowColorClass = 'hover:bg-red-50 detrator-bg';
+                } else if (nota === '3') {
+                    rowColorClass = 'hover:bg-amber-50 neutro-bg';
+                } else if (nota === '4' || nota === '5') {
+                    rowColorClass = 'hover:bg-emerald-50 promotor-bg';
+                }
+                tr.className = rowColorClass;
+
+
+                const dateTime = formatDateTime(row[COLUMN_INDICES.DATA_HORA]);
+                const uniqueId = row[COLUMN_INDICES.UNIQUE_ID];
+                const isAudited = auditStateMap[uniqueId] || false; 
+
+                // NOVO: Define a cor do texto da nota
+                let notaTextColor = 'text-gray-800';
+                if (nota === '1' || nota === '2') notaTextColor = 'detrator-text';
+                if (nota === '3') notaTextColor = 'neutro-text';
+                if (nota === '4' || nota === '5') notaTextColor = 'promotor-text';
+
+                const auditCheckboxHtml = `
+                    <input type="checkbox" 
+                           class="audit-checkbox" 
+                           id="audit-${uniqueId}" 
+                           ${isAudited ? 'checked' : ''}
+                           onchange="toggleAuditState('${uniqueId}', this.checked)">
+                `;
+
+                tr.innerHTML = `
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-800">${dateTime.date}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${dateTime.time}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${row[COLUMN_INDICES.NOME_ATENDENTE] || 'N/A'}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${row[COLUMN_INDICES.TELEFONE] || 'N/A'}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm cell-nota ${notaTextColor}">${nota || 'N/A'}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">${row[COLUMN_INDICES.FILA] || 'N/A'}</td>
+                    <td class="px-4 py-3 text-center">${auditCheckboxHtml}</td>
+                `;
+                TABLE_BODY.appendChild(tr);
+            });
+        }
+
+        /**
+         * Obtém o rótulo descritivo das notas selecionadas.
+         */
+        function updateFilterSummary(selectedNotes) {
+            const notes = selectedNotes.map(n => parseInt(n)).sort((a, b) => a - b);
+            
+            let summaryParts = [];
+            if (notes.includes(1) || notes.includes(2)) summaryParts.push('Detratores (1-2)');
+            if (notes.includes(3)) summaryParts.push('Neutros (3)');
+            if (notes.includes(4) || notes.includes(5)) summaryParts.push('Promotores (4-5)');
+
+            const noteList = notes.join(', ');
+            
+            FILTERED_NOTES_SUMMARY.textContent = `Notas ${noteList}`;
+            FILTER_DESCRIPTION.textContent = `Filtro aplicado: ${summaryParts.join(' / ')} (Notas ${noteList}) na Pergunta 1 do CSV.`;
+        }
+
+        /**
+         * Processa o arquivo selecionado, lê, filtra e renderiza o relatório.
+         */
+        function processFile() {
+            const fileInput = document.getElementById('csvFileInput');
+            const selectedNotes = getSelectedNotes();
+
+            if (fileInput.files.length === 0 && !isDataLoaded) {
+                STATUS_MSG.textContent = 'Por favor, selecione um arquivo CSV.';
+                STATUS_MSG.classList.add('text-red-500');
+                return;
+            }
+            if (selectedNotes.length === 0) {
+                 STATUS_MSG.textContent = 'Por favor, selecione pelo menos uma nota para auditoria.';
+                 STATUS_MSG.classList.add('text-red-500');
+                 return;
+            }
+            STATUS_MSG.classList.remove('text-red-500');
+
+            // Se o arquivo não foi carregado, carrega o arquivo.
+            if (!isDataLoaded) {
+                STATUS_MSG.textContent = 'Carregando e processando arquivo...';
+
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+
+                reader.onload = function(event) {
+                    try {
+                        const csvText = event.target.result;
+                        rawRecords = parseCSV(csvText, ';');
+                        isDataLoaded = true;
+                        
+                        // Após carregar, aplica o filtro de notas e operador
+                        filterAndRenderBasedOnNotes();
+
+                    } catch (error) {
+                        STATUS_MSG.textContent = `Erro ao processar o arquivo: ${error.message}`;
+                        STATUS_MSG.classList.add('text-red-500');
+                        console.error("Erro no processamento:", error);
+                    }
+                };
+
+                reader.readAsText(file, 'ISO-8859-1'); 
+            } else {
+                // Se o arquivo já está carregado, apenas aplica o filtro de notas e operador
+                filterAndRenderBasedOnNotes();
+            }
+        }
+
+        /**
+         * Aplica o filtro principal baseado nas notas selecionadas e atualiza o UI.
+         */
+        function filterAndRenderBasedOnNotes() {
+            const selectedNotes = getSelectedNotes();
+            
+            // 1. Filtro principal por notas
+            filteredRecords = rawRecords.filter(row => {
+                if (row.length <= COLUMN_INDICES.PERGUNTA_1) return false;
+
+                const notaStr = row[COLUMN_INDICES.PERGUNTA_1] ? row[COLUMN_INDICES.PERGUNTA_1].trim() : '';
+                return selectedNotes.includes(notaStr);
+            });
+
+            // 2. Atualiza o resumo
+            const totalGeral = rawRecords.length;
+            const totalAuditoria = filteredRecords.length;
+            const taxaOcorrencia = totalGeral > 0 
+                ? ((totalAuditoria / totalGeral) * 100).toFixed(2)
+                : '0.00';
+
+            TOTAL_GERAL_COUNT.textContent = totalGeral.toLocaleString('pt-BR');
+            TOTAL_AUDITORIA_COUNT.textContent = totalAuditoria.toLocaleString('pt-BR');
+            INSATISFACAO_RATE.textContent = `${taxaOcorrencia}%`;
+            updateFilterSummary(selectedNotes);
+
+            // 3. Preenche o filtro de operador
+            populateOperatorFilter(filteredRecords);
+            
+            // 4. Aplica o filtro de operador (se houver) e renderiza
+            applyFiltersAndRender();
+            
+            STATUS_MSG.textContent = `Filtro aplicado. ${totalAuditoria} registros encontrados.`;
+        }
+
+
+        /**
+         * Função de ordenação da tabela.
+         * @param {number} columnIndex - Índice da coluna para ordenar
+         */
+        function sortTable(columnIndex) {
+            const table = document.getElementById('auditoriaTableBody');
+            const header = table.parentNode.querySelector('thead');
+            
+            if (lastSortedColumnIndex === columnIndex) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortDirection = 'asc';
+                lastSortedColumnIndex = columnIndex;
+            }
+
+            const rows = Array.from(table.rows);
+
+            rows.sort((rowA, rowB) => {
+                const cellA = rowA.cells[columnIndex].textContent.trim();
+                const cellB = rowB.cells[columnIndex].textContent.trim();
+
+                let comparison = 0;
+                
+                if (columnIndex === 0) { 
+                    const dateA = new Date(cellA.split('/').reverse().join('-'));
+                    const dateB = new Date(cellB.split('/').reverse().join('-'));
+                    comparison = dateA - dateB;
+                } else if (columnIndex === 4) { 
+                    comparison = parseInt(cellA) - parseInt(cellB);
+                } else { 
+                    comparison = cellA.localeCompare(cellB, 'pt', { numeric: true });
+                }
+
+                return sortDirection === 'asc' ? comparison : comparison * -1;
+            });
+
+            while (table.firstChild) {
+                table.removeChild(table.firstChild);
+            }
+            rows.forEach(row => table.appendChild(row));
+
+            const allHeaders = header.querySelectorAll('th');
+            allHeaders.forEach((th, index) => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+                if (index <= 5 && index === columnIndex) {
+                    th.classList.add(sortDirection === 'asc' ? 'sorted-asc' : 'sorted-desc');
+                }
+            });
+        }
+
+        // Adiciona listeners para aplicar filtros ao mudar o estado das checkboxes de nota
+        document.querySelectorAll('input[type="checkbox"][id^="note"]').forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                // Se os dados já estiverem carregados, aplica o filtro imediatamente
+                if (isDataLoaded) {
+                    filterAndRenderBasedOnNotes();
+                } else {
+                    // Se não estiver carregado, apenas atualiza o resumo (se houver necessidade)
+                    updateFilterSummary(getSelectedNotes());
+                }
+            });
+        });
+
+        // Inicializa o resumo do filtro
+        document.addEventListener('DOMContentLoaded', () => {
+             updateFilterSummary(getSelectedNotes());
+        });
+
+    </script>
+</body>
+</html>

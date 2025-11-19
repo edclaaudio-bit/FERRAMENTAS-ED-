@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Consolidado Diário e Detalhado de Baixa Duração</title>
+    <style>
+        /* Cores Base do Index.html: */
+        /* Primary/Header: #082161 (Azul Marinho Escuro) */
+        /* Accent/Action: #17a2b8 (Ciano/Azul Claro) */
+        /* Background: #f4f7f6 */
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6; 
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #082161;
+            border-bottom: 2px solid #17a2b8;
+            padding-bottom: 10px;
+            margin-top: 0;
+            font-size: 1.8em;
+        }
+        h2 {
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+            margin-top: 30px;
+            font-size: 1.3em;
+        }
+        .filter-section {
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr; /* Três colunas */
+            gap: 20px;
+            background-color: #f9f9f9;
+        }
+        .filter-section .upload-box {
+            grid-column: span 1;
+        }
+        .filter-section .ns-setting {
+            grid-column: span 1;
+        }
+
+        input[type="file"], input[type="number"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 5px;
+            background-color: #fff;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            color: #082161;
+            margin-top: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #082161; /* Cor primária do Index */
+            color: white;
+            font-weight: 600;
+            font-size: 0.9em;
+            position: relative;
+            text-align: center;
+        }
+        /* Estilos específicos para o cabeçalho de Dia da Semana */
+        .consolidated-table thead tr:nth-child(3) th { /* Linha 3 é o Dia da Semana */
+            background-color: #17a2b8; /* Cor secundária (Ciano) */
+            font-size: 0.8em;
+            padding: 5px 10px;
+        }
+
+        th:first-child, td:first-child {
+             text-align: left;
+        }
+        th.sortable {
+            cursor: pointer;
+        }
+        th.sortable:hover {
+            background-color: #17a2b8; /* Cor secundária para hover */
+        }
+        th.sorted-asc::after {
+            content: " ▲";
+        }
+        th.sorted-desc::after {
+            content: " ▼";
+        }
+        td {
+            font-size: 0.85em;
+            text-align: center;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        /* Estilos específicos para o novo relatório */
+        .consolidated-table thead tr:nth-child(1) th, 
+        .consolidated-table thead tr:nth-child(2) th {
+            background-color: #3a4750; /* Um cinza mais escuro para o consolidado */
+        }
+        /* Estilo para o TOTAL (Negrito) */
+        .consolidated-table th:last-child {
+            font-weight: bold;
+            color: white; 
+            background-color: #082161;
+        }
+        .consolidated-table td:last-child {
+            font-weight: bold;
+            color: #082161; 
+            background-color: #f0f0f0; 
+        }
+        /* Destaque para Nível de Serviço (NS) */
+        .ns-high-green {
+            background-color: #d4edda !important; /* Verde Claro */
+            color: #155724 !important; 
+            font-weight: bold;
+        }
+        .ns-low-red {
+            background-color: #f8d7da !important; /* Vermelho Claro */
+            color: #721c24 !important; 
+            font-weight: bold;
+        }
+        /* Destaques do relatório de baixa duração */
+        .percent-high {
+            font-weight: bold;
+            color: #dc3545; 
+        }
+        .highlight-yes {
+            background-color: #fff3cd; 
+            font-weight: bold;
+        }
+        .transfer-yes {
+            background-color: #d1ecf1; 
+        }
+        .not-found, .error-message {
+            color: #dc3545;
+            padding: 15px;
+            border: 1px solid #dc3545;
+            background-color: #f8d7da;
+            border-radius: 4px;
+        }
+        .report-actions {
+            margin-bottom: 15px;
+            text-align: right;
+        }
+        /* Estilo para botões secundários (Download) */
+        .report-actions button, #reportContainer button:not(.primary-action) { 
+            background-color: #17a2b8; /* Cor de ação (Ciano) */
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-left: 5px;
+            transition: background-color 0.3s;
+        }
+        .report-actions button:hover, #reportContainer button:not(.primary-action):hover {
+            background-color: #0d8b9f;
+        }
+        
+        /* Estilo para o botão principal "Gerar Relatórios" */
+        button.primary-action {
+             background-color: #17a2b8; /* Ciano para maior destaque */
+             color: white; 
+             border: 2px solid #082161; /* Borda para contraste extra */
+             padding: 12px 25px;
+             border-radius: 4px;
+             cursor: pointer;
+             font-weight: 700;
+             font-size: 1.1em;
+             margin-bottom: 20px;
+             transition: background-color 0.3s, border-color 0.3s;
+        }
+        button.primary-action:hover {
+            background-color: #082161; /* Inverte a cor no hover */
+            border-color: #17a2b8;
+            color: white;
+        }
+        .remove-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        .remove-btn:hover {
+            background-color: #c82333;
+        }
+        footer {
+            margin-top: 40px;
+            padding: 15px 0;
+            border-top: 1px solid #ccc;
+            text-align: center;
+            font-size: 0.85em;
+            color: #777;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Consolidado Diário e Detalhado de Baixa Duração</h1>
+        
+        <div class="filter-section">
+            <div class="upload-box">
+                <label for="fileInputDetalhado">1. CSV de Detalhamento Diário (Fonte de Dados):</label>
+                <input type="file" id="fileInputDetalhado" accept=".csv">
+            </div>
+            <div class="upload-box">
+                <label for="fileInputConsolidado">2. CSV Consolidado Anterior (Opcional - para Histórico):</label>
+                <input type="file" id="fileInputConsolidado" accept=".csv">
+            </div>
+            <div class="ns-setting">
+                <label for="nsThresholdInput">3. Exceção NS (%) (Regra de Cor):</label>
+                <input type="number" id="nsThresholdInput" value="85" min="0" max="100" step="1">
+            </div>
+        </div>
+        <button class="primary-action" onclick="processFiles()">Gerar Relatórios</button>
+
+
+        <div id="reportContainer">
+            <p>Selecione os arquivos CSV e clique em "Gerar Relatórios".</p>
+        </div>
+    </div>
+
+    <footer>
+        Desenvolvido por **Claudio Carvalho**
+    </footer>
+
+    <script>
+        const REQUIRED_COLUMNS = [
+            'tipo', 'tempoAtendimento', 'nomeAtendente', 'desconexaoLocal', 
+            'transferencia', 'data', 'horaAtendimento', 'numero', 'tempoEspera' 
+        ];
+        
+        const HEADER_LINE_INDEX = 5; 
+        const DATA_START_INDEX = 6;
+        const MAX_SHORT_DURATION = 45; 
+        // A constante NS_THRESHOLD agora é controlada pela variável global 'currentNsThreshold'
+
+        // Regex para validar o formato YYYY-MM-DD
+        const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+        const METRIC_NAMES = [
+            'Total de chamadas (abandonadas+atendidas)', 
+            'Chamadas Atendidas (Totais)', 
+            'Chamadas atendidas com duração até 20 segundos', 
+            'Chamadas atendidas (em até 60 segundos)', 
+            'Nível de Serviço (atendidas até 60 / chamadas atendidas)', 
+            'Tempo médio de espera das chamadas atendidas', 
+            'Chamadas não atendidas (abandonadas + desligadas)', 
+            'Chamadas abandonadas (com espera superior a 60 segundos)', 
+            'Taxa de abandono (com espera superior a 60 segundos)', 
+            'Chamadas desligadas pelo cliente (antes de 60 segundos)', 
+            'Tempo médio de atendimento'
+        ];
+        
+        let currentSummaryData = []; 
+        let currentConsolidatedData = {}; 
+        let totalMetricsBase = {}; 
+        let currentNsThreshold = 85; // Variável global para armazenar o NS Threshold atual
+        
+        // Adicionando o BOM (Byte Order Mark) para compatibilidade com Excel UTF-8
+        const CSV_BOM = "\ufeff"; 
+
+        /**
+         * Converte uma string de tempo (MM:SS ou HH:MM:SS) para segundos.
+         */
+        function timeToSeconds(timeStr) {
+            if (!timeStr || timeStr === '-') return 0;
+            
+            const cleanStr = timeStr.replace(/\s*\(.*\)/, '').trim();
+            const parts = cleanStr.split(':').map(p => parseInt(p, 10) || 0);
+
+            if (parts.length === 3) {
+                return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+            } else if (parts.length === 2) {
+                return (parts[0] * 60) + parts[1];
+            }
+            return 0; 
+        }
+        
+        /**
+         * Formata segundos totais de volta para o formato de tempo HH:MM:SS.
+         */
+        function formatSecondsToTime(totalSeconds) {
+            if (totalSeconds === 0) return '00:00:00';
+            const seconds = Math.round(totalSeconds); 
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const remainingSeconds = seconds % 60;
+            
+            const pad = (num) => String(num).padStart(2, '0');
+            
+            return `${pad(hours)}:${pad(minutes)}:${pad(remainingSeconds)}`;
+        }
+        
+        /**
+         * Extrai apenas o dia (DD) de uma string de data YYYY-MM-DD.
+         */
+        function formatDateToDay(dateStr) {
+            if (!dateStr || dateStr.length < 10) return '';
+            // Assume dateStr é 'YYYY-MM-DD' e extrai 'DD'
+            return dateStr.substring(8, 10); 
+        }
+
+        /**
+         * Retorna o dia da semana abreviado em português (ex: SEG, DOM).
+         * @param {string} dateStr - Data no formato YYYY-MM-DD.
+         */
+        function getDayOfWeek(dateStr) {
+            if (!dateStr) return '';
+            // Adiciona T12:00:00 para evitar problemas de fuso horário e garantir o dia correto
+            const date = new Date(dateStr + 'T12:00:00'); 
+            const days = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+            return days[date.getDay()];
+        }
+
+        /* --- Processamento de Arquivos --- */
+        
+        async function parseCsvFile(file, isConsolidated = false) {
+             if (!file) return { data: [], meta: {} };
+
+             // 1. Primeira leitura (sem cabeçalho) para pegar o raw data
+             const rawResults = await new Promise((resolve, reject) => {
+                 Papa.parse(file, {
+                     header: false, 
+                     skipEmptyLines: false,
+                     complete: resolve,
+                     error: reject
+                 });
+             });
+             
+             // 2. Lógica para consolidado anterior (forçada pela flag ou pelo nome)
+             if (isConsolidated || file.name.includes("Relatorio_CONSOLIDADO_")) {
+                 if (!rawResults.data || rawResults.data.length === 0) {
+                     return { data: [], meta: {} };
+                 }
+
+                 // Reconverte o array de arrays para uma string CSV limpa (semicolon-delimited)
+                 // A linha do cabeçalho é a primeira linha (índice 0)
+                 const csvString = rawResults.data.map(row => row.join(';')).join('\n');
+                 
+                 // Re-parse a string com header=true e delimiter=';'
+                 return new Promise((resolve, reject) => {
+                      Papa.parse(csvString, {
+                          header: true, 
+                          delimiter: ';', 
+                          skipEmptyLines: true,
+                          complete: resolve,
+                          error: reject
+                      });
+                 });
+             }
+
+             // 3. Lógica para detalhamento diário (Intelix: cabeçalho na linha 6, delimitador ';')
+             if (!rawResults.data || rawResults.data.length < DATA_START_INDEX) {
+                 return { data: [], meta: {} };
+             }
+
+             const rawHeaderRow = rawResults.data[HEADER_LINE_INDEX];
+             const dataRows = rawResults.data.slice(DATA_START_INDEX);
+             const correctedCsvString = rawHeaderRow.join(';') + '\n' + dataRows.map(row => row.join(';')).join('\n');
+
+             return new Promise((resolve, reject) => {
+                 Papa.parse(correctedCsvString, {
+                     header: true, 
+                     delimiter: ';', 
+                     skipEmptyLines: true,
+                     complete: resolve,
+                     error: reject
+                 });
+             });
+        }
+        
+        async function processFiles() {
+            const fileDetalhado = document.getElementById('fileInputDetalhado').files[0];
+            const fileConsolidado = document.getElementById('fileInputConsolidado').files[0];
+            const nsInput = document.getElementById('nsThresholdInput');
+            const reportContainer = document.getElementById('reportContainer');
+
+            // 1. LÊ E ATUALIZA O NS THRESHOLD DO CAMPO DE INPUT
+            const nsValue = parseFloat(nsInput.value);
+            if (isNaN(nsValue) || nsValue < 0 || nsValue > 100) {
+                 alert("Por favor, insira um valor válido (0 a 100) para o Nível de Serviço (NS). O padrão 85 será usado.");
+                 currentNsThreshold = 85;
+            } else {
+                 currentNsThreshold = nsValue;
+            }
+
+            if (!fileDetalhado) {
+                reportContainer.innerHTML = '<p class="not-found">Nenhum arquivo de **Detalhamento Diário** selecionado.</p>';
+                return;
+            }
+
+            reportContainer.innerHTML = '<p>Processando arquivos, por favor aguarde...</p>';
+            
+            try {
+                 const resultsDetalhado = await parseCsvFile(fileDetalhado);
+                 const resultsConsolidado = await parseCsvFile(fileConsolidado, true); 
+                 
+                 const validationError = validateColumns(resultsDetalhado.meta);
+                 if (validationError) {
+                     reportContainer.innerHTML = validationError;
+                     return;
+                 }
+                 
+                 generateReports(resultsDetalhado.data, resultsConsolidado.data);
+                 
+            } catch (error) {
+                 reportContainer.innerHTML = '<p class="error-message">Erro no processamento dos arquivos: ' + error.message + '</p>';
+            }
+        }
+        
+        function validateColumns(meta) {
+            const availableColumns = meta.fields || [];
+            const missingColumns = REQUIRED_COLUMNS.filter(col => !availableColumns.includes(col));
+
+            if (missingColumns.length > 0) {
+                return `
+                    <div class="error-message">
+                        <h2>❌ Falha na Validação do Arquivo Detalhado</h2>
+                        <p>O cabeçalho foi encontrado na linha ${HEADER_LINE_INDEX + 1}, mas os nomes das colunas não são os esperados.</p>
+                        <p><strong>Colunas Faltantes:</strong> <code>${missingColumns.join('</code>, <code>')}</code></p>
+                    </div>
+                `;
+            }
+            return null;
+        }
+
+        /* --- Lógica de Consolidação (Novo Relatório 1) --- */
+
+        function calculateMetricsForDay(data) {
+            const metrics = {
+                'Total de chamadas (abandonadas+atendidas)': 0,
+                'Chamadas Atendidas (Totais)': 0,
+                'Chamadas atendidas com duração até 20 segundos': 0,
+                'Chamadas atendidas (em até 60 segundos)': 0, 
+                'Nível de Serviço (atendidas até 60 / chamadas atendidas)': 0,
+                'Tempo médio de espera das chamadas atendidas': 0,
+                'Chamadas não atendidas (abandonadas + desligadas)': 0,
+                'Chamadas abandonadas (com espera superior a 60 segundos)': 0,
+                'Taxa de abandono (com espera superior a 60 segundos)': 0,
+                'Chamadas desligadas pelo cliente (antes de 60 segundos)': 0,
+                'Tempo médio de atendimento': 0
+            };
+
+            let totalEsperaAtendidaSec = 0;
+            let totalTempoAtendimentoSec = 0;
+            
+            data.forEach(row => {
+                const tipo = (row.tipo || '').toLowerCase();
+                const isAtendida = tipo.includes('atendida');
+                const isAbandonada = tipo.includes('abandonada');
+                
+                const duracaoAtendimentoSec = timeToSeconds(row.tempoAtendimento);
+                const duracaoEsperaSec = timeToSeconds(row.tempoEspera); 
+
+                if (isAtendida || isAbandonada) {
+                    metrics['Total de chamadas (abandonadas+atendidas)']++;
+                }
+
+                if (isAtendida) {
+                    metrics['Chamadas Atendidas (Totais)']++;
+                    totalEsperaAtendidaSec += duracaoEsperaSec;
+                    totalTempoAtendimentoSec += duracaoAtendimentoSec;
+
+                    if (duracaoAtendimentoSec <= 20) {
+                        metrics['Chamadas atendidas com duração até 20 segundos']++;
+                    }
+                    
+                    // NS é baseado no tempo de espera
+                    if (duracaoEsperaSec <= 60) {
+                        metrics['Chamadas atendidas (em até 60 segundos)']++;
+                    }
+                } else if (isAbandonada) {
+                    metrics['Chamadas não atendidas (abandonadas + desligadas)']++; 
+                    
+                    if (duracaoEsperaSec > 60) {
+                        metrics['Chamadas abandonadas (com espera superior a 60 segundos)']++;
+                    }
+                    
+                    if (duracaoEsperaSec <= 60) {
+                         metrics['Chamadas desligadas pelo cliente (antes de 60 segundos)']++;
+                    }
+                }
+            });
+            
+            const atendidas = metrics['Chamadas Atendidas (Totais)'];
+            const totalChamadas = metrics['Total de chamadas (abandonadas+atendidas)'];
+            const atendidasEspera60s = metrics['Chamadas atendidas (em até 60 segundos)'];
+            const abandonadas60s = metrics['Chamadas abandonadas (com espera superior a 60 segundos)'];
+            
+            metrics['Nível de Serviço (atendidas até 60 / chamadas atendidas)'] = (atendidas > 0) ? (atendidasEspera60s / atendidas) * 100 : 0;
+            metrics['Tempo médio de espera das chamadas atendidas'] = (atendidas > 0) ? totalEsperaAtendidaSec / atendidas : 0;
+            metrics['Taxa de abandono (com espera superior a 60 segundos)'] = (totalChamadas > 0) ? (abandonadas60s / totalChamadas) * 100 : 0;
+            metrics['Tempo médio de atendimento'] = (atendidas > 0) ? totalTempoAtendimentoSec / atendidas : 0;
+            
+            // Armazena a base para o cálculo do TOTAL GERAL
+            return {
+                metrics: metrics,
+                baseMetrics: {
+                    totalEsperaAtendidaSec: totalEsperaAtendidaSec,
+                    totalTempoAtendimentoSec: totalTempoAtendimentoSec,
+                    totalAtendidas: atendidas,
+                    totalChamadas: totalChamadas,
+                    totalAtendidas60s: atendidasEspera60s,
+                    totalAbandonadas60s: abandonadas60s
+                }
+            };
+        }
+
+        /**
+         * Mescla os dados calculados do novo dia com o consolidado anterior,
+         * filtrando colunas inválidas ou não formatadas como data.
+         */
+        function mergeConsolidatedData(dailyData, previousConsolidated) {
+            let finalConsolidated = {};
+
+            // 1. Processa dados anteriores (histórico) para criar a base
+            if (previousConsolidated && previousConsolidated.length > 0) {
+                const previousHeader = Object.keys(previousConsolidated[0]); 
+                const metricHeaderName = previousHeader[0] || 'Métrica';
+                
+                previousConsolidated.forEach(row => {
+                    const metricName = row[metricHeaderName] || ''; 
+                    
+                    if (metricName && METRIC_NAMES.includes(metricName)) {
+                         finalConsolidated[metricName] = {};
+                         
+                         previousHeader.slice(1).forEach(day => { 
+                             // Filtro: O cabeçalho da coluna deve ser uma data completa (YYYY-MM-DD) para ser considerado histórico
+                             if (DATE_REGEX.test(day)) { 
+                                 let val = row[day] || '0';
+                                 
+                                 // Mapeamento de valores para formato numérico (necessário para somar no cálculo do TOTAL)
+                                 if (metricName.includes('Tempo médio')) {
+                                     // Para Tempos Médios: Converte para segundos
+                                     val = timeToSeconds(val);
+                                     
+                                     // Armazena a contagem de atendidas do dia do histórico para usar como peso 
+                                     const atendidasRow = previousConsolidated.find(r => r[metricHeaderName] === 'Chamadas Atendidas (Totais)');
+                                     // Parse do valor numérico (removendo ponto de milhar e trocando vírgula decimal por ponto)
+                                     const atendidasDoDia = atendidasRow ? (parseFloat((atendidasRow[day] || '0').replace(/\./g, '').replace(',', '.')) || 0) : 0;
+
+
+                                     finalConsolidated[metricName]['baseAttendedCount'] = finalConsolidated[metricName]['baseAttendedCount'] || {};
+                                     finalConsolidated[metricName]['baseAttendedCount'][day] = atendidasDoDia;
+                                 } else if (!metricName.includes('Serviço') && !metricName.includes('abandono')) {
+                                     // Para contagens (contagens diárias): remove formatacao e converte para número
+                                     val = parseFloat(val.replace(/\./g, '').replace(',', '.')) || 0;
+                                 } else {
+                                     // Para porcentagens (NS/Abandono diário): remove '%' e armazena o número
+                                     val = parseFloat(val.replace('%', '').replace(',', '.')) || 0;
+                                 }
+                                 finalConsolidated[metricName][day] = val;
+                             }
+                         });
+                    }
+                });
+            }
+
+            // 2. Adiciona dados dos dias atuais
+            for (const [metric, daysData] of Object.entries(dailyData)) {
+                if (!finalConsolidated[metric]) {
+                    finalConsolidated[metric] = {};
+                }
+                Object.assign(finalConsolidated[metric], daysData);
+            }
+
+            return finalConsolidated;
+        }
+
+
+        function generateConsolidatedReport(dataDetalhado, dataConsolidadoAnterior) {
+            
+            const dailyResults = {};
+            dataDetalhado.forEach(row => {
+                const date = row.data;
+                if (DATE_REGEX.test(date)) { // Garantir que a data é válida
+                    if (!dailyResults[date]) {
+                        dailyResults[date] = [];
+                    }
+                    dailyResults[date].push(row);
+                }
+            });
+            
+            const calculatedDailyMetrics = {};
+            // Armazena a base para o cálculo do TOTAL GERAL (Numeradores e Denominadores) - Apenas dos NOVOS DIAS
+            totalMetricsBase = { 
+                totalChamadas: 0, 
+                totalAtendidas: 0, 
+                totalEsperaAtendidaSec: 0, 
+                totalTempoAtendimentoSec: 0, 
+                totalAtendidas60s: 0, 
+                totalAbandonadas60s: 0
+            };
+            
+            Object.keys(dailyResults).forEach(date => {
+                 const result = calculateMetricsForDay(dailyResults[date]);
+                 calculatedDailyMetrics[date] = result.metrics;
+                 
+                 // Soma os totais BRUTOS para o cálculo final do TOTAL GERAL (Apenas dados NOVOS)
+                 totalMetricsBase.totalEsperaAtendidaSec += result.baseMetrics.totalEsperaAtendidaSec;
+                 totalMetricsBase.totalTempoAtendimentoSec += result.baseMetrics.totalTempoAtendimentoSec;
+                 totalMetricsBase.totalAtendidas += result.baseMetrics.totalAtendidas;
+                 totalMetricsBase.totalChamadas += result.baseMetrics.totalChamadas;
+                 totalMetricsBase.totalAtendidas60s += result.baseMetrics.totalAtendidas60s;
+                 totalMetricsBase.totalAbandonadas60s += result.baseMetrics.totalAbandonadas60s;
+            });
+            
+            let newDayData = {};
+            METRIC_NAMES.forEach(metric => {
+                newDayData[metric] = {};
+                Object.keys(calculatedDailyMetrics).forEach(date => {
+                    newDayData[metric][date] = calculatedDailyMetrics[date][metric];
+                });
+            });
+
+            // Une os novos dados com o histórico (valores numéricos prontos para soma)
+            const finalData = mergeConsolidatedData(newDayData, dataConsolidadoAnterior);
+
+            if (Object.keys(finalData).length === 0) return '';
+            
+            let allDatesSet = new Set();
+            METRIC_NAMES.forEach(metric => {
+                Object.keys(finalData[metric] || {}).forEach(date => {
+                    if (DATE_REGEX.test(date)) {
+                        allDatesSet.add(date);
+                    }
+                });
+            });
+            const allDates = Array.from(allDatesSet).sort();
+            
+            if (allDates.length === 0) {
+                 return '<p class="not-found">Nenhuma data válida encontrada para gerar o Relatório Consolidado.</p>';
+            }
+
+            let html = `
+                <div id="consolidatedReportSection">
+                    <h2>⭐ 1. Relatório Consolidado Diário (NS/SLA)</h2>
+                    <p>Métricas consolidadas para cada dia encontrado. NS de **${currentNsThreshold}%** usado para cores.</p>
+                    <div class="report-actions">
+                        <button onclick="exportConsolidatedToCsv()">⬇️ Baixar Consolidado (CSV/Excel)</button>
+                        <button onclick="downloadReportAsImage('consolidatedReportSection', 'Relatorio_CONSOLIDADO')">🖼️ Baixar como Imagem</button>
+                    </div>
+                    <table id="consolidatedReportTable" class="consolidated-table">
+                        <thead>
+                            <tr>
+                                <th rowspan="3">Métrica</th>
+                                ${allDates.map(() => `<th>Dia</th>`).join('')} 
+                                <th rowspan="3">TOTAL</th>
+                            </tr>
+                            <tr>
+                                ${allDates.map(date => `<th>${formatDateToDay(date)}</th>`).join('')}
+                                <th></th>
+                            </tr>
+                            <tr>
+                                ${allDates.map(date => `<th>${getDayOfWeek(date)}</th>`).join('')}
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            currentConsolidatedData = {}; 
+            
+            // Variáveis para somar *todos* os numeradores e denominadores brutos, incluindo o histórico
+            let totalAtendidasGlobal = totalMetricsBase.totalAtendidas;
+            let totalChamadasGlobal = totalMetricsBase.totalChamadas;
+            let totalAtendidas60sGlobal = totalMetricsBase.totalAtendidas60s;
+            let totalAbandonadas60sGlobal = totalMetricsBase.totalAbandonadas60s;
+            let totalEsperaAtendidaSecGlobal = totalMetricsBase.totalEsperaAtendidaSec;
+            let totalTempoAtendimentoSecGlobal = totalMetricsBase.totalTempoAtendimentoSec;
+
+            METRIC_NAMES.forEach(metric => {
+                let totalSum = 0; // Usado para somar métricas de contagem (para display do total da linha)
+
+                currentConsolidatedData[metric] = {};
+
+                allDates.forEach(date => {
+                    let value = finalData[metric]?.[date] || 0;
+                    currentConsolidatedData[metric][date] = value; 
+                    
+                    // 1. Soma Global de Contagens (incluindo o histórico e o novo dia)
+                    if (!metric.includes('Serviço') && !metric.includes('abandono') && !metric.includes('Tempo médio')) {
+                        totalSum += value; 
+                    }
+                });
+
+                // 2. Acumula os totais de base do HISTÓRICO para o cálculo TOTAL GERAL
+                // Isso garante que as bases de cálculo (numeradores/denominadores) do histórico
+                // sejam adicionadas à base do dia atual (totalMetricsBase).
+                if (dataConsolidadoAnterior && Object.keys(dailyResults).length > 0) {
+                     allDates.forEach(date => {
+                        // Verifica se é uma data do histórico (NÃO está nos dias processados agora)
+                        if (!dailyResults[date] && finalData[metric]?.[date] !== undefined) {
+                            const value = finalData[metric][date];
+                            
+                            // Adiciona os valores do HISTÓRICO para as métricas de BASE (Contagens)
+                            if (metric === 'Chamadas Atendidas (Totais)') { totalAtendidasGlobal += value; }
+                            else if (metric === 'Total de chamadas (abandonadas+atendidas)') { totalChamadasGlobal += value; }
+                            else if (metric === 'Chamadas atendidas (em até 60 segundos)') { totalAtendidas60sGlobal += value; }
+                            else if (metric === 'Chamadas abandonadas (com espera superior a 60 segundos)') { totalAbandonadas60sGlobal += value; }
+                            
+                            // Adiciona os segundos totais do HISTÓRICO para TME/TMA
+                            const atendidasDoDiaHistorico = finalData['Tempo médio de espera das chamadas atendidas']?.['baseAttendedCount']?.[date] || 0;
+
+                            if (metric === 'Tempo médio de espera das chamadas atendidas' && atendidasDoDiaHistorico > 0) { 
+                                // TME Total = TME do dia * Atendidas do dia (do histórico)
+                                totalEsperaAtendidaSecGlobal += (value * atendidasDoDiaHistorico); 
+                            } 
+                            else if (metric === 'Tempo médio de atendimento' && atendidasDoDiaHistorico > 0) { 
+                                // TMA Total = TMA do dia * Atendidas do dia (do histórico)
+                                totalTempoAtendimentoSecGlobal += (value * atendidasDoDiaHistorico); 
+                            }
+                        }
+                    });
+                }
+                
+                // --- 3. Cálculo do TOTAL GERAL ---
+                let totalValue;
+                let displayTotal;
+                
+                if (metric === 'Nível de Serviço (atendidas até 60 / chamadas atendidas)') {
+                     // CÁLCULO: (Soma total atendidas até 60) / (Soma total atendidas)
+                     totalValue = (totalAtendidasGlobal > 0) ? (totalAtendidas60sGlobal / totalAtendidasGlobal) * 100 : 0;
+                     displayTotal = `${totalValue.toFixed(2).replace('.', ',')}%`;
+
+                } else if (metric === 'Taxa de abandono (com espera superior a 60 segundos)') {
+                    // CÁLCULO: (Soma total abandonadas > 60) / (Soma total chamadas)
+                    totalValue = (totalChamadasGlobal > 0) ? (totalAbandonadas60sGlobal / totalChamadasGlobal) * 100 : 0;
+                    displayTotal = `${totalValue.toFixed(2).replace('.', ',')}%`;
+
+                } else if (metric === 'Tempo médio de espera das chamadas atendidas') {
+                    // CÁLCULO: (Soma total de espera atendida) / (Soma total atendidas)
+                    totalValue = (totalAtendidasGlobal > 0) ? totalEsperaAtendidaSecGlobal / totalAtendidasGlobal : 0;
+                    displayTotal = formatSecondsToTime(totalValue);
+
+                } else if (metric === 'Tempo médio de atendimento') {
+                    // CÁLCULO: (Soma total de tempo de atendimento) / (Soma total atendidas)
+                    totalValue = (totalAtendidasGlobal > 0) ? totalTempoAtendimentoSecGlobal / totalAtendidasGlobal : 0;
+                    displayTotal = formatSecondsToTime(totalValue);
+                    
+                } else {
+                    // Métricas de contagem: o TOTAL é a soma simples de todos os valores na linha
+                    totalSum = 0;
+                    allDates.forEach(date => {
+                        totalSum += finalData[metric]?.[date] || 0;
+                    });
+                    totalValue = totalSum;
+                    displayTotal = totalValue.toLocaleString('pt-BR');
+                }
+                
+                // Armazena o valor TOTAL calculado para uso futuro (ex: exportação)
+                currentConsolidatedData[metric]['TOTAL'] = totalValue;
+
+                // Cálculo da classe CSS para o TOTAL
+                let totalCellClass = '';
+                // AGORA USA A VARIÁVEL currentNsThreshold
+                if (metric.includes('Nível de Serviço')) {
+                    if (totalValue >= currentNsThreshold) {
+                        totalCellClass = 'ns-high-green';
+                    } else if (totalValue > 0) {
+                        totalCellClass = 'ns-low-red';
+                    }
+                }
+                
+                // Montagem da Linha
+                let row = `<tr><td>${metric}</td>`; 
+                
+                allDates.forEach(date => {
+                    let value = finalData[metric]?.[date] || 0;
+                    
+                    let displayValue;
+                    if (metric.includes('Serviço') || metric.includes('abandono')) {
+                        displayValue = `${value.toFixed(2).replace('.', ',')}%`;
+                    } else if (metric.includes('Tempo médio')) {
+                        // O valor armazenado é em segundos, formatamos para HH:MM:SS
+                        displayValue = formatSecondsToTime(value); 
+                    } else {
+                        // Para contagens: formatamos o número
+                        displayValue = Math.round(value).toLocaleString('pt-BR');
+                    }
+
+                    // Cálculo da classe CSS para a célula do dia
+                    let cellClass = '';
+                    // AGORA USA A VARIÁVEL currentNsThreshold
+                    if (metric.includes('Nível de Serviço')) {
+                         if (value >= currentNsThreshold) {
+                             cellClass = 'ns-high-green';
+                         } else if (value > 0) {
+                             cellClass = 'ns-low-red';
+                         }
+                    }
+                    
+                    row += `<td class="${cellClass}">${displayValue}</td>`;
+                });
+                
+                // Aplica a classe ao TD do TOTAL
+                row += `<td class="${totalCellClass}">${displayTotal}</td></tr>`;
+                html += row;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            return html;
+        }
+
+
+        function generateReports(dataDetalhado, dataConsolidadoAnterior) {
+            const reportContainer = document.getElementById('reportContainer');
+            
+            const consolidatedHtml = generateConsolidatedReport(dataDetalhado, dataConsolidadoAnterior);
+
+            const allAnsweredCalls = {};
+            const exceptions = []; 
+            
+            dataDetalhado.forEach(row => {
+                const atendente = (row.nomeAtendente || 'ATENDENTE DESCONHECIDO').trim();
+                const atendenteKey = atendente.toUpperCase();
+                const isAtendida = (row.tipo || '').toLowerCase().includes('atendida'); 
+                const durationSeconds = timeToSeconds(row.tempoAtendimento);
+                
+                if (isAtendida && !exceptions.includes(atendenteKey)) {
+                    if (!allAnsweredCalls[atendenteKey]) {
+                        allAnsweredCalls[atendenteKey] = { atendente: atendente, total: 0, short: 0 };
+                    }
+                    
+                    allAnsweredCalls[atendenteKey].total++;
+
+                    if (durationSeconds <= MAX_SHORT_DURATION && durationSeconds > 0) {
+                        allAnsweredCalls[atendenteKey].short++;
+                    }
+                }
+            });
+            let summaryData = Object.values(allAnsweredCalls);
+            currentSummaryData = summaryData;
+            
+            const filteredData = dataDetalhado.filter(row => {
+                const isAtendida = (row.tipo || '').toLowerCase().includes('atendida');
+                const durationSeconds = timeToSeconds(row.tempoAtendimento);
+                
+                return isAtendida && durationSeconds <= MAX_SHORT_DURATION && durationSeconds > 0;
+            });
+            
+            
+            let html = consolidatedHtml;
+
+            if (summaryData.length > 0) {
+                html += `
+                    <div id="summaryReportSection">
+                        <h2>📊 2. Relatório de Resumo por Atendente</h2>
+                        <p>Métricas consolidadas de todas as ligações atendidas.</p>
+                        <div class="report-actions">
+                            <button onclick="exportSummaryToCsv()">⬇️ Baixar Resumo (CSV/Excel)</button>
+                            <button onclick="downloadReportAsImage('summaryReportSection', 'Relatorio_RESUMO')">🖼️ Baixar como Imagem</button>
+                        </div>
+                        <table id="summaryReportTable">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" onclick="sortSummaryTable(0)">Nome Atendente</th>
+                                    <th class="sortable" onclick="sortSummaryTable(1)">Total Atendidas</th>
+                                    <th class="sortable" onclick="sortSummaryTable(2)">Total Curta Duração (≤ ${MAX_SHORT_DURATION}s)</th>
+                                    <th class="sortable" onclick="sortSummaryTable(3)">Porcentagem (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                summaryData.forEach(item => {
+                    const total = item.total;
+                    const short = item.short;
+                    const percent = (total > 0) ? ((short / total) * 100).toFixed(2) : '0.00';
+                    const percentClass = (parseFloat(percent) > 10) ? 'percent-high' : ''; 
+
+                    html += `
+                        <tr>
+                            <td>${item.atendente}</td>
+                            <td>${total}</td>
+                            <td>${short}</td>
+                            <td class="${percentClass}">${percent}%</td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else if (dataDetalhado.length > 0 && !consolidatedHtml) {
+                 html += `<p class="not-found">Nenhuma ligação atendida encontrada para gerar o resumo (Verifique a coluna 'tipo').</p>`;
+            }
+
+            if (filteredData.length > 0) {
+                html += `
+                    <div id="detailedReportSection">
+                        <h2>📑 3. Relatório Detalhado de Baixa Duração</h2>
+                        <p>Total de Ligações no Relatório: **${filteredData.length}**</p>
+                        <div class="report-actions">
+                            <button onclick="exportDetailedToCsv()">⬇️ Baixar Detalhado (CSV/Excel)</button>
+                        </div>
+                        <table id="detailedReportTable">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" onclick="sortDetailedTable(0)">Data</th>
+                                    <th class="sortable" onclick="sortDetailedTable(1)">Hora Atendimento</th>
+                                    <th class="sortable" onclick="sortDetailedTable(2)">Tempo Atendimento</th>
+                                    <th class="sortable" onclick="sortDetailedTable(3)">Número (Contato)</th>
+                                    <th class="sortable" onclick="sortDetailedTable(4)">Nome Atendente</th>
+                                    <th class="sortable" onclick="sortDetailedTable(5)">Desconexão Local</th>
+                                    <th class="sortable" onclick="sortDetailedTable(6)">Transferência</th>
+                                    <th>Ação</th> 
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                filteredData.forEach(row => {
+                    const desconexao = row.desconexaoLocal || '-';
+                    const transferencia = row.transferencia || '-';
+                    const atendente = row.nomeAtendente || '-';
+                    // O campo 'tempoAtendimento' e 'data' no relatório detalhado é exibido como está no CSV de entrada
+                    const tempo = row.tempoAtendimento || '-'; 
+                    const data = row.data || '-'; // Mantemos a data completa aqui para contexto
+                    const hora = row.horaAtendimento || '-';
+                    const numero = row.numero || '-';
+
+                    const isDesconexaoLocal = desconexao.toLowerCase().includes('sim') || desconexao.toLowerCase().startsWith('s');
+                    const desconexaoClass = isDesconexaoLocal ? 'highlight-yes' : '';
+                    
+                    const isTransferencia = transferencia.toLowerCase().includes('ramal') || transferencia.toLowerCase().includes('transfer') || transferencia.toLowerCase().includes('sim');
+                    const transferenciaClass = isTransferencia ? 'transfer-yes' : '';
+
+
+                    html += `
+                        <tr>
+                            <td>${data}</td>
+                            <td>${hora}</td>
+                            <td>${tempo}</td>
+                            <td>${numero}</td>
+                            <td>${atendente}</td>
+                            <td class="${desconexaoClass}">${desconexao}</td>
+                            <td class="${transferenciaClass}">${transferencia}</td>
+                            <td><button class="remove-btn" onclick="removeRow(this)">Excluir</button></td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else if (summaryData.length > 0) {
+                 html += `<p>✅ **Processamento Concluído:** Nenhuma ligação atendida com duração de até ${MAX_SHORT_DURATION} segundos foi encontrada no filtro detalhado.</p>`;
+            }
+            
+            reportContainer.innerHTML = html;
+        }
+
+        /* --- Funções de Exportação (Com BOM para Excel) --- */
+
+        function exportConsolidatedToCsv() {
+             if (Object.keys(currentConsolidatedData).length === 0) return;
+
+             let csv = [];
+             
+             const allDates = Object.keys(currentConsolidatedData[METRIC_NAMES[0]]).filter(key => key !== 'TOTAL').sort();
+             
+             // Cabeçalho 1: Métrica, Datas Completas e TOTAL
+             let headerRow1 = ['"Métrica"', ...allDates.map(date => `"${date}"`), '"TOTAL"']; 
+             csv.push(headerRow1.join(';'));
+             
+             // Cabeçalho 2: Dia da Semana (para informação)
+             let headerRow2 = ['"Dia da Semana"', ...allDates.map(date => `"${getDayOfWeek(date)}"`), '""'];
+             csv.push(headerRow2.join(';'));
+
+
+             METRIC_NAMES.forEach(metric => {
+                 let row = [`"${metric}"`];
+                 
+                 const totalValue = currentConsolidatedData[metric]['TOTAL'] || 0;
+                 
+                 allDates.forEach(date => {
+                     let value = currentConsolidatedData[metric]?.[date] || 0;
+                     
+                     let displayValue;
+                     if (metric.includes('Serviço') || metric.includes('abandono')) {
+                         displayValue = `${value.toFixed(2).replace('.', ',')}%`;
+                     } else if (metric.includes('Tempo médio')) {
+                         // Formatação para HH:MM:SS para o CSV
+                         displayValue = formatSecondsToTime(value); 
+                     } else {
+                         displayValue = Math.round(value).toLocaleString('pt-BR');
+                     }
+                     
+                     row.push(`"${displayValue.replace(/"/g, '""')}"`);
+                 });
+                 
+                 let displayTotal;
+                 if (metric.includes('Serviço') || metric.includes('abandono')) {
+                     displayTotal = `${totalValue.toFixed(2).replace('.', ',')}%`;
+                 } else if (metric.includes('Tempo médio')) {
+                     // Formatação para HH:MM:SS para o CSV
+                     displayTotal = formatSecondsToTime(totalValue); 
+                 } else {
+                     displayTotal = Math.round(totalValue).toLocaleString('pt-BR');
+                 }
+                 
+                 row.push(`"${displayTotal.replace(/"/g, '""')}"`);
+                 csv.push(row.join(';'));
+             });
+
+             // Adiciona o BOM ao conteúdo do CSV
+             const csvContent = CSV_BOM + csv.join('\n');
+             const csvFile = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+             
+             const downloadLink = document.createElement("a");
+             downloadLink.href = URL.createObjectURL(csvFile);
+             downloadLink.download = 'Relatorio_CONSOLIDADO_' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '.csv';
+             
+             document.body.appendChild(downloadLink);
+             downloadLink.click();
+             document.body.removeChild(downloadLink);
+        }
+        
+        function updateSummaryRow(atendenteNome) {
+            const tableSummary = document.querySelector('#summaryReportTable');
+            if (!tableSummary) return;
+
+            const rowsSummary = tableSummary.tBodies[0].rows;
+            let foundRow = null;
+
+            for (let i = 0; i < rowsSummary.length; i++) {
+                const row = rowsSummary[i];
+                const summaryAtendente = row.cells[0].innerText.trim();
+                if (summaryAtendente === atendenteNome) {
+                    foundRow = row;
+                    break;
+                }
+            }
+
+            if (foundRow) {
+                const shortCell = foundRow.cells[2];
+                let currentShort = parseInt(shortCell.innerText, 10) || 0;
+                
+                if (currentShort > 0) {
+                    currentShort -= 1;
+                    shortCell.innerText = currentShort;
+                }
+
+                const totalCell = foundRow.cells[1];
+                const total = parseInt(totalCell.innerText, 10) || 0;
+                const short = currentShort;
+                
+                const percentCell = foundRow.cells[3];
+                const newPercent = (total > 0) ? ((short / total) * 100).toFixed(2) : '0.00';
+                
+                percentCell.innerText = `${newPercent}%`;
+                
+                const percentClass = (parseFloat(newPercent) > 10) ? 'percent-high' : '';
+                percentCell.className = percentClass;
+
+                const summaryItem = currentSummaryData.find(item => item.atendente.toUpperCase() === atendenteNome.toUpperCase());
+                if (summaryItem) {
+                    summaryItem.short = currentShort;
+                }
+            }
+        }
+        
+        function removeRow(buttonElement) {
+            const row = buttonElement.closest('tr');
+            if (row) {
+                const atendenteNome = row.cells[4].innerText.trim();
+                row.remove();
+                if (atendenteNome) {
+                    updateSummaryRow(atendenteNome);
+                }
+
+                const table = document.querySelector('#detailedReportTable');
+                if (table) {
+                    const rowCountElement = document.querySelector('#detailedReportSection p:first-of-type');
+                    const currentCount = table.tBodies[0].rows.length;
+                    if (rowCountElement) {
+                         let pText = rowCountElement.innerHTML;
+                         rowCountElement.innerHTML = pText.replace(/\*\*(\d+)\*\*/, `**${currentCount}**`);
+                    }
+                }
+            }
+        }
+
+        function exportSummaryToCsv() {
+            if (currentSummaryData.length === 0) return;
+
+            let csv = [];
+            
+            csv.push('"Nome Atendente";"Total Atendidas";"Total Curta Duração (<= 45s)";"Porcentagem (%)"');
+            
+            currentSummaryData.forEach(item => {
+                const percent = (item.total > 0) ? ((item.short / item.total) * 100).toFixed(2) : '0.00';
+                const atendenteNameClean = item.atendente.replace(/"/g, '""');
+
+                csv.push(`"${atendenteNameClean}";"${item.total}";"${item.short}";"${percent}%"`);
+            });
+
+            // Adiciona o BOM ao conteúdo do CSV
+            const csvContent = CSV_BOM + csv.join('\n');
+            const csvFile = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            
+            const downloadLink = document.createElement("a");
+            downloadLink.href = URL.createObjectURL(csvFile);
+            downloadLink.download = 'Relatorio_RESUMO_' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '.csv';
+            
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+
+        function exportDetailedToCsv() {
+            const table = document.querySelector('#detailedReportTable');
+            if (!table) return;
+
+            const rows = table.querySelectorAll('tr');
+            let csv = [];
+            
+            let headerRow = [];
+            rows[0].querySelectorAll('th').forEach(th => {
+                const headerText = th.innerText.trim();
+                if (headerText !== 'Ação') {
+                    headerRow.push(`"${headerText.replace("▲", "").replace("▼", "").trim()}"`); 
+                }
+            });
+            csv.push(headerRow.join(';'));
+            
+            for (let i = 1; i < rows.length; i++) {
+                let row = [];
+                const cells = rows[i].querySelectorAll('td');
+                for (let j = 0; j < cells.length - 1; j++) { 
+                    let cellText = cells[j].innerText.trim();
+                    cellText = cellText.replace(/"/g, '""'); 
+                    row.push(`"${cellText}"`);
+                }
+                csv.push(row.join(';'));
+            }
+
+            // Adiciona o BOM ao conteúdo do CSV
+            const csvContent = CSV_BOM + csv.join('\n');
+            const csvFile = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            
+            const downloadLink = document.createElement("a");
+            downloadLink.href = URL.createObjectURL(csvFile);
+            downloadLink.download = 'Relatorio_DETALHADO_' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '.csv';
+            
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+
+        /* --- Funções de Download de Imagem --- */
+        
+        /**
+         * Captura uma seção do relatório e baixa como imagem PNG.
+         */
+        function downloadReportAsImage(sectionId, baseFilename) {
+            const section = document.getElementById(sectionId);
+            
+            // 1. Elementos Internos do Relatório a Ocultar Temporariamente
+            const h2Title = section.querySelector('h2'); 
+            const originalH2Display = h2Title ? h2Title.style.display : null;
+            
+            const pDescription = section.querySelector('p'); 
+            const originalPDisplay = pDescription ? pDescription.style.display : null;
+
+            const actions = section.querySelector('.report-actions');
+            const originalActionsDisplay = actions ? actions.style.display : null;
+
+            // Remove os botões 'Excluir' da tabela detalhada, se houver
+            const removeButtons = section.querySelectorAll('.remove-btn');
+            removeButtons.forEach(btn => btn.style.display = 'none');
+
+            // Remove as setas de ordenação dos cabeçalhos para uma imagem limpa
+            const tableHeaders = section.querySelectorAll('th');
+            tableHeaders.forEach(th => th.classList.remove('sorted-asc', 'sorted-desc'));
+
+            // 2. Elementos Externos ao Relatório (para limpar a borda)
+            const container = document.querySelector('.container');
+            const originalPadding = container ? container.style.padding : null;
+            const footer = document.querySelector('footer');
+            const originalFooterDisplay = footer ? footer.style.display : null;
+            const reportContainer = document.getElementById('reportContainer');
+            const originalMarginBottom = reportContainer ? reportContainer.style.marginBottom : null;
+
+
+            // 3. Oculta todos os elementos de controle e texto para uma imagem limpa
+            if (h2Title) h2Title.style.display = 'none'; 
+            if (pDescription) pDescription.style.display = 'none'; 
+            if (actions) actions.style.display = 'none';
+            if (container) container.style.padding = '0'; 
+            if (footer) footer.style.display = 'none'; 
+            if (reportContainer) reportContainer.style.marginBottom = '20px'; 
+
+
+            // 4. Captura a seção
+            html2canvas(section, { 
+                scale: 2, 
+                useCORS: true,
+                allowTaint: true,
+                // CORREÇÃO: Define as dimensões do canvas para a altura e largura total de SCROLL
+                width: section.scrollWidth,
+                height: section.scrollHeight,
+                scrollX: 0,
+                scrollY: 0,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                // 5. Reverte as alterações de estilo
+                if (h2Title) h2Title.style.display = originalH2Display; 
+                if (pDescription) pDescription.style.display = originalPDisplay; 
+                if (actions) actions.style.display = originalActionsDisplay;
+                if (container) container.style.padding = originalPadding;
+                if (footer) footer.style.display = originalFooterDisplay;
+                if (reportContainer) reportContainer.style.marginBottom = originalMarginBottom;
+                removeButtons.forEach(btn => btn.style.display = '');
+
+                // 6. Dispara o download
+                const link = document.createElement('a');
+                link.download = `${baseFilename}_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.png`;
+                link.href = canvas.toDataURL('image/png');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+            }).catch(error => {
+                // 7. Reverte as alterações de estilo em caso de erro
+                if (h2Title) h2Title.style.display = originalH2Display; 
+                if (pDescription) pDescription.style.display = originalPDisplay; 
+                if (actions) actions.style.display = originalActionsDisplay;
+                if (container) container.style.padding = originalPadding;
+                if (footer) footer.style.display = originalFooterDisplay;
+                if (reportContainer) reportContainer.style.marginBottom = originalMarginBottom;
+                removeButtons.forEach(btn => btn.style.display = '');
+
+                console.error('Erro ao gerar imagem:', error);
+                alert('Erro ao gerar a imagem. Verifique o console para mais detalhes.');
+            });
+        }
+
+        /* --- Funções de Ordenação --- */
+
+        let sortDirectionDetailed = 'asc'; 
+        let lastSortedColumnIndexDetailed = 4;
+        let sortDirectionSummary = 'desc'; 
+        let lastSortedColumnIndexSummary = 3; 
+
+        function sortTable(tableId, columnIndex, isSummary) {
+            const table = document.getElementById(tableId);
+            const tbody = table.tBodies[0];
+            const rows = Array.from(tbody.rows);
+            const isNumeric = [1, 2, 3].includes(columnIndex) && isSummary;
+            const isTime = [2].includes(columnIndex) && !isSummary; // Só Tempo Atendimento é tempo
+            const isDate = [0].includes(columnIndex) && !isSummary;
+
+            let currentSortDirection = isSummary ? sortDirectionSummary : sortDirectionDetailed;
+            let lastSortedIndex = isSummary ? lastSortedColumnIndexSummary : lastSortedColumnIndexDetailed;
+
+            let direction = 'asc';
+            if (columnIndex === lastSortedIndex) {
+                direction = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            }
+
+            rows.sort((r1, r2) => {
+                let v1 = r1.cells[columnIndex].textContent.trim();
+                let v2 = r2.cells[columnIndex].textContent.trim();
+
+                if (isNumeric) {
+                    v1 = parseFloat(v1.replace('%', '').replace(',', '.')) || 0;
+                    v2 = parseFloat(v2.replace('%', '').replace(',', '.')) || 0;
+                } else if (isTime) {
+                    v1 = timeToSeconds(v1);
+                    v2 = timeToSeconds(v2);
+                } else if (isDate) {
+                     // Ordenação por data (YYYY-MM-DD) é simples por string
+                }
+                 // Para outros (Nome, Numero, etc) a ordenação por string é suficiente
+
+                let comparison = 0;
+                if (v1 > v2) comparison = 1;
+                else if (v1 < v2) comparison = -1;
+
+                return direction === 'asc' ? comparison : comparison * -1;
+            });
+
+            while (tbody.firstChild) {
+                tbody.removeChild(tbody.firstChild);
+            }
+            rows.forEach(row => tbody.appendChild(row));
+
+            const allHeaders = table.querySelectorAll('th');
+            allHeaders.forEach((th, index) => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+                
+                // Ignorar a ordenação nos cabeçalhos de dia da semana no consolidado (linha 3)
+                if (tableId === 'consolidatedReportTable') {
+                     const headerRowIndex = th.closest('tr').rowIndex;
+                     if (headerRowIndex === 0 || headerRowIndex === 2) return;
+                }
+
+                if (index === columnIndex) {
+                    th.classList.add(direction === 'asc' ? 'sorted-asc' : 'sorted-desc');
+                }
+            });
+
+            if (isSummary) {
+                sortDirectionSummary = direction;
+                lastSortedColumnIndexSummary = columnIndex;
+            } else {
+                sortDirectionDetailed = direction;
+                lastSortedColumnIndexDetailed = columnIndex;
+            }
+        }
+
+        function sortSummaryTable(columnIndex) {
+            sortTable('summaryReportTable', columnIndex, true);
+        }
+
+        function sortDetailedTable(columnIndex) {
+            sortTable('detailedReportTable', columnIndex, false);
+        }
+
+    </script>
+</body>
+</html>

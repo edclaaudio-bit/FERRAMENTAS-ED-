@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Performance Diária Simplificada</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Define a fonte Inter como padrão */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        /* Estilização para o contêiner de upload para melhor aparência */
+        .upload-area {
+            border: 2px dashed #3b82f6;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            background-color: #eff6ff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-area:hover {
+            background-color: #dbeafe;
+        }
+        /* Estilo para a tabela de resultados */
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            background-color: #1f2937;
+            color: #ffffff;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        .info-card {
+            background-color: #fff;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container mx-auto p-6 lg:p-10">
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-8 border-b pb-2">
+            📊 Acompanhamento de Performance Diária
+        </h1>
+
+        <div id="upload-section" class="bg-white p-6 rounded-xl shadow-lg mb-8">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">1. Carregar Dados CSV</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="upload-area">
+                    <label for="file-chamadas" class="block text-lg font-medium text-blue-600 mb-1">Detalhamento de Chamadas</label>
+                    <input type="file" id="file-chamadas" accept=".csv" class="hidden">
+                    <p id="label-chamadas" class="text-sm text-gray-500 mt-2">Nenhum arquivo selecionado.</p>
+                </div>
+                <div class="upload-area">
+                    <label for="file-eventos" class="block text-lg font-medium text-blue-600 mb-1">Eventos de Atendentes</label>
+                    <input type="file" id="file-eventos" accept=".csv" class="hidden">
+                    <p id="label-eventos" class="text-sm text-gray-500 mt-2">Nenhum arquivo selecionado.</p>
+                </div>
+                <div class="upload-area">
+                    <label for="file-csat" class="block text-lg font-medium text-blue-600 mb-1">Pesquisa de Satisfação (CSAT)</label>
+                    <input type="file" id="file-csat" accept=".csv" class="hidden">
+                    <p id="label-csat" class="text-sm text-gray-500 mt-2">Nenhum arquivo selecionado.</p>
+                </div>
+            </div>
+            
+            <button id="process-button" 
+                    class="mt-6 w-full py-3 px-4 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 transition duration-300 disabled:opacity-50"
+                    disabled>
+                Processar e Calcular Desempenho Diário
+            </button>
+        </div>
+        
+        <div id="message-area" class="mt-4 hidden p-4 rounded-lg text-center font-medium bg-red-100 text-red-700"></div>
+
+        <div id="results-section" class="hidden">
+            
+            <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">2. Relatório e Filtros</h2>
+
+                <div class="flex flex-wrap items-end gap-6 mb-6">
+                    
+                    <div class="flex-grow">
+                        <label for="collaborator-filter" class="block text-sm font-medium text-gray-700 mb-1">Filtrar por Colaborador:</label>
+                        <select id="collaborator-filter" class="w-full md:w-64 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                            <option value="all">Todos os Colaboradores</option>
+                            </select>
+                    </div>
+
+                    <div>
+                        <button id="export-button" 
+                                class="py-2.5 px-6 bg-green-500 text-white font-bold rounded-lg shadow-md hover:bg-green-600 transition duration-300">
+                            Exportar para Excel (CSV)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-lg shadow-md">
+                    <table id="daily-results-table" class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr>
+                                <th>Dia</th>
+                                <th>Colaborador</th>
+                                <th>Total Chamadas</th>
+                                <th>TMA</th>
+                                <th>Total Pesquisas</th>
+                                <th>Prod. Pesquisas (%)</th> 
+                                <th>% Promotores (4-5)</th>
+                                <th>% Neutros (3)</th>
+                                <th>% Detratores (1-2)</th>
+                                <th>P. Registro</th>
+                                <th>P. Digital</th>
+                                <th>P. Água</th>
+                                <th>P. Banheiro</th>
+                                </tr>
+                        </thead>
+                        <tbody id="results-body" class="divide-y divide-gray-200">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    
+    <footer class="mt-12 py-4 border-t border-gray-300 text-center text-gray-600">
+        <p class="text-sm">Desenvolvido por **Claudio Carvalho** | &copy; 2025</p>
+    </footer>
+
+    <script>
+        const DELIMITER_CSV = ';'; 
+        
+        let processedDailyData = {};
+        let collaboratorList = [];
+        
+        // --- UTILS DE CONVERSÃO E VALIDAÇÃO ---
+
+        /**
+         * Converte tempo no formato HH:MM:SS para segundos.
+         * @param {string} timeStr - Tempo formatado (HH:MM:SS).
+         * @returns {number} Tempo total em segundos.
+         */
+        const timeToSeconds = (timeStr) => {
+            if (!timeStr || typeof timeStr !== 'string') return 0;
+            
+            // Remove parênteses com números e espaços extras (ex: "17:43:33 (1)")
+            const cleanTimeStr = timeStr.replace(/\s*\([^)]*\)/g, '').trim();
+
+            const parts = cleanTimeStr.split(':');
+            if (parts.length === 3) {
+                // HH:MM:SS
+                const h = parseInt(parts[0], 10) || 0;
+                const m = parseInt(parts[1], 10) || 0;
+                const s = parseInt(parts[2], 10) || 0;
+                return h * 3600 + m * 60 + s;
+            }
+            return 0;
+        };
+        
+        /**
+         * Tenta analisar uma linha CSV.
+         */
+        const parseLine = (line) => {
+            // Tenta primeiro o delimitador ponto e vírgula
+            let parts = line.split(DELIMITER_CSV);
+            if (parts.length > 1) return parts.map(p => p.trim());
+            
+            // Se não funcionar, tenta a vírgula
+            parts = line.split(',');
+            if (parts.length > 1) return parts.map(p => p.trim());
+            
+            return [line];
+        };
+
+        /**
+         * Tenta analisar a data/hora e extrai o dia (YYYY-MM-DD) e hora (HH:MM:SS).
+         * @returns {Object|null} {isoDate: 'YYYY-MM-DD', brDate: 'DD/MM/YYYY', time: 'HH:MM:SS'}
+         */
+        const extractDateTimeInfo = (dateTimeStr) => {
+            if (!dateTimeStr) return null;
+
+            let date;
+            const cleanStr = dateTimeStr.trim().replace(/"/g, ''); 
+            
+            // Tenta formato YYYY/MM/DD (como na coluna 'data' do eventosAtendentes)
+            if (cleanStr.match(/^\d{4}\/\d{2}\/\d{2}/)) {
+                // Cria a data no fuso horário local para evitar problemas de deslocamento de dia.
+                const [year, month, day] = cleanStr.split(' ')[0].split('/');
+                date = new Date(`${year}-${month}-${day}T00:00:00`);
+            } 
+            // Tenta Formato YYYY-MM-DD (detalhamentoChamadas.csv, satisfacaoclientes.csv)
+            else if (cleanStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+                date = new Date(cleanStr.replace(' ', 'T'));
+            }
+            // Tenta formato DD/MM/YYYY (Brasileiro)
+            else {
+                const brMatch = cleanStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+                if (brMatch) {
+                    date = new Date(`${brMatch[3]}-${brMatch[2]}-${brMatch[1]}T00:00:00`);
+                }
+            }
+
+            if (date && !isNaN(date.getTime())) {
+                const isoDate = date.toISOString().split('T')[0];
+                // Formata a data para DD/MM/YYYY
+                const brDate = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+                
+                let time = '';
+                const timeMatch = cleanStr.match(/(\d{2}):(\d{2}):(\d{2})/);
+                if (timeMatch) {
+                    time = timeMatch[0];
+                }
+
+                return { isoDate, brDate, time };
+            }
+            return null;
+        };
+        
+        /**
+         * Converte segundos para o formato HH:MM:SS.
+         */
+        const formatSeconds = (seconds) => {
+            if (isNaN(seconds) || seconds < 0) return '00:00:00';
+            const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
+            const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+            const s = String(Math.floor(seconds % 60) % 60).padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        };
+        
+        /**
+         * Encontra o valor da coluna, tratando variações de casing e nomes.
+         */
+        const findColumnValue = (row, possibleKeys) => {
+            const rowKeys = Object.keys(row);
+            for (const expectedKey of possibleKeys) {
+                if (row[expectedKey]) {
+                    return row[expectedKey];
+                }
+                const normalizedExpectedKey = expectedKey.toLowerCase().trim();
+                for (const actualKey of rowKeys) {
+                    if (actualKey.toLowerCase().trim() === normalizedExpectedKey) {
+                        return row[actualKey];
+                    }
+                }
+            }
+            return null;
+        };
+        
+        // --- MANUSEIO DE ARQUIVOS E INTERFACE ---
+
+        const fileInputs = [
+            'file-chamadas', 
+            'file-eventos', 
+            'file-csat'
+        ];
+
+        const updateProcessButtonState = () => {
+            const allFilesSelected = fileInputs.every(id => document.getElementById(id).files.length > 0);
+            document.getElementById('process-button').disabled = !allFilesSelected;
+        };
+
+        fileInputs.forEach(id => {
+            const input = document.getElementById(id);
+            const label = document.getElementById(`label-${id.split('-')[1]}`);
+            const area = input.parentElement;
+
+            area.addEventListener('click', () => input.click());
+
+            input.addEventListener('change', () => {
+                if (input.files.length > 0) {
+                    label.textContent = `Arquivo carregado: ${input.files[0].name}`;
+                    area.classList.remove('bg-red-100', 'border-red-500', 'bg-eff6ff', 'border-blue-600');
+                    area.classList.add('bg-green-100', 'border-green-500');
+                } else {
+                    label.textContent = 'Nenhum arquivo selecionado.';
+                    area.classList.remove('bg-green-100', 'border-green-500');
+                    area.classList.add('bg-eff6ff', 'border-blue-600');
+                }
+                updateProcessButtonState();
+            });
+        });
+
+        /**
+         * Lê e analisa o conteúdo de um arquivo CSV.
+         */
+        const parseCSV = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const text = e.target.result;
+                        const lines = text.split('\n').filter(line => line.trim() !== '');
+                        
+                        // Localiza o cabeçalho
+                        let headerIndex = -1;
+                        for (let i = 0; i < lines.length; i++) {
+                            const line = lines[i].toLowerCase();
+                            // Critério de cabeçalho: deve ter 'data' e algum termo específico
+                            if (line.includes('data') && (line.includes('atendente') || line.includes('uniqueid') || line.includes('nota') || line.includes('evento') || line.includes('pergunta_1'))) {
+                                headerIndex = i;
+                                break;
+                            }
+                        }
+
+                        if (headerIndex === -1) {
+                            reject(new Error(`Não foi possível identificar o cabeçalho no arquivo ${file.name}.`));
+                            return;
+                        }
+
+                        const headers = parseLine(lines[headerIndex]).map(h => h.trim().replace(/"/g, ''));
+                        const data = [];
+                        for (let i = headerIndex + 1; i < lines.length; i++) {
+                            const values = parseLine(lines[i]);
+                            // Verifica se a linha tem um número razoável de colunas (pelo menos metade do cabeçalho)
+                            if (values.length < headers.length * 0.5) continue; 
+                            
+                            const row = {};
+                            headers.forEach((header, index) => {
+                                // Remove aspas duplas de todos os valores e espaços extras
+                                row[header] = values[index] ? values[index].replace(/"/g, '').trim() : ''; 
+                            });
+                            data.push(row);
+                        }
+                        resolve(data);
+                    } catch (error) {
+                        reject(new Error(`Erro ao processar o arquivo CSV ${file.name}: ${error.message}`));
+                    }
+                };
+                // Usa 'iso-8859-1' ou 'latin1' para tratar a maioria dos CSVs com acentos (padrão brasileiro)
+                reader.onerror = (e) => reject(new Error(`Erro ao ler o arquivo ${file.name}.`));
+                reader.readAsText(file, 'iso-8859-1'); 
+            });
+        };
+
+
+        /**
+         * Processa os 3 arquivos e calcula as métricas diárias por colaborador.
+         */
+        const processFiles = async () => {
+            document.getElementById('message-area').classList.add('hidden');
+            document.getElementById('process-button').disabled = true;
+            document.getElementById('process-button').textContent = 'Processando... Aguarde.';
+
+            const files = {
+                chamadas: document.getElementById('file-chamadas').files[0],
+                eventos: document.getElementById('file-eventos').files[0],
+                csat: document.getElementById('file-csat').files[0],
+            };
+
+            try {
+                const [chamadasData, eventosData, csatData] = await Promise.all([
+                    parseCSV(files.chamadas),
+                    parseCSV(files.eventos),
+                    parseCSV(files.csat),
+                ]);
+
+                // Objeto para armazenar métricas agrupadas por Colaborador|Dia
+                const dailyMetrics = {}; 
+                const uniqueCollaborators = new Set();
+                
+                const initializeDailyMetric = (key, colaborador) => {
+                    if (!dailyMetrics[key]) {
+                        dailyMetrics[key] = {
+                            colaborador: colaborador,
+                            brDate: '', // Data em DD/MM/YYYY
+                            
+                            // Métricas de Chamadas
+                            chamadasAtendidas: 0,
+                            tempoAtendimentoTotal: 0, 
+                            
+                            // Métricas de Satisfação (CSAT)
+                            pesquisasRealizadas: 0,
+                            promotersCount: 0, 
+                            neutralsCount: 0,  
+                            detractorsCount: 0, 
+                            
+                            // Métricas de Pausas
+                            tempoRegistroTotal: 0, // TMR
+                            pausaDigitalTotal: 0,
+                            pausaAguaTotal: 0,
+                            pausaBanheiroTotal: 0,
+                        };
+                    }
+                };
+                
+                // Mapeamento de Pausas (Foco em pausas essenciais)
+                const PAUSA_MAP = {
+                    'PÓS-ATENDIMENTO': 'tempoRegistroTotal',
+                    'REGISTRO': 'tempoRegistroTotal',
+                    'REGISTRO DE CHAMADA': 'tempoRegistroTotal',
+                    'CANAL DIGITAL': 'pausaDigitalTotal',
+                    'AGUA': 'pausaAguaTotal',
+                    'BANHEIRO': 'pausaBanheiroTotal',
+                };
+
+
+                // 1. PROCESSAR CHAMADAS (Total Chamadas, Tempo Atendimento - TMA)
+                chamadasData.forEach(row => {
+                    const dataInfo = extractDateTimeInfo(findColumnValue(row, ['data', 'Data', 'data/hora início']));
+                    const colaborador = findColumnValue(row, ['nomeAtendente', 'NomeAtendente', 'atendente']);
+                    const tempoAtendimentoStr = findColumnValue(row, ['tempoAtendimento', 'TempoAtendimento', 'duracao atendimento']); 
+                    
+                    if (dataInfo && colaborador) {
+                        const { isoDate, brDate } = dataInfo;
+                        const key = `${colaborador}|${isoDate}`;
+                        uniqueCollaborators.add(colaborador);
+                        initializeDailyMetric(key, colaborador);
+                        
+                        dailyMetrics[key].brDate = brDate;
+
+                        const duracaoSegundos = timeToSeconds(tempoAtendimentoStr);
+                        if (duracaoSegundos > 0) { 
+                             dailyMetrics[key].chamadasAtendidas++;
+                        }
+                        dailyMetrics[key].tempoAtendimentoTotal += duracaoSegundos;
+                    }
+                });
+                
+                // 2. PROCESSAR EVENTOS (Pauses)
+                eventosData.forEach(row => {
+                    // Nota: Usamos a coluna 'data' para agrupar o dia
+                    const dataInfo = extractDateTimeInfo(findColumnValue(row, ['data', 'dataInicio', 'DataInicio'])); 
+                    const colaborador = findColumnValue(row, ['nomeAtendente', 'NomeAtendente', 'atendente']);
+                    const evento = findColumnValue(row, ['evento', 'Evento'])?.trim().toUpperCase(); 
+                    const nomePausa = findColumnValue(row, ['nomePausa', 'Nome Pausa', 'Pausa'])?.trim().toUpperCase();
+                    const duracaoStr = findColumnValue(row, ['duracao', 'Duracao', 'duração']); 
+                    
+                    if (dataInfo && colaborador) {
+                        const { isoDate, brDate } = dataInfo;
+                        const key = `${colaborador}|${isoDate}`;
+                        uniqueCollaborators.add(colaborador);
+                        initializeDailyMetric(key, colaborador);
+
+                        dailyMetrics[key].brDate = brDate;
+                        const duracaoSegundos = timeToSeconds(duracaoStr);
+                        
+                        // 2.1 PAUSAS E REGISTRO
+                        if (duracaoSegundos > 0) {
+                            const eventToMap = nomePausa || evento;
+                            let metricKey = null;
+
+                            // Tenta mapear o Nome da Pausa/Evento
+                            for (const [pausaName, keyName] of Object.entries(PAUSA_MAP)) {
+                                if (eventToMap.includes(pausaName)) {
+                                    metricKey = keyName;
+                                    break;
+                                }
+                            }
+                            
+                            // Se for evento de REGISTRO (Pós-Atendimento, Registro, etc.)
+                            if (!metricKey && ['PÓS-ATENDIMENTO', 'REGISTRO DE CHAMADA', 'REGISTRO'].includes(evento)) {
+                                metricKey = 'tempoRegistroTotal';
+                            }
+                            
+                            if (metricKey) {
+                                dailyMetrics[key][metricKey] += duracaoSegundos;
+                            }
+                        }
+                    }
+                });
+
+                // 3. PROCESSAR CSAT (Total Pesquisas, Promotores, Neutros, Detratores)
+                csatData.forEach(row => {
+                    const dataInfo = extractDateTimeInfo(findColumnValue(row, ['data', 'data pesquisa', 'Data Pesquisa']));
+                    const colaborador = findColumnValue(row, ['nomeAtendente', 'NomeAtendente', 'atendente']);
+                    const notaStr = findColumnValue(row, ['Pergunta_1', 'Nota Atendente', 'Nota', 'pergunta_1']); 
+                    const nota = parseInt(notaStr, 10); 
+                    
+                    if (dataInfo && colaborador && !isNaN(nota) && nota >= 1 && nota <= 5) {
+                        const { isoDate, brDate } = dataInfo;
+                        const key = `${colaborador}|${isoDate}`;
+                        uniqueCollaborators.add(colaborador);
+                        initializeDailyMetric(key, colaborador);
+
+                        dailyMetrics[key].brDate = brDate;
+                        dailyMetrics[key].pesquisasRealizadas++;
+                        
+                        // Classificação CSAT Detalhada (Nota 1 a 5)
+                        if (nota >= 4) { // Promotores: Notas 4 e 5
+                            dailyMetrics[key].promotersCount++;
+                        } else if (nota === 3) { // Neutros: Nota 3
+                            dailyMetrics[key].neutralsCount++;
+                        } else { // Detratores: Notas 1 e 2
+                            dailyMetrics[key].detractorsCount++;
+                        }
+                    }
+                });
+
+                // 4. CALCULAR MÉTRICAS FINAIS E FORMATAR
+                const finalResults = [];
+                Object.entries(dailyMetrics).forEach(([key, metrics]) => {
+                    
+                    const tma = metrics.chamadasAtendidas > 0 
+                        ? (metrics.tempoAtendimentoTotal / metrics.chamadasAtendidas)
+                        : 0;
+
+                    const totalPesquisas = metrics.pesquisasRealizadas;
+                    const totalChamadas = metrics.chamadasAtendidas;
+                    
+                    // CÁLCULO DA NOVA MÉTRICA: Produtividade Pesquisas (%)
+                    const percentPesquisas = (totalChamadas > 0 && totalPesquisas > 0)
+                        ? (totalPesquisas / totalChamadas) * 100
+                        : 0;
+                    
+                    // Cálculo das porcentagens de satisfação detalhada
+                    const percentPromotores = totalPesquisas > 0 
+                        ? (metrics.promotersCount / totalPesquisas) * 100 
+                        : 0;
+                        
+                    const percentNeutros = totalPesquisas > 0 
+                        ? (metrics.neutralsCount / totalPesquisas) * 100 
+                        : 0;
+                        
+                    const percentDetratores = totalPesquisas > 0
+                        ? (metrics.detractorsCount / totalPesquisas) * 100
+                        : 0;
+                        
+                    finalResults.push({
+                        dia: metrics.brDate, // Usando DD/MM/YYYY
+                        colaborador: metrics.colaborador,
+                        totalChamadas: totalChamadas,
+                        tma: formatSeconds(Math.round(tma)), // TMA formatado para HH:MM:SS
+                        tmr: Math.round(metrics.tempoRegistroTotal), // TMR em segundos (MANTIDO NO OBJETO PARA CÁLCULOS FUTUROS, MAS REMOVIDO DA VISUALIZAÇÃO)
+                        
+                        // Métricas de Satisfação
+                        totalPesquisas: totalPesquisas,
+                        percentPesquisas: percentPesquisas.toFixed(1), // Nova métrica formatada
+                        percentPromotores: percentPromotores.toFixed(1),
+                        percentNeutros: percentNeutros.toFixed(1),
+                        percentDetratores: percentDetratores.toFixed(1),
+                        
+                        // Pausas Detalhadas
+                        pausaRegistro: formatSeconds(metrics.tempoRegistroTotal),
+                        pausaDigital: formatSeconds(metrics.pausaDigitalTotal),
+                        pausaAgua: formatSeconds(metrics.pausaAguaTotal),
+                        pausaBanheiro: formatSeconds(metrics.pausaBanheiroTotal),
+                    });
+                });
+                
+                // Filtra apenas dados relevantes (com chamadas ou pesquisas) e ordena
+                processedDailyData = finalResults.filter(item => item.totalChamadas > 0 || item.totalPesquisas > 0).sort((a, b) => {
+                    if (a.colaborador < b.colaborador) return -1;
+                    if (a.colaborador > b.colaborador) return 1;
+                    
+                    // Ordena pela data (comparando DD/MM/YYYY)
+                    const [dA, mA, yA] = a.dia.split('/').map(Number);
+                    const [dB, mB, yB] = b.dia.split('/').map(Number);
+                    if (yA !== yB) return yA - yB;
+                    if (mA !== mB) return mA - mB;
+                    return dA - dB;
+                });
+                collaboratorList = Array.from(uniqueCollaborators).sort();
+                
+                // Atualiza a UI
+                populateCollaboratorFilter();
+                renderTable(processedDailyData);
+
+                document.getElementById('results-section').classList.remove('hidden');
+                document.getElementById('message-area').classList.add('hidden');
+                document.getElementById('process-button').textContent = 'Processamento Concluído!';
+                document.getElementById('process-button').disabled = false;
+
+
+            } catch (error) {
+                console.error("Erro no processamento:", error);
+                const messageArea = document.getElementById('message-area');
+                messageArea.textContent = `Erro no processamento: ${error.message}. Verifique se os arquivos estão corretos e as colunas chaves ('data', 'nomeAtendente', 'tempoAtendimento', 'duracao', 'Pergunta_1', 'evento') existem.`;
+                messageArea.classList.remove('hidden');
+                messageArea.classList.add('bg-red-100', 'text-red-700');
+                
+                document.getElementById('process-button').textContent = 'Processar e Calcular Desempenho Diário';
+                document.getElementById('process-button').disabled = false;
+            }
+        };
+
+        // --- MANUSEIO DE FILTROS E TABELA ---
+
+        const populateCollaboratorFilter = () => {
+            const select = document.getElementById('collaborator-filter');
+            select.innerHTML = '<option value="all">Todos os Colaboradores</option>'; // Reset
+
+            if (collaboratorList.length > 0) {
+                collaboratorList.forEach(colaborador => {
+                    const option = document.createElement('option');
+                    option.value = colaborador;
+                    option.textContent = colaborador;
+                    select.appendChild(option);
+                });
+            } else {
+                 const option = document.createElement('option');
+                 option.value = 'none';
+                 option.textContent = 'Nenhum Colaborador Encontrado';
+                 select.appendChild(option);
+            }
+            
+            select.removeEventListener('change', filterResults);
+            select.addEventListener('change', filterResults);
+        };
+
+        const filterResults = () => {
+            const selectedCollaborator = document.getElementById('collaborator-filter').value;
+            let filteredData = processedDailyData;
+
+            if (selectedCollaborator !== 'all' && selectedCollaborator !== 'none') {
+                filteredData = processedDailyData.filter(item => item.colaborador === selectedCollaborator);
+            }
+
+            renderTable(filteredData);
+        };
+
+        const renderTable = (data) => {
+            const tbody = document.getElementById('results-body');
+            tbody.innerHTML = ''; // Limpa a tabela
+
+            // O número de colunas aumentou para 13 (era 12)
+            const numColumns = 13; 
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${numColumns}" class="text-center py-4 text-gray-500">Nenhum dado diário encontrado para o filtro.</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                const row = tbody.insertRow();
+                
+                // Determina a cor com base no % de Detratores (Ajuste conforme política da empresa)
+                let detratorClass = 'text-red-600';
+                if (parseFloat(item.percentDetratores) <= 5.0) { // Exemplo: Meta 5% ou menos
+                    detratorClass = 'text-green-600';
+                } else if (parseFloat(item.percentDetratores) <= 10.0) { // Exemplo: Alerta 10%
+                    detratorClass = 'text-yellow-600';
+                }
+                
+                // Cor para a Produtividade de Pesquisas (Pode ser ajustada)
+                const prodPesqClass = parseFloat(item.percentPesquisas) >= 50 ? 'text-blue-600 font-semibold' : 'text-gray-600';
+
+                row.innerHTML = `
+                    <td>${item.dia}</td>
+                    <td>${item.colaborador}</td>
+                    <td>${item.totalChamadas}</td>
+                    <td>${item.tma}</td>
+                    <td>${item.totalPesquisas}</td>
+                    <td class="${prodPesqClass}">${item.percentPesquisas} %</td> 
+                    <td class="font-semibold text-green-600">${item.percentPromotores} %</td>
+                    <td class="font-semibold text-yellow-600">${item.percentNeutros} %</td>
+                    <td class="font-semibold ${detratorClass}">${item.percentDetratores} %</td>
+                    <td>${item.pausaRegistro}</td>
+                    <td>${item.pausaDigital}</td>
+                    <td>${item.pausaAgua}</td>
+                    <td>${item.pausaBanheiro}</td>
+                `;
+            });
+        };
+
+        // --- EXPORTAÇÃO DE CSV (AGORA MANTÉM O CONTEÚDO EXATO DA CÉLULA) ---
+
+        document.getElementById('export-button').addEventListener('click', () => {
+            const table = document.getElementById('daily-results-table');
+            const rows = table.querySelectorAll('tr');
+            
+            let csv = [];
+            
+            // 1. Coleta o cabeçalho (TH) - JÁ ESTÁ SEM O TMR (s)
+            const headerCells = rows[0].querySelectorAll('th');
+            const header = Array.from(headerCells).map(th => th.textContent.trim());
+            csv.push(header.join(DELIMITER_CSV));
+
+            // 2. Coleta os dados (TD) da tabela VISÍVEL (após o filtro)
+            // Começa da linha 1 para ignorar o cabeçalho
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                const cells = row.querySelectorAll('td');
+                
+                // AQUI: Usamos o textContent exato sem manipulação de formatação
+                const rowData = Array.from(cells).map(td => td.textContent.trim()); 
+                csv.push(rowData.join(DELIMITER_CSV));
+            }
+
+            // Adiciona BOM (Byte Order Mark) para garantir a correta abertura em Excel com caracteres especiais
+            const csvFile = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const downloadLink = document.createElement('a');
+            
+            const dateStr = new Date().toISOString().split('T')[0];
+            downloadLink.download = `Relatorio_Diario_Performance_Simplificado_${dateStr}.csv`;
+            
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+            downloadLink.style.display = 'none';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        });
+
+
+        // --- EVENTO PRINCIPAL ---
+        document.getElementById('process-button').addEventListener('click', processFiles);
+
+        // --- INICIALIZAÇÃO ---
+        window.onload = () => {
+            updateProcessButtonState(); 
+        };
+
+    </script>
+</body>
+</html>

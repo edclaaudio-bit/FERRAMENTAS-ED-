@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Análise de Silêncio e Operação</title>
+    <style>
+        /* Estilos Gerais */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .container {
+            width: 95%;
+            max-width: 1200px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #0056b3;
+            border-bottom: 2px solid #0056b3;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Área de Upload e Botões */
+        .controls-area {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 20px;
+            border: 1px dashed #ccc;
+            border-radius: 5px;
+            margin-bottom: 25px;
+        }
+        .file-input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .file-input-group label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #0056b3;
+        }
+        .file-input-group input[type="file"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        #process-btn, #export-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+        #process-btn {
+            background-color: #28a745;
+            color: white;
+        }
+        #process-btn:hover:not([disabled]) {
+            background-color: #218838;
+        }
+        #process-btn:disabled {
+            background-color: #90a4ae;
+            cursor: not-allowed;
+        }
+        #export-btn {
+            background-color: #007bff;
+            color: white;
+        }
+        #export-btn:hover:not([disabled]) {
+            background-color: #0056b3;
+        }
+        #export-btn:disabled {
+            background-color: #90a4ae;
+            cursor: not-allowed;
+        }
+
+        /* Estilos da Tabela */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #e9e9ff;
+        }
+
+        /* Estilos para Mensagens de Status */
+        #status-message {
+            text-align: center;
+            padding: 15px;
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+        
+        /* Rodapé */
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 10px;
+            color: #777;
+            font-size: 0.9em;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Relatório de Análise de Silêncio e Operação</h1>
+
+        <div id="status-message">Selecione os arquivos CSV abaixo para iniciar o processamento.</div>
+
+        <div class="controls-area">
+            <div class="file-input-group">
+                <label for="file-silencio">1. Relatório de Chamadas Silenciadas (o principal)</label>
+                <input type="file" id="file-silencio" accept=".csv" required>
+            </div>
+            
+            <div class="file-input-group">
+                <label for="file-ramais">2. Lista de Ramais (para identificar a Operação)</label>
+                <input type="file" id="file-ramais" accept=".csv" required>
+            </div>
+
+            <div class="action-buttons">
+                <button id="process-btn" disabled>Processar Relatórios</button>
+                <button id="export-btn" disabled>Exportar para Excel</button>
+            </div>
+        </div>
+        
+        <table id="relatorio-tabela">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Hora</th>
+                    <th>Ramal</th>
+                    <th>Atendente</th>
+                    <th>Operação</th>
+                    <th>Telefone (Origem/Destino)</th>
+                    <th>Silêncio Inicial (Seg.)</th>
+                    <th>Silêncio Meio (Seg.)</th>
+                    <th>% Mudo Atendente</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+    </div>
+
+    <footer>
+        Desenvolvido por **Claudio Carvalho**
+    </footer>
+
+    <script>
+        const DELIMITER = ';';
+        const SILENCIO_INICIAL_MIN = 5;
+        const SILENCIO_MEIO_MIN = 90;
+        const PERCENTUAL_MUDO_MIN = 90;
+
+        const fileSilencioInput = document.getElementById('file-silencio');
+        const fileRamaisInput = document.getElementById('file-ramais');
+        const processButton = document.getElementById('process-btn');
+        const exportButton = document.getElementById('export-btn');
+        const statusMessage = document.getElementById('status-message');
+        const tbody = document.getElementById('relatorio-tabela').getElementsByTagName('tbody')[0];
+        const tabela = document.getElementById('relatorio-tabela');
+
+        // --- Funções de Controle ---
+        function checkFiles() {
+            const filesSelected = fileSilencioInput.files.length > 0 && fileRamaisInput.files.length > 0;
+            processButton.disabled = !filesSelected;
+            exportButton.disabled = tbody.rows.length === 0;
+        }
+
+        // --- Event Listeners ---
+        fileSilencioInput.addEventListener('change', checkFiles);
+        fileRamaisInput.addEventListener('change', checkFiles);
+        processButton.addEventListener('click', processFiles);
+        exportButton.addEventListener('click', exportToExcel);
+
+        /**
+         * Lida com a leitura de um arquivo usando FileReader.
+         */
+        function readFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (event) => resolve(event.target.result);
+                reader.onerror = (error) => reject(new Error(`Erro ao ler o arquivo: ${file.name}.`));
+                // Tenta ler como ISO-8859-1 (latin1, comum em CSVs do Windows)
+                reader.readAsText(file, 'ISO-8859-1'); 
+            });
+        }
+
+        /**
+         * Converte a string CSV em um array de objetos E retorna os cabeçalhos.
+         */
+        function parseCSV(csvString) {
+            csvString = csvString.replace(/^\uFEFF/, '');
+            
+            const lines = csvString.split('\n');
+            if (lines.length < 2) return {data: [], headers: []}; 
+
+            const headers = lines[0].trim().split(DELIMITER).map(h => h.trim());
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const currentLine = lines[i].trim();
+                if (!currentLine) continue;
+
+                const values = currentLine.split(DELIMITER);
+                const row = {};
+
+                headers.forEach((header, index) => {
+                    if (header) {
+                        row[header] = values[index] ? values[index].trim() : '';
+                    }
+                });
+                data.push(row);
+            }
+            return {data, headers};
+        }
+        
+        // --- Funções Principais de Processamento ---
+
+        /**
+         * Função principal para processar, filtrar e exibir os relatórios.
+         */
+        async function processFiles() {
+            tbody.innerHTML = ''; 
+            statusMessage.textContent = 'Iniciando processamento...';
+            processButton.disabled = true;
+            exportButton.disabled = true;
+            let debugOutput = "--- DEBUG INFO (CRUZAMENTO) ---\n";
+
+            try {
+                // 1. Carregar e Parsear o Relatório de Ramais (Lista de ramais atendentes.csv)
+                const ramaisFile = fileRamaisInput.files[0];
+                statusMessage.textContent = `Lendo ${ramaisFile.name}...`;
+                const ramaisCSV = await readFile(ramaisFile);
+                const {data: ramaisData, headers: ramaisHeaders} = parseCSV(ramaisCSV);
+                debugOutput += `1. Ramais Cabeçalhos Lidos: [${ramaisHeaders.join(', ')}]\n`;
+
+                // CORREÇÃO: Define a chave de Ramal baseada na sua leitura de debug (NÃºmero ou Número)
+                let ramalKey = ramaisHeaders.includes('Número') ? 'Número' : 
+                               ramaisHeaders.includes('NÃºmero') ? 'NÃºmero' : null;
+                
+                if (!ramalKey) {
+                     throw new Error("Cabeçalho 'Número' ou 'NÃºmero' não encontrado na lista de ramais. Verifique a Coluna A.");
+                }
+
+
+                // Cria o mapa de Ramal (Coluna A - 'Número') -> Operação (Coluna C - 'Perfil')
+                const ramalPerfilMap = {};
+                ramaisData.forEach(item => {
+                    // CHAVE: Limpa Ramal (ramalKey) para usar SÓ DÍGITOS
+                    const numeroRamal = item[ramalKey] ? item[ramalKey].replace(/[^0-9]/g, '').trim() : '';
+                    const perfilCompleto = item['Perfil'];
+
+                    let perfilAbreviado = 'N/D';
+                    if (perfilCompleto) {
+                        // VALOR: Extrai as 3 primeiras letras da coluna Perfil
+                        perfilAbreviado = perfilCompleto.substring(0, 3);
+                    }
+                    
+                    if (numeroRamal) {
+                        ramalPerfilMap[numeroRamal] = perfilAbreviado;
+                    }
+                });
+                
+                const mapKeys = Object.keys(ramalPerfilMap);
+                debugOutput += `2. Ramal Chave Utilizada: ${ramalKey}\n`;
+                debugOutput += `3. Total de Ramais Mapeados: ${mapKeys.length}\n`;
+
+
+                // 2. Carregar e Parsear o Relatório de Silêncio (analise_silencio_20251104.csv)
+                const silencioFile = fileSilencioInput.files[0];
+                statusMessage.textContent = `Lendo ${silencioFile.name}...`;
+                const silencioCSV = await readFile(silencioFile);
+                const {data: silencioData, headers: silencioHeaders} = parseCSV(silencioCSV);
+                debugOutput += `4. Silêncio Cabeçalhos: [${silencioHeaders.join(', ')}]\n`;
+
+
+                // 3. Filtrar Dados
+                statusMessage.textContent = 'Aplicando filtros de silêncio e preparando a tabela...';
+                const filteredData = silencioData.filter(row => {
+                    const inicioE = parseInt(row['InicioE']) || 0;     // Coluna A
+                    const maxMeioE = parseInt(row['MaxMeioE']) || 0;   // Coluna C
+                    const percentualE = parseFloat(row['PercentualE']) || 0; // Coluna G
+
+                    return inicioE > SILENCIO_INICIAL_MIN || 
+                           maxMeioE > SILENCIO_MEIO_MIN || 
+                           percentualE > PERCENTUAL_MUDO_MIN;
+                });
+
+                // 4. Inserir na Tabela
+                if (filteredData.length === 0) {
+                    statusMessage.textContent = `Nenhum registro encontrado que atenda aos critérios de filtro.\n\n${debugOutput}`;
+                    statusMessage.style.backgroundColor = '#d1ecf1';
+                    statusMessage.style.color = '#0c5460';
+                    processButton.disabled = false;
+                    exportButton.disabled = true;
+                    return;
+                }
+                
+                let failureCount = 0;
+
+                filteredData.forEach(row => {
+                    const newRow = tbody.insertRow();
+                    
+                    // --- Tratamento de Data/Hora (K) ---
+                    const dataHoraOriginal = row['Data_Hora'] || '';
+                    const [dataPart, horaPartOriginal] = dataHoraOriginal.split('_');
+
+                    const dataFormatada = dataPart.length === 8 
+                        ? `${dataPart.substring(6, 8)}/${dataPart.substring(4, 6)}/${dataPart.substring(0, 4)}` 
+                        : 'N/D';
+                    
+                    let horaFormatada = 'N/D';
+                    if (horaPartOriginal && horaPartOriginal.length >= 6) {
+                        const HH = horaPartOriginal.substring(0, 2);
+                        const MM = horaPartOriginal.substring(2, 4);
+                        const SS = horaPartOriginal.substring(4, 6);
+                        horaFormatada = `${HH}:${MM}:${SS}`;
+                    }
+
+                    // Ramal (Destino - Coluna M). Limpa o ramal para usar SÓ DÍGITOS na comparação.
+                    const ramal = row['Destino'] ? row['Destino'].replace(/[^0-9]/g, '').trim() : 'N/D';
+                    
+                    // Operação (Busca no mapa)
+                    const operacao = ramalPerfilMap[ramal] || 'N/A';
+                    
+                    if (operacao === 'N/A') {
+                         failureCount++;
+                    }
+
+                    // Dados a serem exibidos (na ordem da tabela):
+                    const displayData = [
+                        dataFormatada,                                 // Data (Col. K)
+                        horaFormatada,                                 // Hora (Col. K)
+                        ramal,                                         // Ramal (Col. M)
+                        row['Identificacao'] || 'N/D',                 // Nome do Atendente (Col. O)
+                        operacao,                                      // **Operação (CORRIGIDA)**
+                        row['Origem'] || 'N/D',                        // Telefone (Col. K - Origem)
+                        row['InicioE'] || '0',                         // Silêncio Inicial (Col. A)
+                        row['MaxMeioE'] || '0',                        // Silêncio Meio (Col. C)
+                        row['PercentualE'] || '0'                      // % Mudo Atendente (Col. G)
+                    ];
+
+                    displayData.forEach(item => {
+                        const cell = newRow.insertCell();
+                        cell.textContent = item;
+                    });
+                });
+                
+                debugOutput += `\n5. Falhas no Mapeamento de Ramal (Operação='N/A'): ${failureCount} de ${filteredData.length} registros.`;
+
+
+                statusMessage.textContent = `Relatório gerado com sucesso! Total de ${filteredData.length} registros encontrados.\n\n${debugOutput}`;
+                statusMessage.style.backgroundColor = '#d4edda';
+                statusMessage.style.color = '#155724';
+                
+                processButton.disabled = false;
+                exportButton.disabled = filteredData.length === 0;
+
+            } catch (error) {
+                console.error(error);
+                statusMessage.textContent = `ERRO FATAL: ${error.message}. Verifique os cabeçalhos das colunas nos seus arquivos.\n\n${debugOutput}`;
+                statusMessage.style.backgroundColor = '#f8d7da';
+                statusMessage.style.color = '#721c24';
+                processButton.disabled = false;
+                exportButton.disabled = true;
+            }
+        }
+
+        /**
+         * Exporta o conteúdo da tabela para um arquivo CSV/Excel.
+         */
+        function exportToExcel() {
+            if (tbody.rows.length === 0) {
+                alert('Não há dados na tabela para exportar.');
+                return;
+            }
+
+            // Clona a tabela e remove o rodapé (footer) se houver
+            let tab_text = '<table>' + tabela.innerHTML + '</table>';
+            
+            // Cria um link de download com os dados formatados
+            const uri = 'data:application/vnd.ms-excel;charset=utf-8,' + encodeURIComponent(tab_text);
+            const downloadLink = document.createElement("a");
+
+            // Define o nome do arquivo
+            downloadLink.href = uri;
+            downloadLink.download = 'Relatorio_Silencio_Operacao_' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '.xls'; 
+
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            
+            alert('Exportação concluída! Verifique sua pasta de downloads.');
+        }
+
+
+        document.addEventListener('DOMContentLoaded', checkFiles);
+    </script>
+
+</body>
+</html>

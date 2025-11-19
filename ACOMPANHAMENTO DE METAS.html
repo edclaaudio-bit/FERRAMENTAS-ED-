@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="main-title">Acompanhamento de Metas de Atendentes</title>
+    <style>
+        /* Estilos CSS Atualizados para uma aparência mais profissional e moderna */
+        
+        /* Cores da Paleta: 
+         * Azul Marinho Escuro (Principal): #082161 
+         * Azul/Ciano (Ação/Botão): #17a2b8 
+         * Fundo Principal: #f0f2f5 (Cinza claro suave)
+         * Fundo Inputs: #f9fbfd (Quase branco suave)
+         */
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 30px; 
+            background-color: #f0f2f5; /* Fundo Cinza Claro Suave */
+        }
+
+        .container {
+            max-width: 1500px; /* Aumentado um pouco mais para as colunas de meta */
+            margin: 0 auto; /* Centraliza */
+            background-color: #ffffff;
+            padding: 30px 40px; /* Padding generoso */
+            border-radius: 12px; /* Cantos mais suaves */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Sombra suave */
+        }
+
+        /* Container do Título e Logo */
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        h1 {
+            color: #082161; /* Azul Marinho Escuro */
+            text-align: center;
+            margin: 0;
+            flex-grow: 1; 
+            font-size: 2em;
+            font-weight: 600;
+        }
+
+        /* Seção de Inputs */
+        .input-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 25px; 
+            margin-bottom: 30px;
+            padding: 25px;
+            border: none;
+            border-radius: 8px;
+            background-color: #f9fbfd; /* Fundo mais claro para os inputs */
+            box-shadow: inset 0 0 5px rgba(8, 33, 97, 0.05); /* Sombra interna sutil */
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .input-group label {
+            font-weight: 600; /* Mais destaque no label */
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        /* Estilo dos campos de texto e arquivo */
+        input[type="file"], input[type="text"], input[type="number"], select {
+            padding: 10px 12px;
+            border: 1px solid #c9d6e5; /* Borda mais sutil */
+            border-radius: 6px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            border-color: #17a2b8; 
+            box-shadow: 0 0 0 2px rgba(23, 162, 184, 0.25); /* Efeito de foco profissional */
+            outline: none;
+        }
+
+        /* Estilo dos Botões */
+        button {
+            background-color: #17a2b8; /* Cor de ação moderna (Ciano/Teal) */
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+            margin-top: 15px;
+        }
+
+        button:hover {
+            background-color: #138496; /* Darker teal/cyan */
+            transform: translateY(-1px); /* Efeito de elevação leve */
+        }
+
+        #error-message {
+            color: #d9534f; /* Vermelho mais suave */
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ebccd1;
+            background-color: #f2dede;
+            border-radius: 4px;
+            display: none; 
+        }
+
+        /* Estilos da Tabela */
+        #results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        #results-table th, #results-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            font-size: 0.85em; 
+            white-space: nowrap; 
+        }
+
+        /* Estilo específico para o input de Operação */
+        #results-table td[data-field="operacao"] input[type="text"] {
+            border: none;
+            text-align: center;
+            padding: 5px;
+            font-weight: bold;
+            background-color: transparent;
+            width: 100%;
+        }
+
+        #results-table th {
+            background-color: #082161; /* Azul Marinho Escuro */
+            color: white;
+            font-weight: bold;
+            cursor: pointer; /* Adicionado para indicar que o header é clicável */
+            position: relative;
+        }
+
+        /* ESTILOS PARA ORDENAÇÃO */
+        #results-table th.sorted-asc::after {
+            content: ' ▲';
+            font-size: 0.7em;
+            color: #fff;
+        }
+        #results-table th.sorted-desc::after {
+            content: ' ▼';
+            font-size: 0.7em;
+            color: #fff;
+        }
+        
+        /* Estilo para a linha do segundo cabeçalho (atingido/esperado) */
+        #results-table thead tr:nth-child(2) th {
+            background-color: #17a2b8; /* Azul/Ciano mais claro */
+            font-size: 0.8em;
+            padding: 5px;
+        }
+
+
+        #results-table tbody tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        #results-table tfoot td {
+            background-color: #082161; 
+            color: white;
+            font-weight: bold;
+            font-size: 1em;
+            text-align: center;
+        }
+        
+        /* Estilo para o rodapé */
+        footer {
+            margin-top: 30px;
+            padding: 15px 0;
+            text-align: center;
+            font-size: 0.9em;
+            color: #777;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        footer strong {
+            color: #082161;
+        }
+        
+        /* Estilos Específicos do Modal de Metas */
+        .metas-input-row {
+            display: flex; 
+            gap: 15px; 
+            align-items: center; 
+            margin-bottom: 15px; 
+            border: 1px solid #eee; 
+            padding: 10px; 
+            border-radius: 6px;
+            background-color: white;
+        }
+        .metas-input-row select, .metas-input-row input {
+            padding: 10px; 
+            border: 1px solid #ccc; 
+            border-radius: 6px; 
+            flex-grow: 1;
+        }
+        
+        /* Classes de Status (Metas e Situação) */
+        .goal-status-met {
+            background-color: #d4edda; color: #155724; font-weight: bold;
+        }
+        .goal-status-miss {
+            background-color: #f8d7da; color: #721c24;
+        }
+
+        /* Classes para a Coluna Situação */
+        .situation-cell {
+            padding: 0; 
+        }
+        .situation-cell select {
+            border: none;
+            background: transparent;
+            padding: 8px; 
+            width: 100%;
+            height: 100%;
+            font-weight: inherit;
+            color: inherit;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .situation-valid {
+            background-color: #d4edda; 
+            color: #155724; 
+            font-weight: bold;
+        }
+        .situation-training {
+            background-color: #fff3cd; 
+            color: #856404; 
+            font-weight: bold;
+        }
+        .situation-disqualified {
+            background-color: #f8d7da; 
+            color: #721c24; 
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div class="header-container">
+            <img src="" alt="" id="logo" style="display: none;"> 
+            <h1 id="main-title">Acompanhamento de Metas de Atendentes</h1>
+        </div>
+
+        <p id="error-message" style="display: none;"></p>
+
+        <div class="input-section">
+            <div class="input-group" style="grid-column: 1 / span 3;">
+                <label for="reportTitleInput">Título do Relatório/Período (Ex: Metas 01/2025):</label>
+                <input type="text" id="reportTitleInput" placeholder="Preencha o título do relatório">
+            </div>
+            
+            <div class="input-group">
+                <label for="fileDetalhamento">1. Detalhamento de Chamadas (CSV):</label>
+                <input type="file" id="fileDetalhamento" accept=".csv" multiple required>
+            </div>
+            <div class="input-group">
+                <label for="fileEventos">2. Eventos de Atendentes (CSV):</label>
+                <input type="file" id="fileEventos" accept=".csv" multiple required>
+            </div>
+            
+            <div class="input-group">
+                <label for="fileSatisfacao">3. Pesquisa de Satisfação (CSV):</label>
+                <input type="file" id="fileSatisfacao" accept=".csv" multiple required>
+            </div>
+
+            <button onclick="openModal()" style="grid-column: 3 / 4; align-self: end; margin-top: 0;">PROCESSAR RELATÓRIOS</button>
+        </div>
+
+        <div id="results-container">
+            </div>
+        
+        <button id="downloadBtn" onclick="downloadTable()" style="display: none; margin-top: 20px;">EXPORTAR PARA CSV/EXCEL</button>
+
+    </div>
+    
+    <footer>
+        Desenvolvido por: <strong>Claudio Carvalho</strong>
+    </footer>
+
+<div id="metasModal" style="
+    display: none; 
+    position: fixed; 
+    z-index: 1000; 
+    left: 0; 
+    top: 0; 
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.6); 
+    padding-top: 50px;">
+    
+    <div style="
+        background-color: #fefefe; 
+        margin: 3% auto; 
+        padding: 30px; 
+        border: 1px solid #888; 
+        width: 90%; 
+        max-width: 1000px; 
+        border-radius: 12px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);">
+        
+        <h2 style="color: #082161; margin-top: 0;">🎯 Configuração de Metas e Bônus</h2>
+        
+        <h3 style="color: #17a2b8; margin-top: 20px;">🌎 Metas Coletivas (Operação)</h3>
+        <p style="color: #777;">Defina o alvo e o bônus para toda a equipe caso a meta global seja batida.</p>
+        <div id="collectiveGoalsConfigContainer">
+            </div>
+
+        <h3 style="color: #17a2b8; margin-top: 20px;">👤 Metas Individuais (Máximo 4)</h3>
+        <p style="color: #777;">Defina o alvo e o bônus para metas que dependem do desempenho de cada atendente.</p>
+        <div id="individualGoalsConfigContainer">
+            </div>
+
+        <div style="margin-top: 30px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="font-weight: 600; color: #d9534f;">
+                💰 Desconto por RNC (R$):
+                <input type="number" id="rncValue" value="50.00" step="0.01" min="0" style="width: 100px; padding: 10px; border: 1px solid #ccc; border-radius: 6px;">
+            </div>
+        
+            <div style="text-align: right;">
+                <button onclick="processGoalsAndContinue()" style="background-color: #17a2b8; margin-top: 0;">✅ Processar e Continuar</button>
+                <button onclick="closeModal()" style="background-color: #6c757d; margin-left: 10px; margin-top: 0;">❌ Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const DELIMITER = ';';
+    const HEADER_LINE_INDEX = 5; 
+    // **CONSTANTE: Mínimo de 45s para ser considerado TMA e Chamada Atendida VÁLIDA**
+    const MIN_ATTENDANCE_TIME_SECONDS = 45; 
+
+    // Variáveis globais para armazenar dados após o processamento
+    let rawData = {
+        chamadas: { data: [], headerMap: {} },
+        eventos: { data: [], headerMap: {} },
+        satisfacao: { data: [], headerMap: {} }
+    };
+    
+    // Variável global para armazenar as métricas globais agrupadas por Operação
+    let globalMetricsByOperation = {}; 
+
+    // Variável global para armazenar as médias finais
+    let finalAverages = {};
+    
+    // ==========================================================
+    // VARIÁVEIS E CONSTANTES PARA O MODAL DE METAS
+    // ==========================================================
+    let INDIVIDUAL_GOALS_CONFIG = []; 
+    let COLLECTIVE_GOALS_CONFIG = [];
+    let RNC_DISCOUNT = 50.00; 
+    
+    // Metas Coletivas (Não são selecionáveis, são fixas)
+    const COLLECTIVE_INDICATORS = {
+        'serviceLevel': { name: 'NS (Nível de Serviço)', isTime: false, isPercent: true, isGoal: '>=', order: 1 },
+        'abandonRate': { name: 'TXA (Taxa de Abandono)', isTime: false, isPercent: true, isGoal: '<=', order: 2 },
+        'avgWaitTime': { name: 'TME (Tempo Médio de Espera)', isTime: true, isPercent: false, isGoal: '<=', order: 3 },
+    };
+
+    // Metas Individuais (Selecionáveis no modal)
+    const INDIVIDUAL_INDICATORS = {
+        'avgHandleTime': { name: 'TMA (segundos)', isTime: true, isPercent: false, isGoal: '<=' },
+        'avgRegTimePerCall': { name: 'TMR (segundos)', isTime: true, isPercent: false, isGoal: '<=' },
+        'filteredAttendedCalls': { name: 'Total Chamadas Atendidas', isTime: false, isPercent: false, isGoal: '>=' },
+        'callsPerDay': { name: 'Chamadas / Dia (Média)', isTime: false, isPercent: false, isGoal: '>=' },
+        'surveyRate': { name: 'Pesquisa Respostas (%)', isTime: false, isPercent: true, isGoal: '>=' },
+        'evaluationRate': { name: 'Avaliação CSAT (%)', isTime: false, isPercent: true, isGoal: '>=' }
+    };
+
+    // Objeto global para armazenar o valor final do bônus de cada atendente (para o rodapé)
+    const attendantFinalBonus = {};
+
+    // Função para converter valor esperado em segundos se for tempo (HH:MM:SS) ou decimal se for %
+    function parseGoalValue(indicator, valueStr) {
+        const metadata = INDIVIDUAL_INDICATORS[indicator] || COLLECTIVE_INDICATORS[indicator];
+
+        if (!metadata) return parseFloat(valueStr.replace(',', '.')) || NaN;
+
+        const cleanedStr = valueStr.trim().replace(',', '.');
+        const floatValue = parseFloat(cleanedStr);
+
+        if (isNaN(floatValue)) return NaN;
+
+        if (metadata.isTime) {
+            // Assume HH:MM:SS format
+            const parts = valueStr.split(':');
+            if (parts.length === 3) {
+                return parseInt(parts[0] || 0) * 3600 +
+                       parseInt(parts[1] || 0) * 60 +
+                       parseInt(parts[2] || 0);
+            }
+        }
+        
+        if (metadata.isPercent) {
+             // Se o usuário digitou 85 (para 85%), converte para 0.85 para a comparação
+             if (floatValue > 1 && floatValue <= 100) {
+                 return floatValue / 100;
+             }
+             // Caso contrário (se já digitou 0.85), usa o valor
+             return floatValue;
+        }
+
+        // Para outros indicadores (volume)
+        return floatValue;
+    }
+    
+    // Função para renderizar os campos de meta
+    function renderGoalInputs() {
+        const individualContainer = document.getElementById('individualGoalsConfigContainer');
+        individualContainer.innerHTML = '';
+        
+        // Renderiza Metas Individuais (4 slots)
+        for (let i = 1; i <= 4; i++) {
+            const selectId = `goalIndicator${i}`;
+            const expectedId = `goalExpected${i}`;
+            
+            let options = '<option value="">-- Selecione o Indicador --</option>';
+            Object.keys(INDIVIDUAL_INDICATORS).forEach(key => {
+                options += `<option value="${key}">${INDIVIDUAL_INDICATORS[key].name}</option>`;
+            });
+
+            individualContainer.innerHTML += `
+                <div class="metas-input-row">
+                    <span style="font-weight: bold; color: #082161; width: 30px;">Meta ${i}:</span>
+                    
+                    <select id="${selectId}">
+                        ${options}
+                    </select>
+                    
+                    <input type="text" id="${expectedId}" placeholder="Valor Esperado" data-is-time="false" data-is-percent="false" style="flex-grow: 1;">
+                    
+                    <input type="number" id="goalBonus${i}" placeholder="Bônus R$ (Ex: 100.00)" step="0.01" min="0" style="flex-grow: 1;">
+                </div>
+            `;
+            
+            // Adiciona o listener de mudança para formatar o placeholder
+            setTimeout(() => {
+                 document.getElementById(selectId).addEventListener('change', (e) => {
+                     const selected = e.target.value;
+                     const expectedInput = document.getElementById(expectedId);
+                     const metadata = INDIVIDUAL_INDICATORS[selected];
+
+                     if (metadata && metadata.isTime) {
+                         // Corrigido para HH:MM:SS
+                         expectedInput.placeholder = 'Valor Esperado (Ex: 00:01:00)';
+                     } else if (metadata && metadata.isPercent) {
+                         expectedInput.placeholder = 'Valor Esperado (Ex: 85 ou 0.85)';
+                     } else {
+                         expectedInput.placeholder = 'Valor Esperado (Ex: 100)';
+                     }
+                 });
+            }, 0);
+        }
+
+        // Renderiza Metas Coletivas (Fixas: NS, TXA, TME)
+        const collectiveContainer = document.getElementById('collectiveGoalsConfigContainer');
+        collectiveContainer.innerHTML = '';
+        
+        Object.keys(COLLECTIVE_INDICATORS).forEach((key, index) => {
+            const metadata = COLLECTIVE_INDICATORS[key];
+            const expectedPlaceholder = metadata.isTime ? 'Valor Esperado (Ex: 00:01:00)' : (metadata.isPercent ? 'Valor Esperado (Ex: 85 ou 0.85)' : 'Valor Esperado');
+
+            collectiveContainer.innerHTML += `
+                <div class="metas-input-row">
+                    <span style="font-weight: bold; color: #082161; width: 250px;">${metadata.name} (Meta ${metadata.isGoal})</span>
+                    
+                    <input type="text" id="collGoalExpected${index}" placeholder="${expectedPlaceholder}" style="flex-grow: 1;">
+                    
+                    <input type="number" id="collGoalBonus${index}" placeholder="Bônus R$ (Ex: 50.00)" step="0.01" min="0" style="flex-grow: 1;">
+                </div>
+            `;
+        });
+    }
+    
+    // Função para abrir o modal
+    function openModal() {
+        // Redefine as variáveis globais
+        rawData = { chamadas: { data: [], headerMap: {} }, eventos: { data: [], headerMap: {} }, satisfacao: { data: [], headerMap: {} } };
+        globalMetricsByOperation = {}; // Redefine o objeto de métricas globais agrupadas
+        finalAverages = {};
+        
+        const fileListDetalhamento = document.getElementById('fileDetalhamento').files;
+        const fileListEventos = document.getElementById('fileEventos').files;
+        const fileListSatisfacao = document.getElementById('fileSatisfacao').files;
+        
+        if (fileListDetalhamento.length === 0 || fileListEventos.length === 0 || fileListSatisfacao.length === 0) {
+            document.getElementById('error-message').innerHTML = 'Por favor, carregue pelo menos 1 arquivo para cada uma das 3 categorias.';
+            document.getElementById('error-message').style.display = 'block';
+            document.getElementById('results-container').innerHTML = '';
+            document.getElementById('downloadBtn').style.display = 'none';
+            return;
+        }
+
+        // Removido o check de Nome da Operação Manual
+        document.getElementById('error-message').style.display = 'none';
+
+        renderGoalInputs(); // Renderiza os campos antes de abrir
+        document.getElementById('metasModal').style.display = 'block';
+    }
+
+    // Função para fechar o modal
+    function closeModal() {
+        document.getElementById('metasModal').style.display = 'none';
+    }
+    
+    // Função para salvar as metas e continuar o processamento
+    function processGoalsAndContinue() {
+        INDIVIDUAL_GOALS_CONFIG = [];
+        COLLECTIVE_GOALS_CONFIG = [];
+        let isValid = true;
+
+        // 1. Processar Metas Individuais
+        for (let i = 1; i <= 4; i++) {
+            const indicator = document.getElementById(`goalIndicator${i}`).value;
+            const expectedStr = document.getElementById(`goalExpected${i}`).value.trim();
+            const bonusStr = document.getElementById(`goalBonus${i}`).value.replace(',', '.');
+            
+            const expected = parseGoalValue(indicator, expectedStr);
+            const bonus = parseFloat(bonusStr);
+            
+            if (indicator) {
+                if (isNaN(expected) || expectedStr === '' || isNaN(bonus) || bonus < 0) {
+                    alert(`Por favor, preencha o Valor Esperado e um Bônus (R$ >= 0) válidos para a Meta Individual ${i}.`);
+                    isValid = false;
+                    break;
+                }
+                
+                INDIVIDUAL_GOALS_CONFIG.push({
+                    indicator: indicator,
+                    expected: expected,
+                    bonus: bonus,
+                    displayName: INDIVIDUAL_INDICATORS[indicator].name,
+                    metadata: INDIVIDUAL_INDICATORS[indicator]
+                });
+            } else if (expectedStr !== '' || (bonusStr && bonusStr.trim() !== '')) {
+                 alert(`Por favor, selecione o Indicador para a Meta Individual ${i} ou deixe todos os campos vazios.`);
+                 isValid = false;
+                 break;
+            }
+        }
+        
+        if (!isValid) return;
+
+        // 2. Processar Metas Coletivas (NS, TXA, TME)
+        Object.keys(COLLECTIVE_INDICATORS).forEach((key, index) => {
+            const expectedStr = document.getElementById(`collGoalExpected${index}`).value.trim();
+            const bonusStr = document.getElementById(`collGoalBonus${index}`).value.replace(',', '.');
+            
+            const expected = parseGoalValue(key, expectedStr);
+            const bonus = parseFloat(bonusStr);
+            const metadata = COLLECTIVE_INDICATORS[key];
+
+            if (expectedStr !== '' && !isNaN(expected) && !isNaN(bonus) && bonus >= 0) {
+                 COLLECTIVE_GOALS_CONFIG.push({
+                    indicator: key,
+                    expected: expected,
+                    bonus: bonus,
+                    displayName: metadata.name,
+                    metadata: metadata,
+                    achieved: false // Será preenchido em aggregateAttendantData
+                });
+            } else if (expectedStr !== '' || (bonusStr && bonusStr.trim() !== '')) {
+                alert(`Por favor, preencha o Valor Esperado e um Bônus (R$ >= 0) válidos para a Meta Coletiva: ${metadata.name}.`);
+                isValid = false;
+            }
+        });
+
+        if (!isValid) return;
+
+        RNC_DISCOUNT = parseFloat(document.getElementById('rncValue').value.replace(',', '.') || 0);
+        
+        if (isValid) {
+            closeModal();
+            processFilesAfterGoals(); 
+        }
+    }
+
+    // FUNÇÃO DE ATUALIZAÇÃO DA SITUAÇÃO 
+    function updateAttendantSituation(selectElement) {
+        const selectedValue = selectElement.value;
+        const cell = selectElement.closest('td');
+        const row = selectElement.closest('tr');
+        
+        const discountCell = row.querySelector('[data-field="rnc_desconto"]');
+        const bonusCell = row.querySelector('[data-field="bonus_final"]');
+        const rncInput = row.querySelector('[data-field="rnc_input"] input');
+        
+        // Remove todas as classes de situação
+        cell.classList.remove('situation-valid', 'situation-training', 'situation-disqualified');
+
+        const maxBonusClean = parseFloat(discountCell.getAttribute('data-max-bonus'));
+
+        if (selectedValue === 'VALIDO') {
+            cell.classList.add('situation-valid');
+            
+            // Re-habilita RNC input
+            rncInput.disabled = false;
+            rncInput.style.backgroundColor = 'white';
+            
+            // Recalcula o bônus com base no RNC atual
+            updateAttendantBonus(rncInput); 
+
+        } else {
+            // Aplica classes de cor para situações não-válidas
+            if (selectedValue === 'TREINAMENTO') {
+                cell.classList.add('situation-training');
+            } else {
+                cell.classList.add('situation-disqualified');
+            }
+
+            // Desabilita RNC input
+            rncInput.disabled = true;
+            rncInput.style.backgroundColor = '#e9ecef'; // Cinza claro para indicar desabilitado
+            
+            discountCell.textContent = 'R$ 0,00';
+            
+            // Zera o bônus final
+            bonusCell.textContent = 'R$ 0,00';
+            bonusCell.style.color = 'red'; 
+            
+            // Atualiza o rastreador de bônus global
+            const attendantKey = row.getAttribute('data-name');
+            attendantFinalBonus[attendantKey] = 0; 
+            updateFooterBonus(Object.values(attendantFinalBonus));
+        }
+    }
+
+    // Função que atualiza o bônus final quando o RNC é alterado 
+    function updateAttendantBonus(inputElement) {
+        const row = inputElement.closest('tr');
+        const situationSelect = row.querySelector('[data-field="situacao"] select');
+        
+        // Se a situação não for VÁLIDO, não faz o cálculo de RNC e sai.
+        if (situationSelect && situationSelect.value !== 'VALIDO') {
+            return; 
+        }
+
+        const rncDiscountValue = RNC_DISCOUNT;
+        const rncCount = parseFloat(inputElement.value.replace(',', '.')) || 0;
+        
+        const discountCell = row.querySelector('[data-field="rnc_desconto"]');
+        const bonusCell = row.querySelector('[data-field="bonus_final"]');
+        
+        const maxBonus = parseFloat(discountCell.getAttribute('data-max-bonus'));
+        const totalPenalty = rncCount * rncDiscountValue;
+        
+        const actualDiscount = Math.min(totalPenalty, maxBonus);
+        
+        const finalBonus = Math.max(0, maxBonus - actualDiscount);
+        
+        // Atualiza a célula de desconto
+        discountCell.textContent = `R$ ${actualDiscount.toFixed(2).replace('.', ',')}`;
+        // Atualiza a célula de bônus final
+        bonusCell.textContent = `R$ ${finalBonus.toFixed(2).replace('.', ',')}`;
+        bonusCell.style.color = finalBonus > 0 ? 'green' : 'red';
+        
+        // Armazena o valor final para o rodapé 
+        const attendantKey = row.getAttribute('data-name');
+        attendantFinalBonus[attendantKey] = finalBonus;
+        
+        // Recalcula o rodapé após a mudança
+        updateFooterBonus(Object.values(attendantFinalBonus));
+    }
+
+    // Função para atualizar apenas o bônus total no rodapé
+    function updateFooterBonus(finalBonusValues) {
+        const totalFinalBonus = finalBonusValues.reduce((sum, current) => sum + current, 0);
+        const totalFinalBonusStr = totalFinalBonus.toFixed(2).replace('.', ',');
+        const footerCell = document.querySelector('[data-field="bonus_final_total"]');
+        if (footerCell) {
+            footerCell.textContent = `R$ ${totalFinalBonusStr}`;
+        }
+    }
+    
+    // ==========================================================
+    // FUNÇÕES DE CÁLCULO E PARSE 
+    // ==========================================================
+    
+    function timeToSeconds(timeStr) {
+        if (!timeStr || typeof timeStr !== 'string') return 0;
+        const cleanedStr = timeStr.trim().replace(/"/g, ''); 
+        const parts = cleanedStr.split(':');
+
+        if (parts.length === 3) { 
+            return parseInt(parts[0] || 0) * 3600 +
+                   parseInt(parts[1] || 0) * 60 +
+                   parseInt(parts[2] || 0);
+        }
+        const floatValue = parseFloat(cleanedStr.replace(',', '.'));
+        if (!isNaN(floatValue)) return floatValue * 60; 
+        
+        return 0;
+    }
+
+    function secondsToTime(totalSeconds) {
+        if (isNaN(totalSeconds) || totalSeconds < 0) return '00:00:00';
+        const roundedSeconds = Math.round(totalSeconds);
+        const h = String(Math.floor(roundedSeconds / 3600)).padStart(2, '0');
+        const m = String(Math.floor((roundedSeconds % 3600) / 60)).padStart(2, '0');
+        const s = String(roundedSeconds % 60).padStart(2, '0');
+        return `${h}:${m}:${s}`;
+    }
+    
+    function normalizeAttendantName(str) {
+        if (typeof str !== 'string') return '';
+        let cleaned = str.toUpperCase().replace(/"/g, ''); 
+        cleaned = cleaned.replace(/\u00A0/g, ' ').replace(/[\r\n\t]/g, '').trim(); 
+        return cleaned.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function normalizeHeader(str) {
+        if (typeof str !== 'string') return '';
+        // Remove caracteres especiais, incluindo o sublinhado '_'
+        return str.toLowerCase().replace(/[^a-z0-9]/g, ''); 
+    }
+
+    const getColValue = (row, headerMap, normalizedName) => {
+        const originalName = headerMap[normalizedName];
+        // Se a coluna tem duplicatas (como Pergunta_1), a chave no `row` terá um sufixo
+        // Se não existir, retorna undefined
+        if (!originalName) return undefined; 
+        
+        // Tenta buscar o nome original (primeiro)
+        let value = row[originalName]; 
+        let count = 2;
+
+        // Itera sobre as possíveis duplicatas geradas pelo parser (Pergunta_1_2, Pergunta_1_3, etc.)
+        // até encontrar um valor não vazio (para resolver o problema do score vazio)
+        if (value === '' || value === undefined) {
+             while (row[`${originalName}_${count}`] !== undefined) {
+                 value = row[`${originalName}_${count}`];
+                 if (value && value.trim() !== '') {
+                     break; 
+                 }
+                 count++;
+             }
+        }
+        return value;
+    };
+    
+    // Parse CSV com correção de cabeçalhos duplicados
+    function parseCSV(csvString, fileName) { 
+        csvString = csvString.replace(/^\uFEFF/, ''); 
+        const allLines = csvString.replace(/\r/g, '').split('\n');
+        
+        let headerLineIndex = -1;
+        let rawHeaders = [];
+        
+        const HEADER_SEARCH_LIMIT = 15; 
+        const ATTENDANT_ID_KEYS = ['numeroatendente', 'atendente'];
+        
+        for (let i = HEADER_LINE_INDEX; i < Math.min(allLines.length, HEADER_SEARCH_LIMIT); i++) {
+            const currentLine = allLines[i];
+            
+            if (currentLine.trim() === '' || currentLine.trim().includes('Período:') || currentLine.trim().includes('Relatório gerado em:')) {
+                continue;
+            }
+
+            const parts = currentLine.split(DELIMITER);
+            // Normaliza os cabeçalhos para busca
+            const headers = parts.map(h => normalizeHeader(h.trim().replace(/^"|"$/g, '')));
+            
+            const hasAttendantName = headers.includes('nomeatendente') || headers.includes('nomeatendente2');
+            const hasAttendantId = ATTENDANT_ID_KEYS.some(key => headers.includes(key));
+
+            // Para Detalhamento, precisa de nomeFila
+            const isChamadasFile = fileName.toLowerCase().includes('detalhamento') || headers.includes('nomefila');
+            
+            if (hasAttendantName && hasAttendantId) {
+                if (isChamadasFile && (!headers.includes('tipo') || !headers.includes('nomefila'))) {
+                    // Arquivo de chamadas precisa de 'tipo' e 'nomefila'
+                    continue; 
+                }
+                
+                headerLineIndex = i;
+                rawHeaders = parts.map(h => h.trim().replace(/^"|"$/g, ''));
+                break;
+            }
+        }
+        
+        if (headerLineIndex === -1) {
+             throw new Error(`Não foi possível localizar o cabeçalho no arquivo "${fileName}" (buscou da linha ${HEADER_LINE_INDEX + 1} até a ${HEADER_SEARCH_LIMIT}).`);
+        }
+        
+        // --- INÍCIO DA CORREÇÃO DE DUPLICATAS ---
+        const finalHeaderMap = {}; // Mapeia normalizado -> PRIMEIRO nome original
+        const headerCounts = {};
+        const finalRawHeaders = []; // Nomes de cabeçalho com duplicatas renomeadas (para uso na linha de dados)
+        
+        rawHeaders.forEach(h => {
+            const normalized = normalizeHeader(h);
+            let uniqueH = h;
+            
+            if (headerCounts[normalized]) {
+                headerCounts[normalized]++;
+                // Renomeia a coluna duplicada para garantir que o objeto `row` contenha todas
+                // Usa o nome original mais um sufixo numérico (ex: Pergunta_1_2)
+                uniqueH = `${h}_${headerCounts[normalized]}`; 
+            } else {
+                headerCounts[normalized] = 1;
+            }
+            
+            finalRawHeaders.push(uniqueH);
+            
+            // O finalHeaderMap só mapeia o nome normalizado para o PRIMEIRO nome original (sem sufixo)
+            if (headerCounts[normalized] === 1) {
+                finalHeaderMap[normalized] = h;
+            }
+        });
+        // --- FIM DA CORREÇÃO DE DUPLICATAS ---
+
+
+        const data = [];
+        for (let i = headerLineIndex + 1; i < allLines.length; i++) {
+            const line = allLines[i];
+            if (line.trim() === '') continue;
+
+            const values = line.split(DELIMITER);
+            
+            // Só processa a linha se tiver pelo menos o número de colunas do cabeçalho original
+            if (values.length >= rawHeaders.length) {
+                const row = {};
+                for(let j = 0; j < finalRawHeaders.length; j++) { // Usa finalRawHeaders
+                     let val = values[j] ? values[j] : '';
+                     val = val.replace(/^"|"$/g, '').replace(/\u00A0/g, ' ').trim();
+                     row[finalRawHeaders[j]] = val; // Atribui ao nome único
+                }
+                data.push(row);
+            }
+        }
+
+        if (data.length === 0) {
+            console.warn(`O parser encontrou o cabeçalho na linha ${headerLineIndex + 1}, mas não encontrou nenhuma linha de dados válida após ele no arquivo ${fileName}.`);
+        }
+
+        return { data: data, headerMap: finalHeaderMap };
+    }
+
+
+    // FUNÇÃO: CÁLCULO DAS MÉTRICAS GLOBAIS AGRUPADAS POR OPERAÇÃO (NS, TME, TXA)
+    function calculateGlobalMetricsByOperation() {
+        const metrics = {}; // { 'USC': { totalAttended: 100, totalWaitTime: 500, ... }, 'ULI': { ... } }
+        const mapC = rawData.chamadas.headerMap;
+        
+        // **CONSTANTES DE SLA**
+        const NS_SLA_SECONDS = 60; 
+        const ABANDON_SLA_SECONDS = 60; // Para TXA
+        
+        rawData.chamadas.data.forEach(call => {
+            const queueName = getColValue(call, mapC, 'nomefila');
+            if (!queueName || queueName.trim().length < 3) return;
+            
+            // Pega o prefixo ULI, USP, USC, etc.
+            const operationPrefix = queueName.trim().substring(0, 3).toUpperCase();
+            
+            if (!metrics[operationPrefix]) {
+                metrics[operationPrefix] = {
+                    totalAttended: 0,
+                    totalAttendedUnderSLA: 0, 
+                    totalAbandoned: 0,
+                    totalAbandonedUnderSLA: 0, 
+                    totalAbandonedAfterSLA: 0, 
+                    totalWaitTime: 0
+                };
+            }
+            
+            const opMetrics = metrics[operationPrefix];
+            const waitTimeSec = timeToSeconds(getColValue(call, mapC, 'tempoespera') || '00:00:00');
+            
+            // 1. Garante que a flag seja um booleano
+            const isAttended = String(getColValue(call, mapC, 'isatendida')) === '1';
+            const isAbandoned = String(getColValue(call, mapC, 'isabandonada')) === '1';
+            
+            // **CORREÇÃO CRÍTICA NA BASE DE CÁLCULO:** // Denominador (Total Chamadas Oferecidas): Se foi atendida OU se foi abandonada E entrou na fila (espera > 0)
+            const isValidOfferedCall = isAttended || (isAbandoned && waitTimeSec > 0);
+            
+            if (isValidOfferedCall) {
+                
+                if (isAttended) {
+                    // Attended: Denominador do NS e TME
+                    opMetrics.totalAttended++;
+                    opMetrics.totalWaitTime += waitTimeSec;
+                    
+                    // Numerador do NS: Chamadas atendidas com espera de até 60s
+                    if (waitTimeSec <= NS_SLA_SECONDS) {
+                        opMetrics.totalAttendedUnderSLA++;
+                    }
+                } 
+                
+                if (isAbandoned) {
+                    opMetrics.totalAbandoned++; 
+                    
+                    // TXA: Abandonada após 60s
+                    if (waitTimeSec >= ABANDON_SLA_SECONDS) {
+                        opMetrics.totalAbandonedAfterSLA++;
+                    } else {
+                        opMetrics.totalAbandonedUnderSLA++;
+                    }
+                }
+            }
+        });
+        
+        const finalResults = {};
+        
+        Object.keys(metrics).forEach(prefix => {
+            const opMetrics = metrics[prefix];
+            
+            // Base de cálculo para TXA
+            const totalCallsOffered = opMetrics.totalAttended + opMetrics.totalAbandoned; 
+            
+            // NS (Nível de Serviço) = (Atendidas com espera <= 60s) / Total Atendidas
+            const serviceLevel = opMetrics.totalAttended > 0 ? opMetrics.totalAttendedUnderSLA / opMetrics.totalAttended : 0;
+            
+            // TME (Tempo Médio de Espera) = Total Wait Time / Total Attended
+            const avgWaitTime = opMetrics.totalAttended > 0 ? opMetrics.totalWaitTime / opMetrics.totalAttended : 0;
+            
+            // TXA (Taxa de Abandono) = Abandoned After SLA (>= 60s) / Total Calls Offered
+            const abandonRate = totalCallsOffered > 0 ? opMetrics.totalAbandonedAfterSLA / totalCallsOffered : 0;
+            
+            finalResults[prefix] = {
+                serviceLevel: serviceLevel, 
+                avgWaitTime: avgWaitTime, 
+                abandonRate: abandonRate,
+                // Adicionado totais para a média geral do rodapé
+                totalAttended: opMetrics.totalAttended,
+                totalAttendedUnderSLA: opMetrics.totalAttendedUnderSLA,
+                totalAbandoned: opMetrics.totalAbandoned,
+                totalAbandonedAfterSLA: opMetrics.totalAbandonedAfterSLA,
+                totalAbandonedUnderSLA: opMetrics.totalAbandonedUnderSLA,
+                totalWaitTime: opMetrics.totalWaitTime
+            };
+        });
+
+        return finalResults;
+    } 
+
+    // Função para checar se a meta foi batida
+    function checkGoalAchievement(actualValue, expectedValue, goalMetadata) {
+        if (goalMetadata.isGoal === '>=') {
+            return actualValue >= expectedValue;
+        } else if (goalMetadata.isGoal === '<=') {
+            // Para métricas com meta '<=', só consideramos batida se o valor for positivo
+            return actualValue >= 0 && actualValue <= expectedValue;
+        }
+        return false;
+    }
+
+    // Processamento e Agregação INDIVIDUAL E COLETIVA
+    function aggregateAttendantData() { 
+        const attendants = {};
+        
+        // CORREÇÃO DE LÓGICA DE CHAVE DO ATENDENTE (Mapeamento entre arquivos)
+        const getAttendant = (name, id) => {
+            // 1. Limpar e Normalizar ID e Nome
+            let cleanId = id ? String(id).trim().replace(/[^\d]/g, '') : null;
+            cleanId = cleanId === '' ? null : cleanId;
+            const normalizedName = name ? normalizeAttendantName(name) : null;
+            
+            // 2. Definir a chave principal para o objeto de agregação
+            let key = null;
+            
+            // Prioriza ID numérico se for válido (2 dígitos ou mais)
+            if (cleanId && cleanId.length > 1) {
+                key = `ID_${cleanId}`;
+            } else if (normalizedName) { 
+                // Usa o nome como fallback, se o ID for inválido ou não existir
+                key = `NAME_${normalizedName}`;
+            } else {
+                return null;
+            }
+            
+            if (!attendants[key]) {
+                attendants[key] = {
+                    key: key,
+                    id: cleanId || 'N/A', // O ID pode ser N/A se a chave foi NAME_
+                    displayName: normalizedName || 'Atendente Desconhecido',
+                    operation: '', // Será preenchido
+                    uniqueQueuePrefixes: new Set(), // NOVO: Para armazenar os prefixos de 3 letras das filas
+                    filteredAttendedCalls: 0,
+                    totalFilteredHandleTime: 0,
+                    uniqueDates: new Set(),
+                    totalRegTime: 0,
+                    totalDigitalTime: 0,
+                    totalBathroomTime: 0,
+                    totalWaterBreakTime: 0,
+                    surveyResponses: 0,
+                    surveyScores4or5: 0,
+                    totalSurveyScores: 0,
+                    // NOVOS CAMPOS DE META
+                    totalBonus: 0,
+                    collectiveGoalsMet: [],
+                    individualGoalsMet: []
+                };
+            }
+            
+            // Tenta sempre usar o nome mais completo
+            if (normalizedName && normalizedName.length > attendants[key].displayName.length) {
+                attendants[key].displayName = normalizedName;
+            }
+            // Atualiza o ID se estiver "N/A" e um ID válido for encontrado
+            if (attendants[key].id === 'N/A' && cleanId) {
+                attendants[key].id = cleanId;
+            }
+            
+            return attendants[key];
+        };
+
+        // 1. Processar Detalhamento, Eventos e Satisfação
+        // ** CHAMADAS (Detalhamento) **
+        const mapC = rawData.chamadas.headerMap;
+        rawData.chamadas.data.forEach(call => {
+            const name = getColValue(call, mapC, 'nomeatendente');
+            const id = getColValue(call, mapC, 'numeroatendente');
+            const attendant = getAttendant(name, id);
+            if (!attendant) return;
+
+            const callTypeRaw = String(getColValue(call, mapC, 'tipo')).toUpperCase().trim();
+            const handleTimeSec = timeToSeconds(getColValue(call, mapC, 'tempoatendimento') || '00:00:00'); // Corrigido para tempoAtendimento
+            const callDateRaw = getColValue(call, mapC, 'data'); 
+            
+            // NOVO: Coleta prefixo da fila
+            const queueName = getColValue(call, mapC, 'nomefila'); 
+            if (queueName && queueName.trim().length >= 3) {
+                 const prefix = queueName.trim().substring(0, 3).toUpperCase();
+                 attendant.uniqueQueuePrefixes.add(prefix);
+            }
+
+            if (callTypeRaw === 'ATENDIDA') {
+                 // Filtro de TMA: Só conta se o Tempo de Detenção (Handle Time) for >= 45s
+                 if (handleTimeSec >= MIN_ATTENDANCE_TIME_SECONDS) {
+                     attendant.filteredAttendedCalls++;
+                     attendant.totalFilteredHandleTime += handleTimeSec;
+                     
+                     if (callDateRaw) {
+                         // Extrai a data (primeira parte antes do espaço ou só o valor)
+                         const dateOnly = callDateRaw.split(' ')[0];
+                         attendant.uniqueDates.add(dateOnly);
+                     }
+                 }
+            }
+        });
+
+        // ** EVENTOS (Pausas) **
+        const mapE = rawData.eventos.headerMap;
+        rawData.eventos.data.forEach(event => {
+            const name = getColValue(event, mapE, 'nomeatendente');
+            const id = getColValue(event, mapE, 'atendente');
+            const attendant = getAttendant(name, id);
+            if (!attendant) return;
+
+            const pauseName = getColValue(event, mapE, 'nomepausa');
+            const durationSec = timeToSeconds(getColValue(event, mapE, 'duracao'));
+            const normalizedPause = normalizeAttendantName(pauseName).replace(/\s/g, '');
+            
+            if (normalizedPause === 'REGISTRO') {
+                attendant.totalRegTime += durationSec;
+            } else if (normalizedPause === 'CANALDIGITAL') {
+                attendant.totalDigitalTime += durationSec;
+            } else if (normalizedPause === 'BANHEIRO') {
+                attendant.totalBathroomTime += durationSec;
+            } else if (normalizedPause === 'AGUA') {
+                attendant.totalWaterBreakTime += durationSec;
+            }
+        });
+
+        // ** PESQUISA DE SATISFAÇÃO **
+        const mapS = rawData.satisfacao.headerMap;
+        rawData.satisfacao.data.forEach(survey => {
+            // Pega o ID e Nome da Pesquisa, usando a coluna 2 como fallback (segurança)
+            let id = getColValue(survey, mapS, 'numeroatendente') || getColValue(survey, mapS, 'numeroatendente2');
+            let name = getColValue(survey, mapS, 'nomeatendente') || getColValue(survey, mapS, 'nomeatendente2');
+            const attendant = getAttendant(name, id);
+            if (!attendant) return;
+
+            // --- CORREÇÃO ROBUSTA: Busca o score na primeira coluna Pergunta_1 válida ---
+            let score1 = NaN;
+            
+            // 1. Obter todos os nomes de colunas na linha de dados que podem ser a pesquisa (Pergunta_1, Pergunta_1_2, NPS_Pergunta_1, etc.)
+            const allSurveyColumns = Object.keys(survey).filter(h => {
+                 const lowerH = h.toLowerCase();
+                 // Procura por Pergunta_1 ou NPS_Pergunta_1, mas evita Pergunta_2
+                 return lowerH.includes('pergunta_1') && !lowerH.includes('pergunta_2'); 
+            });
+            
+            // 2. Iterar sobre as colunas encontradas (na ordem em que apareceram no CSV) até achar um score válido
+            for (const colName of allSurveyColumns) {
+                let scoreStr = survey[colName];
+                if (scoreStr) {
+                    scoreStr = scoreStr.trim().replace(/^"|"$/g, '').replace(',', '.');
+                    const tempScore = parseFloat(scoreStr);
+                    
+                    // Garante que é um número válido e maior ou igual a 1 (assumindo a nota mínima)
+                    if (!isNaN(tempScore) && tempScore >= 1) { 
+                        score1 = tempScore;
+                        break; // Encontrou o score, para a busca
+                    }
+                }
+            }
+            // --- FIM DA CORREÇÃO ROBUSTA ---
+
+            if (!isNaN(score1)) {
+                attendant.surveyResponses++;
+                
+                // CSAT: Assumimos que a nota de 4 ou 5 é positiva (se a escala for de 1 a 5)
+                if (score1 >= 4 && score1 <= 5) {
+                    attendant.surveyScores4or5++;
+                }
+                // Conta todas as respostas com score válido para o denominador do CSAT
+                attendant.totalSurveyScores++;
+            }
+        });
+
+        // 2. Checar Metas Coletivas
+        
+        // 3. Realizar os Cálculos Finais (por atendente)
+        Object.values(attendants).forEach(attendant => {
+            // NOVO: Calcular a string da operação (ex: ULI/USP)
+            attendant.operation = Array.from(attendant.uniqueQueuePrefixes).sort().join('/');
+            
+            const totalAttendedFiltered = attendant.filteredAttendedCalls;
+            
+            attendant.totalWorkDays = attendant.uniqueDates.size;
+            attendant.callsPerDay = attendant.totalWorkDays > 0 ? attendant.filteredAttendedCalls / attendant.totalWorkDays : 0;
+            attendant.avgHandleTime = totalAttendedFiltered > 0 ? attendant.totalFilteredHandleTime / totalAttendedFiltered : 0;
+            attendant.avgRegTimePerCall = totalAttendedFiltered > 0 ? attendant.totalRegTime / totalAttendedFiltered : 0; // TMR só divide por chamadas válidas
+            
+            // Taxas de Pesquisa (CORREÇÃO REFORÇADA AQUI - Divisão de pesquisas pelo número de atendimentos válidos)
+            const responses = Number(attendant.surveyResponses);
+            const calls = Number(attendant.filteredAttendedCalls);
+            
+            // Pesquisa (%) = Respostas de Pesquisa / Chamadas Atendidas Válidas
+            attendant.surveyRate = calls > 0 ? responses / calls : 0;
+            
+            // Taxa de Avaliação (CSAT)
+            // CSAT (%) = Respostas Positivas (4/5) / Total de Respostas de Pesquisa
+            attendant.evaluationRate = attendant.totalSurveyScores > 0 ? attendant.surveyScores4or5 / attendant.totalSurveyScores : 0;
+
+            // --- NOVO: Cálculo do Bônus Coletivo por Operação ---
+            let collectiveBonus = 0;
+            attendant.collectiveGoalsMet = [];
+            
+            // Usa o PRIMEIRO prefixo para checar as metas coletivas (simplificação para atendentes que atendem múltiplas filas)
+            const mainOperationPrefix = attendant.operation.split('/')[0]; 
+            const operationMetrics = globalMetricsByOperation[mainOperationPrefix] || {}; // Usa métricas da operação principal
+
+            COLLECTIVE_GOALS_CONFIG.forEach(goal => {
+                 const actualValue = operationMetrics[goal.indicator] || 0; // Se não tiver métrica, é 0
+                 let achieved = false;
+            
+                 if (checkGoalAchievement(actualValue, goal.expected, goal.metadata)) {
+                     achieved = true;
+                     collectiveBonus += goal.bonus;
+                 }
+                 
+                 // Armazena o resultado ESPECÍFICO da operação do atendente
+                 attendant.collectiveGoalsMet.push({
+                    indicator: goal.indicator,
+                    expected: goal.expected,
+                    bonus: goal.bonus,
+                    displayName: goal.displayName,
+                    metadata: goal.metadata,
+                    achieved: achieved, 
+                    actual: actualValue,
+                    operationPrefix: mainOperationPrefix // Para referência na tabela
+                 });
+            });
+            // --- FIM NOVO CÁLCULO COLETIVO ---
+
+
+            // Checagem de Metas Individuais
+            let individualBonus = 0;
+            attendant.individualGoalsMet = [];
+            INDIVIDUAL_GOALS_CONFIG.forEach(goal => {
+                const actualValue = attendant[goal.indicator];
+                const expectedValue = goal.expected;
+                let goalAchieved = false;
+
+                if (checkGoalAchievement(actualValue, expectedValue, goal.metadata)) {
+                    goalAchieved = true;
+                    individualBonus += goal.bonus;
+                }
+
+                attendant.individualGoalsMet.push({
+                    displayName: goal.displayName,
+                    expected: expectedValue,
+                    achieved: actualValue,
+                    bonus: goalAchieved ? goal.bonus : 0,
+                    metadata: goal.metadata
+                });
+            });
+
+            // Bônus Total = Bônus Coletivo + Bônus Individual
+            attendant.totalBonus = collectiveBonus + individualBonus;
+            attendantFinalBonus[attendant.key] = attendant.totalBonus; // Armazena o bônus inicial
+
+        });
+
+        // Filtro final: Retorna apenas atendentes com atividade e ordena por nome.
+        return Object.values(attendants).filter(a => a.filteredAttendedCalls > 0 || a.totalRegTime > 0 || a.totalDigitalTime > 0 || a.totalBathroomTime > 0 || a.totalWaterBreakTime > 0 || a.surveyResponses > 0 )
+        .sort((a, b) => a.displayName.localeCompare(b.displayName));
+    }
+
+    function calculateFinalAverages(results) {
+        if (results.length === 0) {
+            return { totalChamadas: 0, totalWorkDays: 0, avgCallsPerDay: 0, avgHandleTime: 0, avgSurveyRate: 0, avgEvaluationRate: 0, totalRegTime: 0, totalDigitalTime: 0, totalBathroomTime: 0, totalWaterBreakTime: 0, avgRegTimePerCall: 0, totalMaxBonus: 0 };
+        }
+
+        let totalChamadas = 0;
+        let totalFilteredHandleTime = 0;
+        let sumCallsPerDay = 0;
+        let sumSurveyRate = 0;
+        let sumEvaluationRate = 0;
+        let sumRegTime = 0;
+        let sumDigitalTime = 0;
+        let sumBathroomTime = 0;
+        let sumWaterBreakTime = 0;
+        let sumAvgRegTimePerCall = 0;
+        let totalMaxBonus = 0;
+        let totalWorkDays = 0;
+        
+        // --- NOVO: Variáveis para cálculo do NS Global Ponderado ---
+        let grandTotalAttended = 0;
+        let grandTotalAttendedUnderSLA = 0;
+        let grandTotalAbandoned = 0;
+        let grandTotalAbandonedAfterSLA = 0;
+        let grandTotalWaitTime = 0;
+        // ---------------------------------------------------------
+
+        // CORREÇÃO: Agrega os totais de TODAS as operações
+        Object.values(globalMetricsByOperation).forEach(op => {
+             grandTotalAttended += op.totalAttended;
+             grandTotalAttendedUnderSLA += op.totalAttendedUnderSLA; 
+             grandTotalAbandoned += op.totalAbandoned;
+             grandTotalAbandonedAfterSLA += op.totalAbandonedAfterSLA;
+             grandTotalWaitTime += op.totalWaitTime;
+        });
+
+        results.forEach(attendant => {
+            totalChamadas += attendant.filteredAttendedCalls;
+            totalFilteredHandleTime += attendant.totalFilteredHandleTime;
+            sumCallsPerDay += attendant.callsPerDay;
+            sumSurveyRate += attendant.surveyRate;
+            sumEvaluationRate += attendant.evaluationRate;
+            sumRegTime += attendant.totalRegTime;
+            sumDigitalTime += attendant.totalDigitalTime;
+            sumBathroomTime += attendant.totalBathroomTime;
+            sumWaterBreakTime += attendant.totalWaterBreakTime;
+            sumAvgRegTimePerCall += attendant.avgRegTimePerCall;
+            totalMaxBonus += attendant.totalBonus;
+            totalWorkDays += attendant.totalWorkDays;
+        });
+        
+        const count = results.length;
+        // Base de cálculo para TXA Global (Atendidas + Abandonadas)
+        const grandTotalCallsOffered = grandTotalAttended + grandTotalAbandoned; 
+        
+        // NS Global Ponderado (NS = Atendidas < 60s / Total Atendidas)
+        const nsGlobal = grandTotalAttended > 0 ? grandTotalAttendedUnderSLA / grandTotalAttended : 0;
+        
+        // TXA Global Ponderado
+        const txaGlobal = grandTotalCallsOffered > 0 ? grandTotalAbandonedAfterSLA / grandTotalCallsOffered : 0;
+        
+        // TME Global Ponderado
+        const tmeGlobal = grandTotalAttended > 0 ? grandTotalWaitTime / grandTotalAttended : 0;
+
+        return {
+            totalChamadas: totalChamadas,
+            totalWorkDays: totalWorkDays, // Mantido como soma para o total de dias trabalhados por todos
+            avgCallsPerDay: count > 0 ? sumCallsPerDay / count : 0,
+            avgHandleTime: totalChamadas > 0 ? totalFilteredHandleTime / totalChamadas : 0, // Média ponderada pelo volume
+            avgSurveyRate: count > 0 ? sumSurveyRate / count : 0,
+            avgEvaluationRate: count > 0 ? sumEvaluationRate / count : 0,
+            totalRegTime: sumRegTime,
+            totalDigitalTime: sumDigitalTime,
+            totalBathroomTime: sumBathroomTime,
+            totalWaterBreakTime: sumWaterBreakTime,
+            avgRegTimePerCall: count > 0 ? sumAvgRegTimePerCall / count : 0,
+            totalMaxBonus: totalMaxBonus,
+            // Métricas Coletivas Globais Corrigidas
+            nsGlobal: nsGlobal, 
+            txaGlobal: txaGlobal,
+            tmeGlobal: tmeGlobal
+        };
+    }
+    
+    // ==========================================================
+    // FUNÇÃO DE ORDENAÇÃO DA TABELA 
+    // ==========================================================
+    let sortColumn = 'atendente'; // Coluna inicial de ordenação
+    let sortDirection = 1; // 1 para ascendente (A-Z, 0-9), -1 para descendente
+
+    function sortResultsTable(headerElement) {
+        const table = document.getElementById('results-table');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.rows);
+        const columnIndex = headerElement.cellIndex;
+        const field = headerElement.getAttribute('data-field-sort');
+        
+        // Se a coluna não tiver campo de ordenação, sai
+        if (!field) return; 
+
+        // 1. Determina a direção da ordenação
+        if (field === sortColumn) {
+            sortDirection *= -1; // Inverte a direção
+        } else {
+            sortColumn = field;
+            // Padrão: ascendente para strings (nome), descendente para números/tempo (métricas)
+            const isText = field === 'atendente' || field === 'operacao' || field === 'id' || field === 'situacao';
+            sortDirection = isText ? 1 : -1; 
+        }
+        
+        // 2. Atualiza os indicadores visuais de ordenação
+        table.querySelectorAll('th').forEach(th => th.classList.remove('sorted-asc', 'sorted-desc'));
+        headerElement.classList.add(sortDirection === 1 ? 'sorted-asc' : 'sorted-desc');
+
+        // 3. Lógica de ordenação principal
+        rows.sort((a, b) => {
+            const aCell = a.cells[columnIndex];
+            const bCell = b.cells[columnIndex];
+            
+            // Obtém o valor real para ordenação (usando data-sort-value)
+            let aValue = aCell.getAttribute('data-sort-value') || aCell.textContent.trim();
+            let bValue = bCell.getAttribute('data-sort-value') || bCell.textContent.trim();
+            
+            // Se for a coluna de Operação (agora input), pega o valor do input
+            if (field === 'operacao') {
+                aValue = aCell.querySelector('input').value;
+                bValue = bCell.querySelector('input').value;
+            }
+
+            // Função de parse para garantir ordenação numérica
+            const parseSortValue = (v) => {
+                 if (v === null || v === undefined) return 0;
+                 if (typeof v === 'number') return v;
+
+                 let str = String(v);
+                 // 1. Tenta parsear tempo (HH:MM:SS) para segundos
+                 if (/\d{2}:\d{2}:\d{2}/.test(str)) {
+                     return timeToSeconds(str); 
+                 }
+                 
+                 // 2. Remove formatação (R$, %, ,) e tenta parsear como float
+                 let cleaned = str.replace('R$', '').replace('%', '').trim().replace('.', '').replace(',', '.');
+                 let floatVal = parseFloat(cleaned);
+                 
+                 // 3. Se for float, retorna float, senão retorna string para comparação de texto
+                 return isNaN(floatVal) ? str : floatVal;
+            }
+            
+            let valA = parseSortValue(aValue);
+            let valB = parseSortValue(bValue);
+
+            let comparison = 0;
+            if (typeof valA === 'number' && typeof valB === 'number') {
+                comparison = valA - valB;
+            } else {
+                // Comparação de string (case-insensitive)
+                comparison = String(valA).localeCompare(String(valB));
+            }
+
+            return comparison * sortDirection;
+        });
+
+        // 4. Reinsere as linhas na ordem correta
+        rows.forEach(row => tbody.appendChild(row));
+    }
+
+    // ==========================================================
+    // FUNÇÃO DE RENDERIZAÇÃO DA TABELA 
+    // ==========================================================
+    function renderTable(results) {
+        if (results.length === 0) {
+            document.getElementById('results-container').innerHTML = '<p style="font-weight: bold;">Nenhum dado de atendente foi encontrado após o processamento.</p>';
+            document.getElementById('downloadBtn').style.display = 'none';
+            return;
+        }
+
+        // 1. Calcular médias/totais finais
+        finalAverages = calculateFinalAverages(results);
+
+        // 2. Formatar os valores do rodapé
+        const footerData = {
+            totalChamadas: finalAverages.totalChamadas,
+            diasTrabalhados: finalAverages.totalWorkDays,
+            chamadasDia: finalAverages.avgCallsPerDay.toFixed(2).replace('.', ','),
+            tma: secondsToTime(finalAverages.avgHandleTime),
+            pesquisa: (finalAverages.avgSurveyRate * 100).toFixed(2).replace('.', ',') + '%',
+            avaliacao: (finalAverages.avgEvaluationRate * 100).toFixed(2).replace('.', ',') + '%',
+            pausaDigital: secondsToTime(finalAverages.totalDigitalTime),
+            pausaRegistro: secondsToTime(finalAverages.totalRegTime),
+            tmaRegistro: secondsToTime(finalAverages.avgRegTimePerCall),
+            pausaBanheiro: secondsToTime(finalAverages.totalBathroomTime),
+            pausaAgua: secondsToTime(finalAverages.totalWaterBreakTime),
+            // Métricas Globais Corrigidas
+            nsGlobal: (finalAverages.nsGlobal * 100).toFixed(2).replace('.', ',') + '%',
+            txaGlobal: (finalAverages.txaGlobal * 100).toFixed(2).replace('.', ',') + '%',
+            tmeGlobal: secondsToTime(finalAverages.tmeGlobal)
+        };
+        
+        document.getElementById('results-container').innerHTML = '';
+
+        // 3. Gerar cabeçalhos dinâmicos
+        let collectiveHeaders = '';
+        let individualHeaders = '';
+        let collectiveSubHeaders = '';
+        let individualSubHeaders = '';
+        
+        // ** NOVAS CONSTANTES PARA SABER SE AS COLUNAS VÃO EXISTIR **
+        const HAS_COLLECTIVE_GOALS = COLLECTIVE_GOALS_CONFIG.length > 0;
+        const HAS_INDIVIDUAL_GOALS = INDIVIDUAL_GOALS_CONFIG.length > 0;
+        
+        // Headers Coletivos (3 metas fixas) - 2 COLUNAS POR META (Atingido/Esperado)
+        COLLECTIVE_GOALS_CONFIG.forEach((goal, index) => {
+            const baseName = goal.displayName.toUpperCase().replace(' (NÍVEL DE SERVIÇO)', '').replace(' (TAXA DE ABANDONO)', '').replace(' (TEMPO MÉDIO DE ESPERA)', '');
+            collectiveHeaders += `<th colspan="2">META ${baseName}</th>`;
+            // Metas Coletivas NÃO são ordenáveis no cabeçalho dos atendentes
+            collectiveSubHeaders += `<th>ATINGIDO</th><th>ESPERADO</th>`; 
+        });
+
+        // Headers Individuais (até 4 metas) - 2 COLUNAS POR META (Atingido/Esperado)
+        INDIVIDUAL_GOALS_CONFIG.forEach((goal, index) => {
+            const baseName = goal.displayName.toUpperCase().replace(' (MÉDIA)', '').replace(' (SEGUNDOS)', '');
+            individualHeaders += `<th colspan="2">META ${index + 1}: ${baseName}</th>`;
+            // Apenas a coluna 'ATINGIDO' é ordenável
+            collectiveSubHeaders += `<th onclick="sortResultsTable(this)" data-field-sort="ind_meta${index + 1}_atingido">ATINGIDO</th><th>ESPERADO</th>`;
+        });
+        
+        // Metas Coletivas (NS, TXA, TME) são sempre exibidas
+        const totalCollectiveMetrics = 3; 
+        const totalGoalColumns = COLLECTIVE_GOALS_CONFIG.length * 2 + INDIVIDUAL_GOALS_CONFIG.length * 2;
+        const totalBonusColumns = 3;
+
+        // 4. Novo cabeçalho da tabela com as metas (2 LINHAS DE CABEÇALHO)
+        let html = '<table id="results-table">';
+        html += `
+            <thead>
+                <tr>
+                    <th rowspan="2" onclick="sortResultsTable(this)" data-field-sort="operacao">OPERAÇÃO</th>
+                    <th rowspan="2" onclick="sortResultsTable(this)" data-field-sort="atendente">ATENDENTE</th>
+                    <th rowspan="2" onclick="sortResultsTable(this)" data-field-sort="id">ID INTERNO</th>
+                    <th colspan="4">MÉTRICAS BÁSICAS</th>
+                    <th colspan="${totalCollectiveMetrics}">MÉTRICAS COLETIVAS (OPERAÇÃO)</th>
+                    <th colspan="3">QUALIDADE / TEMPO DE ATENDIMENTO</th>
+                    <th colspan="5">PAUSAS AUXILIARES (TEMPO TOTAL)</th>
+                    ${collectiveHeaders}
+                    ${individualHeaders}
+                    <th colspan="${totalBonusColumns}">CÁLCULO DE BÔNUS</th>
+                </tr>
+                <tr>
+                    <th onclick="sortResultsTable(this)" data-field-sort="totalChamadas">TOTAL CHAMADAS</th>
+                    <th onclick="sortResultsTable(this)" data-field-sort="diasTrabalhados">DIAS TRABALHADOS</th>
+                    <th onclick="sortResultsTable(this)" data-field-sort="chamadasDia">CHAMADAS/DIA</th>
+                    <th onclick="sortResultsTable(this)" data-field-sort="situacao">SITUAÇÃO</th>
+                    
+                    <th onclick="sortResultsTable(this)" data-field-sort="ns">NS</th>
+                    <th onclick="sortResultsTable(this)" data-field-sort="txa">TXA</th>
+                    <th onclick="sortResultsTable(this)" data-field-sort="tme">TME</th>
+                    
+                    <th onclick="sortResultsTable(this)" data-field-sort="avgHandleTime">TMA</th>
+                    <th onclick="sortResultsTable(this)" data-field-sort="surveyRate">PESQUISA (%)</th>
+                    <th onclick="sortResultsTable(this)" data-field-sort="evaluationRate">AVALIAÇÃO CSAT (%)</th>
+                    
+                    <th onclick="sortResultsTable(this)" data-field-sort="pausaDigital">DIGITAL</th>
+                    <th onclick="sortResultsTable(this)" data-field-sort="pausaRegistro">REGISTRO</th>
+                    <th onclick="sortResultsTable(this)" data-field-sort="tmr" data-field-sort="avgRegTimePerCall">TMR</th>
+                    <th onclick="sortResultsTable(this)" data-field-sort="pausaBanheiro">BANHEIRO</th>
+                    <th onclick="sortResultsTable(this)" data-field-sort="pausaAgua">ÁGUA</th>
+                    
+                    ${collectiveSubHeaders}
+                    ${individualSubHeaders}
+
+                    <th>RNC</th>
+                    <th>DESCONTO RNC</th>
+                    <th onclick="sortResultsTable(this)" data-field-sort="bonus_final">BÔNUS FINAL</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+
+        // 5. Gerar linhas de dados
+        results.forEach(attendant => {
+            let allGoalColumns = '';
+            
+            // --- NOVO: Métricas Coletivas da Operação do Atendente ---
+            // Usa as métricas da operação principal do atendente (se ele tiver atendido mais de uma)
+            const mainOperationPrefix = attendant.operation.split('/')[0];
+            const opMetrics = globalMetricsByOperation[mainOperationPrefix] || {}; 
+            
+            // Variáveis para as células NS, TXA, TME
+            const nsFormatted = opMetrics.serviceLevel !== undefined ? (opMetrics.serviceLevel * 100).toFixed(2).replace('.', ',') + '%' : '-';
+            // CORRIGIDO: O valor `abandonRate` é um float (ex: 0.05). Precisa de toFixed(2)
+            const txaFormatted = opMetrics.abandonRate !== undefined ? (opMetrics.abandonRate * 100).toFixed(2).replace('.', ',') + '%' : '-';
+            const tmeFormatted = opMetrics.avgWaitTime !== undefined ? secondsToTime(opMetrics.avgWaitTime) : '-';
+            
+            // a) Metas Coletivas (AGORA ATINGIDO e ESPERADO)
+            attendant.collectiveGoalsMet.forEach((result, index) => {
+                const actualValue = result.actual;
+                const expectedValue = result.expected;
+                let actualFormatted;
+                let expectedFormatted;
+
+                // Se a métrica não foi calculada para a operação, usa '-'
+                if (actualValue === 0 && (result.indicator === 'serviceLevel' || result.indicator === 'abandonRate' || result.indicator === 'avgWaitTime') && !opMetrics.totalAttended && !opMetrics.totalAbandoned) {
+                    actualFormatted = '-';
+                    expectedFormatted = expectedValue; // Apenas exibe o esperado
+                } else if (result.metadata.isTime) {
+                    actualFormatted = secondsToTime(actualValue);
+                    expectedFormatted = secondsToTime(expectedValue);
+                } else if (result.metadata.isPercent) {
+                    actualFormatted = (actualValue * 100).toFixed(2).replace('.', ',') + '%';
+                    expectedFormatted = (expectedValue * 100).toFixed(2).replace('.', ',') + '%';
+                } else {
+                    actualFormatted = actualValue.toFixed(2).replace('.', ',');
+                    expectedFormatted = expectedValue.toFixed(2).replace('.', ',');
+                }
+                
+                const achievedClass = result.achieved ? 'goal-status-met' : 'goal-status-miss';
+                
+                // Adicionado data-sort-value para ordenação
+                allGoalColumns += `
+                    <td data-field="coll_meta${index + 1}_atingido" class="${achievedClass}" data-meta-expected="${expectedValue}" data-sort-value="${actualValue}">${actualFormatted}</td>
+                    <td data-field="coll_meta${index + 1}_esperado">${expectedFormatted}</td>
+                `;
+            });
+
+            // b) Metas Individuais (AGORA ATINGIDO e ESPERADO)
+            attendant.individualGoalsMet.forEach((result, index) => {
+                const actualValue = attendant[result.indicator]; // Usar o valor do atendente para TMA etc.
+                const expectedValue = result.expected;
+                let actualFormatted;
+                let expectedFormatted;
+
+                if (result.metadata.isTime) {
+                    actualFormatted = secondsToTime(actualValue);
+                    expectedFormatted = secondsToTime(expectedValue);
+                } else if (result.metadata.isPercent) {
+                    actualFormatted = (actualValue * 100).toFixed(2).replace('.', ',') + '%';
+                    expectedFormatted = (expectedValue * 100).toFixed(2).replace('.', ',') + '%';
+                } else {
+                    actualFormatted = actualValue.toFixed(2).replace('.', ',');
+                    expectedFormatted = expectedValue.toFixed(2).replace('.', ',');
+                }
+                
+                const achievedClass = result.bonus > 0 ? 'goal-status-met' : 'goal-status-miss';
+                
+                // Adicionado data-sort-value para ordenação
+                allGoalColumns += `
+                    <td data-field="ind_meta${index + 1}_atingido" class="${achievedClass}" data-meta-expected="${expectedValue}" data-sort-value="${actualValue}">${actualFormatted}</td>
+                    <td data-field="ind_meta${index + 1}_esperado">${expectedFormatted}</td>
+                `;
+            });
+
+            // Definição do SELECT para a Situação
+            const situationSelect = `
+                <select onchange="updateAttendantSituation(this)">
+                    <option value="VALIDO" selected>VÁLIDO</option>
+                    <option value="TREINAMENTO">TREINAMENTO</option>
+                    <option value="ATESTADO">ATESTADO</option>
+                    <option value="FALTA INJUSTIFICADA">FALTA INJUSTIFICADA</option>
+                    <option value="FERIAS">FÉRIAS</option>
+                    <option value="ADVERTENCIA">ADVERTÊNCIA</option>
+                    <option value="SUSPENSAO">SUSPENSÃO</option>
+                </select>
+            `;
+            
+            const initialBonusTotal = attendant.totalBonus.toFixed(2).replace('.', ',');
+            
+            // O input RNC já chama a função updateAttendantBonus
+            const rncInput = `<input type="number" data-name="${attendant.key}_rnc" value="0" min="0" step="1" onchange="updateAttendantBonus(this)" style="width: 50px; text-align: center;">`;
+
+            // NOVO: Input editável para Operação
+            const operationInput = `<input type="text" value="${attendant.operation}" style="width: 100%; border: none; padding: 0; text-align: center; background: transparent;" data-name="${attendant.key}_operation">`;
+
+
+            html += `
+                <tr data-name="${attendant.key}">
+                    <td data-field="operacao" data-sort-value="${attendant.operation}" style="padding: 0;">${operationInput}</td>
+                    <td data-field="atendente" data-sort-value="${attendant.displayName}">${attendant.displayName}</td>
+                    <td data-field="id" data-sort-value="${attendant.id}">${attendant.id}</td>
+                    
+                    <td data-field="totalChamadas" data-sort-value="${attendant.filteredAttendedCalls}">${attendant.filteredAttendedCalls}</td>
+                    <td data-field="diasTrabalhados" data-sort-value="${attendant.totalWorkDays}">${attendant.totalWorkDays}</td>
+                    <td data-field="chamadasDia" data-sort-value="${attendant.callsPerDay}">${attendant.callsPerDay.toFixed(2).replace('.', ',')}</td>
+                    <td data-field="situacao" class="situation-cell situation-valid" data-sort-value="VALIDO">${situationSelect}</td>
+                    
+                    <td data-field="ns" data-sort-value="${opMetrics.serviceLevel !== undefined ? opMetrics.serviceLevel : -1}">${nsFormatted}</td>
+                    <td data-field="txa" data-sort-value="${opMetrics.abandonRate !== undefined ? opMetrics.abandonRate : -1}">${txaFormatted}</td>
+                    <td data-field="tme" data-sort-value="${opMetrics.avgWaitTime !== undefined ? opMetrics.avgWaitTime : -1}">${tmeFormatted}</td>
+                    
+                    <td data-field="tma" data-sort-value="${attendant.avgHandleTime}">${secondsToTime(attendant.avgHandleTime)}</td>
+                    <td data-field="pesquisa" data-sort-value="${attendant.surveyRate}">${(attendant.surveyRate * 100).toFixed(2).replace('.', ',')}%</td>
+                    <td data-field="avaliacao" data-sort-value="${attendant.evaluationRate}">${(attendant.evaluationRate * 100).toFixed(2).replace('.', ',')}%</td>
+                    
+                    <td data-field="pausaDigital" data-sort-value="${attendant.totalDigitalTime}">${secondsToTime(attendant.totalDigitalTime)}</td>
+                    <td data-field="pausaRegistro" data-sort-value="${attendant.totalRegTime}">${secondsToTime(attendant.totalRegTime)}</td>
+                    <td data-field="tmr" data-sort-value="${attendant.avgRegTimePerCall}">${secondsToTime(attendant.avgRegTimePerCall)}</td>
+                    <td data-field="pausaBanheiro" data-sort-value="${attendant.totalBathroomTime}">${secondsToTime(attendant.totalBathroomTime)}</td>
+                    <td data-field="pausaAgua" data-sort-value="${attendant.totalWaterBreakTime}">${secondsToTime(attendant.totalWaterBreakTime)}</td>
+                    
+                    ${allGoalColumns}
+                    
+                    <td data-field="rnc_input">${rncInput}</td>
+                    <td data-field="rnc_desconto" data-max-bonus="${attendant.totalBonus.toFixed(2)}">R$ 0,00</td>
+                    <td data-field="bonus_final" data-sort-value="${attendant.totalBonus.toFixed(2)}" style="font-weight: bold; color: ${attendant.totalBonus > 0 ? 'green' : 'red'};">R$ ${initialBonusTotal}</td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody>';
+        
+        // 6. Gerar rodapé
+        let footerGoalColumns = '';
+        const totalGoalColumnsCount = COLLECTIVE_GOALS_CONFIG.length * 2 + INDIVIDUAL_GOALS_CONFIG.length * 2; // Colunas de metas (atingido/esperado)
+        
+        // Preenche células vazias para as colunas de metas (que não tem média no rodapé)
+        for(let i = 0; i < totalGoalColumnsCount; i++) {
+            footerGoalColumns += '<td></td>';
+        }
+
+        const totalFinalBonus = Object.values(attendantFinalBonus).reduce((sum, current) => sum + current, 0);
+        const totalFinalBonusStr = totalFinalBonus.toFixed(2).replace('.', ',');
+        
+        const firstColspan = 3; 
+        const bonusColspan = 3; 
+        
+        // Rodapé para NS, TXA, TME SEMPRE APARECE
+        const collectiveFooterColumns = `
+             <td data-field="ns_global">${footerData.nsGlobal}</td>
+             <td data-field="txa_global">${footerData.txaGlobal}</td>
+             <td data-field="tme_global">${footerData.tmeGlobal}</td>
+        `;
+
+        html += `
+            <tfoot>
+                <tr>
+                    <td colspan="${firstColspan}">MÉDIA GERAL / TOTAL:</td>
+                    <td data-field="totalChamadas_total">${footerData.totalChamadas}</td>
+                    <td data-field="diasTrabalhados_total">${footerData.diasTrabalhados}</td>
+                    <td data-field="chamadasDia_avg">${footerData.chamadasDia}</td>
+                    <td data-field="situacao_vazio"></td>
+                    
+                    ${collectiveFooterColumns}
+                    
+                    <td data-field="tma_avg">${footerData.tma}</td>
+                    <td data-field="pesquisa_avg">${footerData.pesquisa}</td>
+                    <td data-field="avaliacao_avg">${footerData.avaliacao}</td>
+                    
+                    <td data-field="pausaDigital_total">${footerData.pausaDigital}</td>
+                    <td data-field="pausaRegistro_total">${footerData.pausaRegistro}</td>
+                    <td data-field="tmr_avg">${footerData.tmaRegistro}</td>
+                    <td data-field="pausaBanheiro_total">${footerData.pausaBanheiro}</td>
+                    <td data-field="pausaAgua_total">${footerData.pausaAgua}</td>
+                    
+                    ${footerGoalColumns}
+                    
+                    <td data-field="rnc_vazio"></td>
+                    <td data-field="desconto_vazio"></td>
+                    <td data-field="bonus_final_total" style="font-weight: bold;">R$ ${totalFinalBonusStr}</td>
+                </tr>
+            </tfoot>
+        `;
+        html += '</table>';
+        
+        document.getElementById('results-container').innerHTML = html;
+        document.getElementById('downloadBtn').style.display = 'inline-block';
+        
+        // Aplica o estado inicial de ordenação (por nome)
+        const initialHeader = document.querySelector('th[data-field-sort="atendente"]');
+        if (initialHeader) {
+            initialHeader.classList.add('sorted-asc');
+        }
+    }
+
+    // Função para ler o conteúdo de um arquivo
+    function readFileContent(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => resolve(event.target.result);
+            reader.onerror = (error) => reject(error);
+            // É crucial usar ISO-8859-1 ou 'latin1' para CSVs do Windows
+            reader.readAsText(file, 'ISO-8859-1'); 
+        });
+    }
+
+    // Função para processar uma lista de arquivos (agrega o conteúdo)
+    async function processFileList(fileList, fileType) {
+        let combinedContent = '';
+        let headerMap = null;
+        let finalData = [];
+        let firstFile = true;
+        
+        for (let i = 0; i < fileList.length; i++) {
+            const file = fileList[i];
+            const content = await readFileContent(file);
+            
+            const { data, headerMap: currentHeaderMap } = parseCSV(content, file.name);
+            
+            if (firstFile) {
+                headerMap = currentHeaderMap;
+                finalData = data;
+                firstFile = false;
+            } else {
+                // Para arquivos subsequentes, apenas anexa os dados
+                // Assumimos que o formato do cabeçalho é o mesmo
+                finalData = finalData.concat(data);
+            }
+        }
+        
+        if (!headerMap && fileList.length > 0) {
+             throw new Error(`Não foi possível processar o cabeçalho para nenhum arquivo de ${fileType}. Verifique se o formato está correto.`);
+        }
+
+        return { data: finalData, headerMap: headerMap };
+    }
+
+
+    // Função principal que orquestra o processamento
+    async function processFilesAfterGoals() {
+        // Removido operationName, pois é calculado
+        const fileListDetalhamento = document.getElementById('fileDetalhamento').files;
+        const fileListEventos = document.getElementById('fileEventos').files;
+        const fileListSatisfacao = document.getElementById('fileSatisfacao').files;
+
+        if (fileListDetalhamento.length === 0 || fileListEventos.length === 0 || fileListSatisfacao.length === 0) {
+            document.getElementById('error-message').innerHTML = 'Erro: Falha na validação de dados. Recarregue os arquivos.';
+            document.getElementById('error-message').style.display = 'block';
+            document.getElementById('results-container').innerHTML = '';
+            return;
+        }
+
+        try {
+            const [parsedChamadas, parsedEventos, parsedSatisfacao] = await Promise.all([
+                processFileList(fileListDetalhamento, 'Detalhamento de Chamadas'),
+                processFileList(fileListEventos, 'Eventos de Atendentes'),
+                processFileList(fileListSatisfacao, 'Pesquisa de Satisfação')
+            ]);
+            
+            rawData.chamadas = parsedChamadas;
+            rawData.eventos = parsedEventos;
+            rawData.satisfacao = parsedSatisfacao;
+
+            // 1. Calcular as métricas GLOBAIS AGRUPADAS POR OPERAÇÃO
+            globalMetricsByOperation = calculateGlobalMetricsByOperation();
+
+            // 2. Agregar dados INDIVIDUAIS e aplicar Metas (associando a métrica coletiva correta)
+            const results = aggregateAttendantData();
+
+            // 3. Renderizar a tabela
+            renderTable(results);
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById('error-message').innerHTML = 'ERRO CRÍTICO DE PROCESSAMENTO: ' + error.message;
+            document.getElementById('error-message').style.display = 'block';
+            document.getElementById('results-container').innerHTML = '';
+        }
+    }
+
+    // Função para baixar a tabela como CSV (Excel) - CORRIGIDA PARA RESPEITAR A ORDEM E FORMATAÇÃO DA TELA
+    function downloadTable() {
+        const table = document.getElementById('results-table');
+        if (!table) return;
+
+        const DELIMITER_CSV = ';';
+        let csv = [];
+        const reportTitle = document.getElementById('reportTitleInput').value.trim() || document.getElementById('main-title').textContent.trim() || 'Relatorio_Metas';
+        
+        // Inclui o título na primeira linha
+        csv.push(`"${reportTitle}"${DELIMITER_CSV.repeat(50)}`);
+        csv.push('');
+
+        // --- 1. CAPTURAR CABEÇALHOS DO DOM (PARA GARANTIR ORDEM) ---
+        const headerRows = table.querySelectorAll('thead tr');
+        
+        // 1.1. Primeira linha de cabeçalho
+        const firstHeaderCells = Array.from(headerRows[0].cells);
+        let firstHeaderLine = [];
+        firstHeaderCells.forEach(cell => {
+             const text = cell.textContent.trim().toUpperCase().replace(/[\r\n\t]/g, '');
+             const colspan = parseInt(cell.getAttribute('colspan') || '1');
+             firstHeaderLine.push(`"${text}"`);
+             for (let i = 1; i < colspan; i++) {
+                 firstHeaderLine.push('');
+             }
+        });
+        csv.push(firstHeaderLine.join(DELIMITER_CSV));
+
+        // 1.2. Segunda linha de cabeçalho (detalhada)
+        const secondHeaderCells = Array.from(headerRows[1].cells);
+        let secondHeaderLine = [];
+
+        secondHeaderCells.forEach(cell => {
+             const text = cell.textContent.trim().toUpperCase().replace(/[\r\n\t]/g, '');
+             secondHeaderLine.push(`"${text}"`);
+        });
+        csv.push(secondHeaderLine.join(DELIMITER_CSV));
+        
+        // --- 2. LINHAS DE DATOS (TBODY) NO DOM ORDER ---
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            let rowData = [];
+            // Iterar sobre as células (<td>) na ordem em que aparecem na linha
+            const dataCells = row.querySelectorAll('td');
+            
+            dataCells.forEach(cell => {
+                 const field = cell.getAttribute('data-field');
+                 let cellValue = '';
+
+                 const input = cell.querySelector('input');
+                 const select = cell.querySelector('select');
+                 
+                 if (input) {
+                     cellValue = input.value; // Pega o valor do INPUT (Operação ou RNC)
+                 } else if (select) {
+                     cellValue = select.value; // Pega o valor do SELECT (situação)
+                 } else {
+                     // Pega o valor formatado da célula (NS, TXA, TMA, Metas, etc.)
+                     cellValue = cell.textContent.trim();
+                 }
+                 
+                 // Tratamento de valores e formatação para CSV
+                 // Remove R$ e % para deixar o valor puro
+                 cellValue = String(cellValue)
+                             .replace('R$', '')
+                             .replace('%', '')
+                             .replace(/[\r\n\t]/g, '')
+                             .trim();
+                 
+                 // Substitui ponto por #TEMP# e vírgula por ponto (decimal)
+                 // Se o Excel for PT-BR, ele interpretará o ponto como decimal.
+                 cellValue = cellValue.replace(/\./g, '#TEMP#').replace(/,/g, '.').replace(/#TEMP#/g, ','); 
+
+                 if (cellValue.includes(DELIMITER_CSV) || cellValue.includes('\n') || cellValue.includes('\"')) {
+                     cellValue = `\"${cellValue.replace(/\"/g, '\"\"')}\"`; 
+                 }
+                 rowData.push(cellValue);
+            });
+            csv.push(rowData.join(DELIMITER_CSV));
+        });
+
+
+        // --- 3. RODAPÉ (TFOOT) NO DOM ORDER ---
+        const tfoot = table.querySelector('tfoot');
+        if (tfoot) {
+            let footerDataSimple = [];
+            const footerRow = tfoot.querySelector('tr');
+            const finalFooterCells = footerRow.cells;
+            
+            for (let i = 0; i < finalFooterCells.length; i++) {
+                let cell = finalFooterCells[i];
+                const colspan = parseInt(cell.getAttribute('colspan') || '1');
+                
+                // Tratamento de valores e formatação
+                let cellValue = cell.textContent.trim().toUpperCase().replace(/[\r\n\t]/g, '').trim();
+                cellValue = cellValue.replace('R$', '').replace('%', '').trim();
+                cellValue = cellValue.replace(/\./g, '#TEMP#').replace(/,/g, '.').replace(/#TEMP#/g, ','); 
+
+                if (cellValue.includes(DELIMITER_CSV) || cellValue.includes('\n') || cellValue.includes('\"')) {
+                     cellValue = `\"${cellValue.replace(/\"/g, '\"\"')}\"`; 
+                }
+                
+                // Adiciona a célula formatada
+                footerDataSimple.push(cellValue);
+                
+                // Adiciona células vazias para o colspan
+                for (let j = 1; j < colspan; j++) {
+                    footerDataSimple.push('');
+                }
+            }
+            
+            // Corrige o alinhamento adicionando colunas vazias para as metas que não têm TD no rodapé
+            const numDataCells = table.querySelector('tbody tr').cells.length;
+            const numFooterCells = footerDataSimple.length;
+            
+            for (let i = numFooterCells; i < numDataCells; i++) {
+                footerDataSimple.push('');
+            }
+            
+            csv.push(footerDataSimple.join(DELIMITER_CSV));
+        }
+
+        csv.push('');
+        csv.push('Desenvolvido por: Claudio Carvalho');
+
+        // Geração do arquivo (com BOM e nome dinâmico)
+        const csvFile = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const downloadLink = document.createElement('a');
+        
+        // Sanitize o título para usá-lo como nome de arquivo (remove caracteres inválidos)
+        const safeTitle = reportTitle.replace(/[\/:*?"<>|]/g, '_');
+        downloadLink.download = `${safeTitle}_export.csv`;
+        
+        downloadLink.href = window.URL.createObjectURL(csvFile);
+        downloadLink.style.display = 'none';
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+    }
+</script>
+</body>
+</html>

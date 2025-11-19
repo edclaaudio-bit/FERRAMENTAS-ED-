@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escala Diária</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* Variáveis de Cores (Paleta Clean) */
+        :root {
+            --primary: #007bff; /* Azul primário mais vibrante */
+            --secondary: #f8f9fa; /* Fundo muito claro */
+            --success: #28a745;
+            --danger: #dc3545;
+            --info: #17a2b8;
+            --text-dark: #343a40;
+            --border-light: #dee2e6;
+            --highlight-bg: #fff3cd;
+            --editable-bg: #fff8e1; /* Fundo claro para células editáveis */
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--secondary);
+            padding: 40px 20px;
+            color: var(--text-dark);
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        h1 {
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            font-size: 2em;
+            font-weight: 600;
+        }
+        
+        h2 {
+            font-size: 1.4em;
+            color: var(--text-dark);
+            margin-top: 30px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-light);
+            padding-bottom: 8px;
+        }
+
+        .section-box {
+            padding: 25px;
+            margin-bottom: 35px;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            background-color: #fcfcfc;
+        }
+
+        /* --- Configuração Grid --- */
+        .config-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr; 
+            gap: 30px;
+            align-items: flex-start;
+        }
+        
+        .config-file {
+            grid-column: 1 / -1;
+        }
+
+        .config-item {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+
+        .config-item label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-dark);
+        }
+
+        .config-item input[type="number"],
+        .config-item input[type="file"] {
+            padding: 10px 12px;
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            transition: border-color 0.3s;
+        }
+        
+        .config-item input[type="number"]:focus,
+        .config-item input[type="file"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+        
+        .jornada-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px dashed var(--border-light);
+        }
+
+        .info-box {
+            background-color: #e9f7fe; 
+            color: var(--primary);
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            border: 1px solid #cce5ff;
+            margin-top: 10px;
+        }
+        
+        .picos-analysis {
+            border: 1px solid #ffe0a3; 
+            background-color: var(--highlight-bg); 
+            color: #856404;
+        }
+
+        .total-summary {
+            margin-top: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: var(--text-dark);
+        }
+        
+        .total-summary strong {
+            color: var(--danger);
+        }
+        
+        .validation-message {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed var(--border-light);
+            font-size: 0.95em;
+        }
+
+
+        .btn-group {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        button.main-btn, button.download-btn {
+            padding: 12px 25px;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        
+        button.main-btn {
+            flex-grow: 1;
+            background-color: var(--success);
+        }
+        button.main-btn:hover {
+            background-color: #218838;
+        }
+        
+        button.download-btn {
+            background-color: var(--info);
+            width: 300px;
+        }
+        button.download-btn:hover {
+            background-color: #117a8b;
+        }
+
+        /* Novo estilo para o botão de XLS */
+        button.download-excel {
+            background-color: #28a745; /* Usa a cor de sucesso para diferenciá-lo do PNG */
+            width: 300px;
+        }
+        button.download-excel:hover {
+            background-color: #218838;
+        }
+
+
+        /* --- Tabela de Escala (Relatório Final) --- */
+        #escalaOutput {
+            margin-top: 30px;
+            overflow-x: auto;
+        }
+
+        #escalaOutput table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+        }
+
+        #escalaOutput th, #escalaOutput td {
+            border: 1px solid var(--border-light);
+            padding: 12px 8px;
+            font-size: 0.9em;
+        }
+        
+        /* Estilo para a célula editável */
+        #escalaOutput td[contenteditable="true"] {
+            background-color: var(--editable-bg);
+            cursor: text;
+            font-weight: 600;
+        }
+        
+        /* Ajuste de alinhamento para o nome do Atendente */
+        #escalaOutput td:first-child[contenteditable="true"] {
+            text-align: left;
+            min-width: 120px;
+        }
+
+        #escalaOutput th {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        #escalaOutput tr:nth-child(even) {
+            background-color: #f4f4f4;
+        }
+        
+        .night-shift-row td {
+            background-color: #007bff10 !important; 
+            border-left: 4px solid var(--primary);
+            font-style: italic;
+        }
+
+        /* Estilo dos Eventos na Célula */
+        .event {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            display: inline-block; 
+            margin: 0 auto;
+        }
+        
+        .event.entrada { background-color: var(--success); color: white; }
+        .event.saida { background-color: var(--danger); color: white; }
+        .event.pausa { background-color: #e6ffed; color: #1e7e34; }
+        .event.almoco { background-color: #fff0f5; color: #c30953; }
+        
+        .tabela-info {
+            margin-top: 25px;
+            font-size: 0.85em;
+            color: #6c757d;
+        }
+        
+        .footer {
+            text-align: right;
+            margin-top: 40px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-light);
+            font-size: 0.8em;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Escala Diária</h1>
+    
+    <div class="section-box">
+        <h2>Análise e Configuração da Escala</h2>
+        <div class="config-grid">
+            
+            <div class="config-item config-file">
+                <label for="csvFile">1. Anexar Relatório CSV de Chamadas (Otimização de Picos):</label>
+                <input type="file" id="csvFile" accept=".csv" onchange="analisarPicos()">
+                <div id="picosOutput" class="info-box picos-analysis" style="margin-top: 15px;">
+                    Aguardando Análise... Selecione o arquivo CSV para processar a média de pico e otimizar as entradas.
+                </div>
+            </div>
+
+            <div class="jornada-count-group" style="grid-column: 1 / -1; padding-top: 0;">
+                <h3 style="grid-column: 1 / -1; border-bottom: none;">2. Configuração de Operadores</h3>
+                
+                <div class="jornada-inputs">
+                    <div class="config-item">
+                        <label for="qtd6h">Operadores Jornada **06:20**:</label>
+                        <input type="number" id="qtd6h" value="7" min="0" onchange="validarQuantidade()" required>
+                    </div>
+
+                    <div class="config-item">
+                        <label for="qtd7h12">Operadores Jornada **07:12**:</label>
+                        <input type="number" id="qtd7h12" value="3" min="0" onchange="validarQuantidade()" required>
+                    </div>
+                </div>
+
+                <div class="validation-message">
+                    <p class="info-box" style="margin-bottom: 10px;">
+                        Regra Fixa: Os **3 primeiros** Operadores da jornada **06:20** serão alocados nos horários fixos de madrugada/noturno (17:40, 23:50, 06:00).
+                    </p>
+                    <p class="total-summary">Total Geral de Operadores na Escala: <span id="totalFinal">10</span></p>
+                    <p id="validationMessage" style="color: var(--success); margin-top: 5px; font-weight: 500;">
+                        * Confirme as quantidades e gere a escala.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="btn-group">
+            <button class="main-btn" onclick="gerarEscala24h()">GERAR ESCALA ESTRUTURADA E OTIMIZADA</button>
+            <button class="download-btn" onclick="downloadEscala()">DOWNLOAD ESCALA (PNG)</button>
+            <button class="download-btn download-excel" onclick="downloadExcelSimples()">DOWNLOAD ESCALA (CSV)</button>
+        </div>
+    </div>
+
+    <div id="escalaOutput">
+        </div>
+    
+    <div class="footer">
+        Desenvolvido por Claudio Carvalho.
+    </div>
+</div>
+
+<script>
+    const CSV_FILE_DELIMITER = ';'; // Delimitador padrão do arquivo CSV (usado para ler o arquivo de picos)
+    let picosMediosPorDia = {}; 
+    const QTD_NOITE_FIXA = 3; 
+
+    // Horários fixos Noturnos (jornada 6h20m)
+    const TURNOS_FIXOS = [
+        { inicio: '17:40', jornadaTipo: '6h20m', ordem: 3 }, // Noturno 1
+        { inicio: '23:50', jornadaTipo: '6h20m', ordem: 4 }, // Noturno 2
+        { inicio: '06:00', jornadaTipo: '6h20m', ordem: 1 }  // Madrugada/Manhã
+    ];
+
+    /**
+     * Adiciona minutos a uma hora no formato HH:MM (lida com virada do dia).
+     */
+    function addMinutos(hora, minutos) {
+        const [h, m] = hora.split(':').map(Number);
+        let totalMinutos = h * 60 + m + minutos;
+        
+        const hFinal = Math.floor(totalMinutos / 60) % 24;
+        const mFinal = totalMinutos % 60;
+
+        return `${String(hFinal).padStart(2, '0')}:${String(mFinal).padStart(2, '0')}`;
+    }
+    
+    /**
+     * Valida e exibe a soma total dos operadores.
+     */
+    function validarQuantidade() {
+        const qtd6h = parseInt(document.getElementById('qtd6h').value) || 0;
+        const qtd7h12 = parseInt(document.getElementById('qtd7h12').value) || 0;
+        
+        const totalGeral = qtd6h + qtd7h12;
+
+        document.getElementById('totalFinal').textContent = totalGeral;
+
+        const validationMessage = document.getElementById('validationMessage');
+
+        if (totalGeral < QTD_NOITE_FIXA) {
+            validationMessage.innerHTML = `⚠️ Você precisa de pelo menos **${QTD_NOITE_FIXA} operadores** para cobrir os horários fixos.`;
+            validationMessage.style.color = 'var(--danger)';
+            return false;
+        }
+
+        validationMessage.innerHTML = `✅ ${totalGeral} operadores alocados. Confirme as quantidades e gere a escala.`;
+        validationMessage.style.color = 'var(--success)';
+        return true;
+    }
+
+
+    /**
+     * Calcula a escala estruturada com pausas e almoço distribuídos.
+     */
+    function calcularEscala(inicioStr, jornadaTipo) {
+        let almocoMinutos, pausaMinutos = 10;
+        let t1Min, t2Min, t3Min, t4Min;
+        let jornadaPadrao = ''; 
+
+        // 1. Definição dos Parâmetros e Distribuição do Trabalho 
+        // 6h00 é o tipo interno para o turno diurno de 6h (20m almoço)
+        if (jornadaTipo === '6h00') {
+            almocoMinutos = 20; 
+            jornadaPadrao = '06:20'; // FORÇADO PARA 06:20 NA EXIBIÇÃO
+            t1Min = 80; t2Min = 70; t3Min = 70; t4Min = 100;
+        } else if (jornadaTipo === '7h12') {
+            almocoMinutos = 60; 
+            jornadaPadrao = '07:12'; 
+            t1Min = 80; t2Min = 80; t3Min = 80; t4Min = 112; 
+        } else if (jornadaTipo === '6h20m') { 
+            // 6h20m é o tipo interno para o turno noturno fixo (20m almoço)
+            almocoMinutos = 20; 
+            jornadaPadrao = '06:20'; 
+            t1Min = 90; t2Min = 80; t3Min = 80; t4Min = 90;
+        }
+        
+        let horaAtual = inicioStr;
+        let escala = { jornadaPadrao: jornadaPadrao, almocoDuracao: almocoMinutos };
+        
+        escala.entrada = horaAtual;
+
+        // T1 -> P1
+        let terminoT1 = addMinutos(horaAtual, t1Min);
+        escala.p1_inicio = terminoT1;
+        let terminoP1 = addMinutos(terminoT1, pausaMinutos);
+        escala.p1_fim = terminoP1;
+        horaAtual = terminoP1;
+
+        // T2 -> Almoço
+        let terminoT2 = addMinutos(horaAtual, t2Min);
+        escala.almoco_inicio = terminoT2;
+        let terminoA = addMinutos(terminoT2, almocoMinutos);
+        escala.almoco_fim = terminoA;
+        horaAtual = terminoA;
+
+        // T3 -> P2
+        let terminoT3 = addMinutos(horaAtual, t3Min);
+        escala.p2_inicio = terminoT3;
+        let terminoP2 = addMinutos(terminoT3, pausaMinutos);
+        escala.p2_fim = terminoP2;
+        horaAtual = terminoP2;
+
+        // T4 -> Saída
+        let terminoT4 = addMinutos(horaAtual, t4Min);
+        escala.saida = terminoT4;
+        
+        return escala;
+    }
+
+    /**
+     * Analisa o CSV para calcular a média de chamadas por hora/janela (Mantido)
+     */
+    function analisarPicos() {
+        const fileInput = document.getElementById('csvFile');
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result;
+            const linhas = content.split('\n');
+            
+            const dadosInicio = 5; 
+            if (linhas.length <= dadosInicio) {
+                document.getElementById('picosOutput').innerHTML = '⚠️ Erro: Arquivo CSV vazio ou com poucas linhas.';
+                picosMediosPorDia = {};
+                return;
+            }
+            
+            const header = linhas[dadosInicio].split(CSV_FILE_DELIMITER).map(h => h.trim().replace(/"/g, ''));
+            const horaAtendimentoIndex = header.findIndex(h => h.includes('horaAtendimento'));
+            const dataIndex = header.findIndex(h => h.includes('data'));
+
+            if (horaAtendimentoIndex === -1 || dataIndex === -1) {
+                document.getElementById('picosOutput').innerHTML = '⚠️ Erro: Colunas "horaAtendimento" e/ou "data" não encontradas.';
+                picosMediosPorDia = {};
+                return;
+            }
+
+            const contagemPorHora = {};
+            const datasUnicas = {}; 
+            const janelas = 30; 
+
+            for (let i = dadosInicio + 1; i < linhas.length; i++) {
+                const linha = linhas[i].trim();
+                if (!linha) continue;
+
+                const colunas = linha.split(CSV_FILE_DELIMITER).map(c => c.trim().replace(/"/g, ''));
+                let dataStr = colunas[dataIndex];
+                let horaStr = colunas[horaAtendimentoIndex];
+                
+                if (dataStr && dataStr.match(/^\d{4}-\d{2}-\d{2}$/) && horaStr && horaStr.match(/^\d{2}:\d{2}:\d{2}$/)) {
+                    
+                    const data = new Date(dataStr + 'T00:00:00');
+                    const diaDaSemanaNum = data.getDay(); 
+                    if (diaDaSemanaNum === 0 || diaDaSemanaNum === 6) continue;
+
+                    const [h, m] = horaStr.split(':').map(Number);
+                    const mNormalizado = Math.floor(m / janelas) * janelas;
+                    const horaChave = `${String(h).padStart(2, '0')}:${String(mNormalizado).padStart(2, '0')}`;
+                    
+                    contagemPorHora[horaChave] = (contagemPorHora[horaChave] || 0) + 1;
+                    datasUnicas[dataStr] = true;
+                }
+            }
+
+            const numDiasUteis = Object.keys(datasUnicas).length;
+            if (numDiasUteis === 0) {
+                 document.getElementById('picosOutput').innerHTML = '⚠️ Nenhum dia útil encontrado no relatório. Picos não puderam ser analisados.';
+                 picosMediosPorDia = {};
+                 return;
+            }
+
+            picosMediosPorDia = {};
+            Object.keys(contagemPorHora).forEach(horaChave => {
+                picosMediosPorDia[horaChave] = contagemPorHora[horaChave] / numDiasUteis;
+            });
+            
+            let html = `✅ Análise Completa. ${numDiasUteis} dias úteis processados. Média de Picos (Top 5 janelas de 30 min):<br>`;
+            
+            const topPicos = Object.entries(picosMediosPorDia)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 5);
+            
+            topPicos.forEach(([hora, media]) => {
+                html += `<span style="background-color: var(--info); color: white; padding: 4px 8px; margin: 3px 0; border-radius: 3px; font-weight: bold; font-size: 0.9em; display: inline-block;">${hora} (${media.toFixed(1)})</span> `;
+            });
+            html += `<br><br>DICA: Os turnos diurnos (06:20 e 07:12) serão alocados para iniciar aproximadamente 1 hora antes destes picos.`;
+
+            document.getElementById('picosOutput').innerHTML = html;
+        };
+
+        reader.readAsText(file, 'ISO-8859-1');
+    }
+    
+    /**
+     * 3. Gera a escala combinando turnos fixos e otimizados.
+     */
+    function gerarEscala24h() {
+        if (!validarQuantidade()) {
+            alert("Atenção: Corrija a distribuição de operadores antes de gerar a escala.");
+            return;
+        }
+
+        let qtd6h = parseInt(document.getElementById('qtd6h').value) || 0;
+        let qtd7h12 = parseInt(document.getElementById('qtd7h12').value) || 0;
+        
+        const todosOperadores = [];
+        
+        // 1. Alocação dos Turnos Noturnos Fixos (Prioridade alta)
+        let countFixosAlocados = 0;
+        const fixosNecessarios = QTD_NOITE_FIXA;
+
+        // Se houver operadores de 06:20 (qtd6h) suficientes, aloca os fixos dali.
+        if (qtd6h >= fixosNecessarios) {
+            TURNOS_FIXOS.forEach(base => {
+                todosOperadores.push(base); 
+            });
+            qtd6h -= fixosNecessarios; // Reduz a contagem dos operadores disponíveis para picos.
+            countFixosAlocados = fixosNecessarios;
+        } else if (qtd6h > 0) {
+            // Se houver menos que 3, usa todos disponíveis para cobrir o máximo de fixos
+            for (let i = 0; i < qtd6h; i++) {
+                todosOperadores.push(TURNOS_FIXOS[i]);
+            }
+            countFixosAlocados = qtd6h;
+            qtd6h = 0; // Todos os operadores de 06:20 foram usados para fixos
+        } 
+        // Nota: Se qtd6h for 0 e ainda faltarem fixos, a regra acima prioriza.
+        // A lógica de prioridade é: 06:20 (ou 06:00) cobre os fixos, e só se sobrar, cobre os picos.
+
+
+        // 2. Picos ordenados (para distribuir os turnos restantes)
+        let picosOrdenados = Object.entries(picosMediosPorDia)
+            .sort(([, a], [, b]) => b - a)
+            .map(([hora]) => hora);
+        
+        if (picosOrdenados.length === 0) {
+            picosOrdenados = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00"];
+        }
+        
+        let picoIndex = 0;
+
+        // 3. Geração dos Turnos de Pico (Diurnos 06:00/06:20) - Ordem 2
+        for (let i = 0; i < qtd6h; i++) { // Usa o valor restante de qtd6h
+            const picoHora = picosOrdenados[picoIndex % picosOrdenados.length]; 
+            const inicioAtribuido = addMinutos(picoHora, -60);
+            picoIndex++;
+
+            todosOperadores.push({
+                jornadaTipo: '6h00', // Tipo interno para o cálculo de 6h (20m almoço)
+                inicio: inicioAtribuido,
+                ordem: 2
+            });
+        }
+        
+        // 4. Geração dos Turnos de Pico (Diurnos 07:12) - Ordem 2
+        for (let i = 0; i < qtd7h12; i++) {
+            const picoHora = picosOrdenados[picoIndex % picosOrdenados.length]; 
+            const inicioAtribuido = addMinutos(picoHora, -60);
+            picoIndex++;
+
+            todosOperadores.push({
+                jornadaTipo: '7h12',
+                inicio: inicioAtribuido,
+                ordem: 2
+            });
+        }
+        
+        // 5. Ordenação Customizada: Primeiro por Ordem (1, 2, 3, 4), depois por horário de início.
+        todosOperadores.sort((a, b) => {
+            if (a.ordem !== b.ordem) {
+                return a.ordem - b.ordem;
+            }
+            return a.inicio.localeCompare(b.inicio);
+        });
+
+        // 6. Atribuição de Nomes Sequenciais
+        let nomeCounter = 1;
+        const escalaFinal = todosOperadores.map(op => ({
+            ...op,
+            nome: `Operador ${nomeCounter++}`
+        }));
+
+
+        // 7. Renderização da Tabela
+        const output = document.getElementById('escalaOutput');
+        output.innerHTML = `<h2>Relatório Final da Escala (Total de ${escalaFinal.length} Atendentes)</h2>`;
+
+        const qtd7h12Usada = escalaFinal.filter(op => op.jornadaTipo === '7h12').length;
+        const almocoHeader = (qtd7h12Usada > 0) ? '20m/60m' : '20m';
+
+        let html = `
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">Atendente</th>
+                        <th style="width: 8%;">Jornada</th>
+                        <th style="width: 8%;">Entrada</th>
+                        <th colspan="2">1ª Pausa (10m)</th>
+                        <th colspan="2">Almoço / Janta (${almocoHeader})</th>
+                        <th colspan="2">2ª Pausa (10m)</th>
+                        <th style="width: 8%;">Saída</th>
+                    </tr>
+                    <tr>
+                        <th colspan="3"></th>
+                        <th>Início</th><th>Fim</th>
+                        <th>Início</th><th>Fim</th>
+                        <th>Início</th><th>Fim</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        escalaFinal.forEach((item) => {
+            // Verifica se é um dos turnos fixos (ou seja, foi alocado nos TURNOS_FIXOS)
+            const isFixedShift = TURNOS_FIXOS.some(fixed => fixed.inicio === item.inicio && fixed.jornadaTipo === item.jornadaTipo);
+            const rowClass = isFixedShift ? 'night-shift-row' : '';
+            const escala = calcularEscala(item.inicio, item.jornadaTipo);
+            
+            html += `
+                <tr class="${rowClass}">
+                    <td contenteditable="true">${item.nome}</td>
+                    <td contenteditable="true">${escala.jornadaPadrao}</td>
+                    <td contenteditable="true"><div class="event entrada">${escala.entrada}</div></td>
+                    <td contenteditable="true"><div class="event pausa">${escala.p1_inicio}</div></td>
+                    <td contenteditable="true"><div class="event pausa">${escala.p1_fim}</div></td>
+                    <td contenteditable="true"><div class="event almoco">${escala.almoco_inicio} (${escala.almocoDuracao}m)</div></td>
+                    <td contenteditable="true"><div class="event almoco">${escala.almoco_fim}</div></td>
+                    <td contenteditable="true"><div class="event pausa">${escala.p2_inicio}</div></td>
+                    <td contenteditable="true"><div class="event pausa">${escala.p2_fim}</div></td>
+                    <td contenteditable="true"><div class="event saida">${escala.saida}</div></td>
+                </tr>
+            `;
+        });
+
+        html += `
+                </tbody>
+            </table>
+            <p class="tabela-info">* **Jornada Padronizada:** A coluna Jornada exibe estritamente **07:12** ou **06:20**.</p>
+            <p class="tabela-info">* **Editável:** Você pode clicar e ajustar **qualquer célula** desta tabela.</p>
+        `;
+        output.innerHTML += html;
+    }
+
+
+    /**
+     * Função para capturar a tabela e fazer o download como PNG.
+     */
+    function downloadEscala() {
+        const input = document.getElementById('escalaOutput').querySelector('table');
+        
+        if (!input) {
+            alert("Gere a escala primeiro para poder fazer o download.");
+            return;
+        }
+
+        // Tira o atributo contenteditable para o print não pegar o cursor/foco
+        input.querySelectorAll('[contenteditable="true"]').forEach(el => {
+            el.removeAttribute('contenteditable');
+        });
+
+        // Usa html2canvas para renderizar o elemento em um canvas
+        html2canvas(input, {
+            scale: 2, // Aumenta a resolução
+            backgroundColor: '#ffffff', // Força fundo branco se necessário
+            useCORS: true 
+        }).then(function(canvas) {
+            const image = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = image;
+            link.download = 'Escala_Diaria_' + new Date().toISOString().slice(0, 10) + '.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Re-adiciona o contenteditable para manter a usabilidade
+            input.querySelectorAll('td').forEach(el => {
+                 // Re-adiciona o contenteditable apenas se for uma célula de dados (e não um cabeçalho)
+                if(el.parentElement.parentElement.tagName === 'TBODY') {
+                    el.setAttribute('contenteditable', 'true');
+                }
+            });
+        });
+    }
+
+    /**
+     * CORREÇÃO FINAL: Função para capturar a tabela e fazer o download como CSV, 
+     * usando PONTO E VÍRGULA (;) como delimitador, o que é o padrão esperado pelo Excel brasileiro.
+     */
+    function downloadExcelSimples() {
+        const table = document.getElementById('escalaOutput').querySelector('table');
+        
+        if (!table) {
+            alert("Gere a escala primeiro para poder fazer o download.");
+            return;
+        }
+
+        let csvContent = "";
+        const DELIMITER_SEMICOLON = ';'; 
+
+        // --- 1. Processar o Cabeçalho (THEAD) ---
+        const headerRows = table.querySelectorAll('thead tr');
+
+        // Linha 1 do cabeçalho (Compensa os colspans com campos vazios)
+        // Resultados esperados: 10 colunas
+        let rowData1 = [];
+        headerRows[0].querySelectorAll('th').forEach(cell => {
+            let text = cell.innerText.trim();
+            rowData1.push(text);
+            
+            // Se a célula tiver colspan (Pausa, Almoço), adicionamos um campo vazio (;) para compensar a coluna 'Fim'
+            if (cell.colSpan > 1) { 
+                rowData1.push(''); 
+            }
+        });
+        csvContent += rowData1.join(DELIMITER_SEMICOLON) + '\n';
+
+
+        // Linha 2 do cabeçalho (Contém Início/Fim e campos vazios iniciais/finais)
+        // Resultados esperados: 10 colunas
+        let rowData2 = [];
+        headerRows[1].querySelectorAll('th').forEach(cell => {
+             // O primeiro TH tem colspan=3, resultando em 3 campos vazios na exportação.
+            if(cell.colSpan === 3) {
+                 rowData2.push('', '', '');
+            } else {
+                let text = cell.innerText.trim();
+                rowData2.push(text);
+            }
+        });
+        csvContent += rowData2.join(DELIMITER_SEMICOLON) + '\n';
+
+
+        // --- 2. Processar o Corpo da Tabela (TBODY) ---
+        table.querySelectorAll('tbody tr').forEach((row) => {
+            let rowData = [];
+            row.querySelectorAll('td').forEach(cell => {
+                // Remove o HTML e o texto de duração (e.g., "(20m)" de Almoço)
+                let text = cell.innerText.trim().replace(/\s*\(\d+m\)\s*/g, '');
+                rowData.push(text);
+            });
+            // O corpo sempre tem 10 colunas e usa o delimitador ;
+            csvContent += rowData.join(DELIMITER_SEMICOLON) + '\n';
+        });
+
+        // 3. Criar e baixar o arquivo (Usando .csv e BOM)
+        // O BOM (\uFEFF) é crucial para o Excel interpretar o UTF-8 corretamente.
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        
+        link.href = url;
+        // Extensão .csv com ponto e vírgula como delimitador é a combinação mais robusta para o Excel brasileiro.
+        link.download = 'Escala_Diaria_Tabela_' + new Date().toISOString().slice(0, 10) + '.csv'; 
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        URL.revokeObjectURL(url);
+    }
+
+
+    // Inicializa a validação ao carregar a página
+    document.addEventListener('DOMContentLoaded', validarQuantidade);
+
+</script>
+
+</body>
+</html>
