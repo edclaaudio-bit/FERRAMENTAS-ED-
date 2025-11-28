@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Performance Diária Simplificada</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
         /* Define a fonte Inter como padrão */
         body {
@@ -104,6 +105,12 @@
                     </div>
                 </div>
 
+                <div class="mb-8 p-4 border rounded-lg bg-gray-50">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Evolução Diária da Performance</h3>
+                    <div class="relative h-96">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
                 <div class="overflow-x-auto rounded-lg shadow-md">
                     <table id="daily-results-table" class="min-w-full divide-y divide-gray-200">
                         <thead>
@@ -141,6 +148,7 @@
         
         let processedDailyData = {};
         let collaboratorList = [];
+        let performanceChart = null; // Variável para a instância do Chart.js
         
         // --- UTILS DE CONVERSÃO E VALIDAÇÃO ---
 
@@ -194,8 +202,10 @@
             // Tenta formato YYYY/MM/DD (como na coluna 'data' do eventosAtendentes)
             if (cleanStr.match(/^\d{4}\/\d{2}\/\d{2}/)) {
                 // Cria a data no fuso horário local para evitar problemas de deslocamento de dia.
-                const [year, month, day] = cleanStr.split(' ')[0].split('/');
-                date = new Date(`${year}-${month}-${day}T00:00:00`);
+                const parts = cleanStr.split(' ')[0].split('/');
+                if (parts.length === 3) {
+                    date = new Date(`${parts[0]}-${parts[1]}-${parts[2]}T00:00:00`);
+                }
             } 
             // Tenta Formato YYYY-MM-DD (detalhamentoChamadas.csv, satisfacaoclientes.csv)
             else if (cleanStr.match(/^\d{4}-\d{2}-\d{2}/)) {
@@ -210,7 +220,10 @@
             }
 
             if (date && !isNaN(date.getTime())) {
+                // Para ordenação correta, usamos a data no formato Date object (timestamp)
                 const isoDate = date.toISOString().split('T')[0];
+                const timestamp = date.getTime(); 
+                
                 // Formata a data para DD/MM/YYYY
                 const brDate = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
                 
@@ -220,7 +233,7 @@
                     time = timeMatch[0];
                 }
 
-                return { isoDate, brDate, time };
+                return { isoDate, brDate, time, timestamp };
             }
             return null;
         };
@@ -372,6 +385,7 @@
                         dailyMetrics[key] = {
                             colaborador: colaborador,
                             brDate: '', // Data em DD/MM/YYYY
+                            timestamp: 0, // Novo campo para ordenação
                             
                             // Métricas de Chamadas
                             chamadasAtendidas: 0,
@@ -410,12 +424,13 @@
                     const tempoAtendimentoStr = findColumnValue(row, ['tempoAtendimento', 'TempoAtendimento', 'duracao atendimento']); 
                     
                     if (dataInfo && colaborador) {
-                        const { isoDate, brDate } = dataInfo;
+                        const { isoDate, brDate, timestamp } = dataInfo;
                         const key = `${colaborador}|${isoDate}`;
                         uniqueCollaborators.add(colaborador);
                         initializeDailyMetric(key, colaborador);
                         
                         dailyMetrics[key].brDate = brDate;
+                        dailyMetrics[key].timestamp = timestamp;
 
                         const duracaoSegundos = timeToSeconds(tempoAtendimentoStr);
                         if (duracaoSegundos > 0) { 
@@ -435,12 +450,13 @@
                     const duracaoStr = findColumnValue(row, ['duracao', 'Duracao', 'duração']); 
                     
                     if (dataInfo && colaborador) {
-                        const { isoDate, brDate } = dataInfo;
+                        const { isoDate, brDate, timestamp } = dataInfo;
                         const key = `${colaborador}|${isoDate}`;
                         uniqueCollaborators.add(colaborador);
                         initializeDailyMetric(key, colaborador);
 
                         dailyMetrics[key].brDate = brDate;
+                        dailyMetrics[key].timestamp = timestamp;
                         const duracaoSegundos = timeToSeconds(duracaoStr);
                         
                         // 2.1 PAUSAS E REGISTRO
@@ -476,12 +492,13 @@
                     const nota = parseInt(notaStr, 10); 
                     
                     if (dataInfo && colaborador && !isNaN(nota) && nota >= 1 && nota <= 5) {
-                        const { isoDate, brDate } = dataInfo;
+                        const { isoDate, brDate, timestamp } = dataInfo;
                         const key = `${colaborador}|${isoDate}`;
                         uniqueCollaborators.add(colaborador);
                         initializeDailyMetric(key, colaborador);
 
                         dailyMetrics[key].brDate = brDate;
+                        dailyMetrics[key].timestamp = timestamp;
                         dailyMetrics[key].pesquisasRealizadas++;
                         
                         // Classificação CSAT Detalhada (Nota 1 a 5)
@@ -499,7 +516,7 @@
                 const finalResults = [];
                 Object.entries(dailyMetrics).forEach(([key, metrics]) => {
                     
-                    const tma = metrics.chamadasAtendidas > 0 
+                    const tmaSeconds = metrics.chamadasAtendidas > 0 
                         ? (metrics.tempoAtendimentoTotal / metrics.chamadasAtendidas)
                         : 0;
 
@@ -526,14 +543,17 @@
                         
                     finalResults.push({
                         dia: metrics.brDate, // Usando DD/MM/YYYY
+                        timestamp: metrics.timestamp, // Para ordenação
                         colaborador: metrics.colaborador,
-                        totalChamadas: totalChamadas,
-                        tma: formatSeconds(Math.round(tma)), // TMA formatado para HH:MM:SS
-                        tmr: Math.round(metrics.tempoRegistroTotal), // TMR em segundos (MANTIDO NO OBJETO PARA CÁLCULOS FUTUROS, MAS REMOVIDO DA VISUALIZAÇÃO)
                         
+                        // Métricas do Gráfico
+                        totalChamadas: totalChamadas,
+                        tma: formatSeconds(Math.round(tmaSeconds)), // TMA formatado
+                        tmaSeconds: Math.round(tmaSeconds), // TMA em segundos (para o gráfico)
+
                         // Métricas de Satisfação
                         totalPesquisas: totalPesquisas,
-                        percentPesquisas: percentPesquisas.toFixed(1), // Nova métrica formatada
+                        percentPesquisas: percentPesquisas.toFixed(1), 
                         percentPromotores: percentPromotores.toFixed(1),
                         percentNeutros: percentNeutros.toFixed(1),
                         percentDetratores: percentDetratores.toFixed(1),
@@ -543,26 +563,24 @@
                         pausaDigital: formatSeconds(metrics.pausaDigitalTotal),
                         pausaAgua: formatSeconds(metrics.pausaAguaTotal),
                         pausaBanheiro: formatSeconds(metrics.pausaBanheiroTotal),
+                        totalPausasSeconds: metrics.tempoRegistroTotal + metrics.pausaDigitalTotal + metrics.pausaAguaTotal + metrics.pausaBanheiroTotal, // Total Pausas em segundos (para o gráfico)
                     });
                 });
                 
                 // Filtra apenas dados relevantes (com chamadas ou pesquisas) e ordena
                 processedDailyData = finalResults.filter(item => item.totalChamadas > 0 || item.totalPesquisas > 0).sort((a, b) => {
+                    // Ordena primeiro por Colaborador
                     if (a.colaborador < b.colaborador) return -1;
                     if (a.colaborador > b.colaborador) return 1;
                     
-                    // Ordena pela data (comparando DD/MM/YYYY)
-                    const [dA, mA, yA] = a.dia.split('/').map(Number);
-                    const [dB, mB, yB] = b.dia.split('/').map(Number);
-                    if (yA !== yB) return yA - yB;
-                    if (mA !== mB) return mA - mB;
-                    return dA - dB;
+                    // Depois pela data (timestamp)
+                    return a.timestamp - b.timestamp;
                 });
                 collaboratorList = Array.from(uniqueCollaborators).sort();
                 
                 // Atualiza a UI
                 populateCollaboratorFilter();
-                renderTable(processedDailyData);
+                filterResults(); // Chama filterResults para renderizar tabela e gráfico
 
                 document.getElementById('results-section').classList.remove('hidden');
                 document.getElementById('message-area').classList.add('hidden');
@@ -582,11 +600,11 @@
             }
         };
 
-        // --- MANUSEIO DE FILTROS E TABELA ---
+        // --- MANUSEIO DE FILTROS, TABELA E GRÁFICO ---
 
         const populateCollaboratorFilter = () => {
             const select = document.getElementById('collaborator-filter');
-            select.innerHTML = '<option value="all">Todos os Colaboradores</option>'; // Reset
+            select.innerHTML = '<option value="all">Operação Total</option>'; // Reset e renomeado
 
             if (collaboratorList.length > 0) {
                 collaboratorList.forEach(colaborador => {
@@ -613,15 +631,93 @@
             if (selectedCollaborator !== 'all' && selectedCollaborator !== 'none') {
                 filteredData = processedDailyData.filter(item => item.colaborador === selectedCollaborator);
             }
+            
+            // Se for Operação Total, precisa agrupar por dia
+            if (selectedCollaborator === 'all') {
+                filteredData = aggregateDataByDay(filteredData);
+            } else {
+                 // Garantir ordenação por data para o gráfico do indivíduo
+                 filteredData = filteredData.sort((a, b) => a.timestamp - b.timestamp);
+            }
 
             renderTable(filteredData);
+            renderChart(filteredData, selectedCollaborator);
         };
+        
+        /**
+         * Agrupa dados de todos os colaboradores por dia.
+         */
+        const aggregateDataByDay = (data) => {
+            const dailyAggregation = {};
+
+            data.forEach(item => {
+                if (!dailyAggregation[item.dia]) {
+                    dailyAggregation[item.dia] = {
+                        dia: item.dia,
+                        timestamp: item.timestamp,
+                        colaborador: 'OPERAÇÃO TOTAL',
+                        totalChamadas: 0,
+                        tempoAtendimentoTotal: 0,
+                        pesquisasRealizadas: 0,
+                        promotersCount: 0,
+                        neutralsCount: 0,
+                        detractorsCount: 0,
+                        totalPausasSeconds: 0,
+                        // Pausas Detalhadas para a Tabela (Manteremos como soma total para a Operação)
+                        pausaRegistroTotal: 0, 
+                        pausaDigitalTotal: 0,
+                        pausaAguaTotal: 0,
+                        pausaBanheiroTotal: 0,
+                    };
+                }
+                
+                dailyAggregation[item.dia].totalChamadas += item.totalChamadas;
+                dailyAggregation[item.dia].tempoAtendimentoTotal += (item.totalChamadas * item.tmaSeconds); // Converte TMA de volta para tempo total
+                dailyAggregation[item.dia].pesquisasRealizadas += item.totalPesquisas;
+                // Os counts de CSAT não estão no item final, então faremos uma aproximação:
+                // Reconstruir os counts a partir dos percentuais é impreciso.
+                // Como não temos os counts brutos no processedDailyData, vamos pular a agregação de CSAT e Pausas detalhadas na Tabela para a "Operação Total" por simplicidade.
+                
+                // Métrica de tempo de atendimento para o total
+                dailyAggregation[item.dia].totalPausasSeconds += item.totalPausasSeconds;
+            });
+            
+            // Recalcula TMA e % CSAT
+            const aggregatedResults = Object.values(dailyAggregation).map(agg => {
+                 const tmaSeconds = agg.totalChamadas > 0 ? agg.tempoAtendimentoTotal / agg.totalChamadas : 0;
+                 
+                 // Nota: Sem os counts brutos, o % CSAT e a Produtividade de Pesquisas serão imprecisas na agregação.
+                 // Para simplificar a exibição no gráfico de OPERAÇÃO TOTAL, usaremos a média do TMA em segundos e o Total de Chamadas.
+                 
+                 return {
+                     dia: agg.dia,
+                     timestamp: agg.timestamp,
+                     colaborador: agg.colaborador,
+                     totalChamadas: agg.totalChamadas,
+                     tma: formatSeconds(Math.round(tmaSeconds)),
+                     tmaSeconds: Math.round(tmaSeconds),
+                     totalPesquisas: agg.pesquisasRealizadas,
+                     // Colunas de %CSAT e %Prod. Pesquisas ficarão zeradas/vazias na tabela agregada
+                     percentPesquisas: 'N/A', 
+                     percentPromotores: 'N/A',
+                     percentNeutros: 'N/A',
+                     percentDetratores: 'N/A',
+                     pausaRegistro: formatSeconds(agg.pausaRegistroTotal),
+                     pausaDigital: formatSeconds(agg.pausaDigitalTotal),
+                     pausaAgua: formatSeconds(agg.pausaAguaTotal),
+                     pausaBanheiro: formatSeconds(agg.pausaBanheiroTotal),
+                     totalPausasSeconds: agg.totalPausasSeconds,
+                 };
+            }).sort((a, b) => a.timestamp - b.timestamp);
+            
+            return aggregatedResults;
+        };
+
 
         const renderTable = (data) => {
             const tbody = document.getElementById('results-body');
             tbody.innerHTML = ''; // Limpa a tabela
 
-            // O número de colunas aumentou para 13 (era 12)
             const numColumns = 13; 
             if (data.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="${numColumns}" class="text-center py-4 text-gray-500">Nenhum dado diário encontrado para o filtro.</td></tr>`;
@@ -631,36 +727,190 @@
             data.forEach(item => {
                 const row = tbody.insertRow();
                 
-                // Determina a cor com base no % de Detratores (Ajuste conforme política da empresa)
-                let detratorClass = 'text-red-600';
-                if (parseFloat(item.percentDetratores) <= 5.0) { // Exemplo: Meta 5% ou menos
-                    detratorClass = 'text-green-600';
-                } else if (parseFloat(item.percentDetratores) <= 10.0) { // Exemplo: Alerta 10%
-                    detratorClass = 'text-yellow-600';
+                // Lógica de formatação condicional (só funciona se não for N/A)
+                let detratorClass = 'text-gray-600';
+                if (item.percentDetratores !== 'N/A') {
+                    const detPercent = parseFloat(item.percentDetratores);
+                    if (detPercent <= 5.0) { 
+                        detratorClass = 'text-green-600';
+                    } else if (detPercent <= 10.0) { 
+                        detratorClass = 'text-yellow-600';
+                    } else {
+                        detratorClass = 'text-red-600';
+                    }
                 }
                 
-                // Cor para a Produtividade de Pesquisas (Pode ser ajustada)
-                const prodPesqClass = parseFloat(item.percentPesquisas) >= 50 ? 'text-blue-600 font-semibold' : 'text-gray-600';
+                const prodPesqClass = item.percentPesquisas !== 'N/A' && parseFloat(item.percentPesquisas) >= 50 ? 'text-blue-600 font-semibold' : 'text-gray-600';
+
+                // Pausas detalhadas só são úteis no filtro individual. Para Total, mostramos apenas o TMA e Total Chamadas.
+                const pausaRegValue = item.colaborador === 'OPERAÇÃO TOTAL' ? 'N/A' : item.pausaRegistro;
+                const pausaDigValue = item.colaborador === 'OPERAÇÃO TOTAL' ? 'N/A' : item.pausaDigital;
+                const pausaAguaValue = item.colaborador === 'OPERAÇÃO TOTAL' ? 'N/A' : item.pausaAgua;
+                const pausaBanheiroValue = item.colaborador === 'OPERAÇÃO TOTAL' ? 'N/A' : item.pausaBanheiro;
+                
+                // TMA da Operação Total vem em segundos e já foi re-formatado
+                const tmaValue = item.tma; 
+
 
                 row.innerHTML = `
                     <td>${item.dia}</td>
                     <td>${item.colaborador}</td>
                     <td>${item.totalChamadas}</td>
-                    <td>${item.tma}</td>
+                    <td>${tmaValue}</td>
                     <td>${item.totalPesquisas}</td>
-                    <td class="${prodPesqClass}">${item.percentPesquisas} %</td> 
-                    <td class="font-semibold text-green-600">${item.percentPromotores} %</td>
-                    <td class="font-semibold text-yellow-600">${item.percentNeutros} %</td>
-                    <td class="font-semibold ${detratorClass}">${item.percentDetratores} %</td>
-                    <td>${item.pausaRegistro}</td>
-                    <td>${item.pausaDigital}</td>
-                    <td>${item.pausaAgua}</td>
-                    <td>${item.pausaBanheiro}</td>
+                    <td class="${prodPesqClass}">${item.percentPesquisas} ${item.percentPesquisas !== 'N/A' ? '%' : ''}</td> 
+                    <td class="font-semibold text-green-600">${item.percentPromotores} ${item.percentPromotores !== 'N/A' ? '%' : ''}</td>
+                    <td class="font-semibold text-yellow-600">${item.percentNeutros} ${item.percentNeutros !== 'N/A' ? '%' : ''}</td>
+                    <td class="font-semibold ${detratorClass}">${item.percentDetratores} ${item.percentDetratores !== 'N/A' ? '%' : ''}</td>
+                    <td>${pausaRegValue}</td>
+                    <td>${pausaDigValue}</td>
+                    <td>${pausaAguaValue}</td>
+                    <td>${pausaBanheiroValue}</td>
                 `;
             });
         };
+        
+        /**
+         * Renderiza o gráfico de linha de evolução.
+         */
+        const renderChart = (data, selectedCollaborator) => {
+            const chartCanvas = document.getElementById('performanceChart');
+            
+            // Destrói a instância anterior do gráfico, se existir
+            if (performanceChart) {
+                performanceChart.destroy();
+            }
+            
+            if (data.length === 0) {
+                 chartCanvas.getContext('2d').clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+                 return;
+            }
 
-        // --- EXPORTAÇÃO DE CSV (AGORA MANTÉM O CONTEÚDO EXATO DA CÉLULA) ---
+            const labels = data.map(item => item.dia);
+            
+            // Dados para o eixo Y (TMA e Pausas em Segundos, CSAT em %)
+            const tmaData = data.map(item => item.tmaSeconds);
+            const csatData = data.map(item => parseFloat(item.percentPromotores || 0)); // % Promotores como principal CSAT
+            const totalPausasData = data.map(item => item.totalPausasSeconds / 60); // Pausas em Minutos para visualização
+            
+            const isIndividual = selectedCollaborator !== 'all';
+
+            const titleText = isIndividual 
+                ? `Evolução Diária - ${data[0].colaborador}` 
+                : 'Evolução Diária - Operação Total (Agregado)';
+
+
+            performanceChart = new Chart(chartCanvas, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Total Chamadas (Unid.)',
+                            data: data.map(item => item.totalChamadas),
+                            borderColor: 'rgb(59, 130, 246)', // Tailwind blue-500
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            fill: false,
+                            yAxisID: 'y1', // Eixo à direita
+                            tension: 0.1,
+                        },
+                        {
+                            label: isIndividual ? 'TMA (Segundos)' : 'TMA Médio (Segundos)',
+                            data: tmaData,
+                            borderColor: 'rgb(249, 115, 22)', // Tailwind orange-600
+                            backgroundColor: 'rgba(249, 115, 22, 0.2)',
+                            fill: false,
+                            yAxisID: 'y2', // Eixo à esquerda
+                            tension: 0.1,
+                            hidden: false,
+                        },
+                        {
+                            label: isIndividual ? '% Promotores (CSAT)' : 'N/A na Operação Total',
+                            data: csatData,
+                            borderColor: 'rgb(22, 163, 74)', // Tailwind green-600
+                            backgroundColor: 'rgba(22, 163, 74, 0.2)',
+                            fill: false,
+                            yAxisID: 'y3', // Eixo à direita
+                            tension: 0.1,
+                            hidden: !isIndividual, // Esconde se for Operação Total (sem agregação de % CSAT)
+                        },
+                        {
+                            label: isIndividual ? 'Pausas (Minutos)' : 'Total Pausas (Minutos)',
+                            data: totalPausasData,
+                            borderColor: 'rgb(124, 58, 237)', // Tailwind violet-600
+                            backgroundColor: 'rgba(124, 58, 237, 0.2)',
+                            fill: false,
+                            yAxisID: 'y2', // Eixo à esquerda
+                            tension: 0.1,
+                        }
+                    ].filter(dataset => dataset.label !== 'N/A na Operação Total' || isIndividual), // Filtra dataset CSAT se for Operação Total
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: titleText,
+                            font: { size: 16 }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Dia (DD/MM/YYYY)'
+                            }
+                        },
+                        // Eixo Y2 (Esquerda) - Para Valores de Tempo (TMA, Pausas)
+                        y2: { 
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Tempo (Segundos / Minutos)',
+                                color: 'rgb(249, 115, 22)',
+                            },
+                            grid: {
+                                drawOnChartArea: false, // Só o grid do y1 (direito)
+                            },
+                        },
+                        // Eixo Y1 (Direita) - Para Contagem e Porcentagem (Chamadas, CSAT)
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Contagem / % CSAT',
+                                color: 'rgb(59, 130, 246)',
+                            },
+                            // Configurações para o % CSAT (se não for Operação Total)
+                            ...(isIndividual && {
+                                suggestedMax: 100,
+                                suggestedMin: 0,
+                                ticks: {
+                                    callback: function(value, index, values) {
+                                        // Adiciona % se o valor for 100 ou 0, para dar contexto ao eixo Y
+                                        if (value === 0 || value === 100) {
+                                             return value + '%';
+                                        }
+                                        return value;
+                                    }
+                                }
+                            })
+                        },
+                    }
+                }
+            });
+        };
+
+        // --- EXPORTAÇÃO DE CSV ---
 
         document.getElementById('export-button').addEventListener('click', () => {
             const table = document.getElementById('daily-results-table');
@@ -668,13 +918,12 @@
             
             let csv = [];
             
-            // 1. Coleta o cabeçalho (TH) - JÁ ESTÁ SEM O TMR (s)
+            // 1. Coleta o cabeçalho (TH)
             const headerCells = rows[0].querySelectorAll('th');
             const header = Array.from(headerCells).map(th => th.textContent.trim());
             csv.push(header.join(DELIMITER_CSV));
 
             // 2. Coleta os dados (TD) da tabela VISÍVEL (após o filtro)
-            // Começa da linha 1 para ignorar o cabeçalho
             for (let i = 1; i < rows.length; i++) {
                 const row = rows[i];
                 const cells = row.querySelectorAll('td');
