@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Integrado de Fechamento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <style>
+        /* Variáveis de Cores Unificadas */
+        :root {
+            --primary-dark: #082161; /* Azul Marinho Escuro (Header) */
+            --secondary-accent: #17a2b8; /* Ciano/Azul Claro (Destaque) */
+            --background-light: #f4f7f6;
+            --text-color: #37474f;
+            --header-bg: #082161;
+            --report-bg: #ffffff;
+            --table-header-bg: #082161;
+        }
+
+        /* Estilos Globais */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-light);
+            color: var(--text-color);
+        }
+        
+        .header-bg { background-color: var(--header-bg); } 
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06); }
+        .accent-text { color: var(--secondary-accent); }
+        .primary-text { color: var(--primary-dark); }
+        
+        /* Cores NPS */
+        .promotor-color { background-color: #d1fae5; color: #059669; } /* Verde - Promotores */
+        .neutro-color { background-color: #fef3c7; color: #d97706; } /* Amarelo - Neutros */
+        .detrator-color { background-color: #fee2e2; color: #dc2626; } /* Vermelho - Detratores */
+
+        /* Estilos da Tabela Unificada */
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+        .report-table th, .report-table td {
+            border: 1px solid #e0e0e0;
+            padding: 12px 8px;
+            text-align: center;
+        }
+        .report-table th {
+            background-color: var(--table-header-bg);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .report-table td:first-child { text-align: left; }
+        .report-table tr:nth-child(even) { background-color: #f9f9f9; }
+
+        /* Estilo para a Linha de Total (CHAMADAS ATENDIDAS) */
+        .total-row td {
+            font-weight: bold;
+            background-color: #e6f7ff; /* Fundo mais claro para destaque */
+            color: var(--primary-dark);
+            border-top: 3px solid var(--primary-dark);
+        }
+        
+        /* Estilos NS/SLA */
+        .ns-high-green { background-color: #d4edda !important; color: #155724 !important; font-weight: bold; }
+        .ns-low-red { background-color: #f8d7da !important; color: #721c24 !important; font-weight: bold; }
+
+        /* Estilo da Tabela de Rechamadas (Coluna % 1º Contato) */
+        .rechamadas-table th:nth-child(4),
+        .rechamadas-table td:nth-child(4) {
+            background-color: #fffb00; /* Amarelo original */
+            color: var(--text-color);
+            font-weight: bold;
+        }
+        .rechamadas-table th:nth-child(4) {
+            background-color: #f1e400; /* Um pouco mais escuro para o cabeçalho */
+        }
+        .rechamadas-table .total-row td:nth-child(4) {
+             background-color: #fef08a !important; /* Amarelo clarinho para o total */
+        }
+        
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        
+        <header class="mb-8 p-6 rounded-lg header-bg text-white shadow-lg text-center">
+            <h1 class="text-3xl font-bold">🚀 Dashboard Integrado de Atendimento</h1>
+            <p class="text-base opacity-80 mt-1">Fechamento Mensal: Chamadas, Nível de Serviço e Pesquisa de Satisfação</p>
+        </header>
+
+        <div class="bg-white p-6 rounded-lg card-shadow mb-8">
+            <h2 class="text-xl font-semibold primary-text mb-4 border-b pb-2">💾 Upload de Arquivos (Opcional)</h2>
+            <p class="text-sm text-gray-600 mb-4">Selecione o arquivo que deseja processar. Relatórios sem arquivo selecionado serão ignorados.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <div>
+                    <label for="fileInputChamadas" class="block text-sm font-medium primary-text mb-1">1. CSV Detalhado de Chamadas (NS, Total e Rechamadas)</label>
+                    <input type="file" id="fileInputChamadas" accept=".csv" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 accent-text hover:file:bg-blue-100" />
+                </div>
+                
+                <div>
+                    <label for="csvFileInputSatisfacao" class="block text-sm font-medium primary-text mb-1">2. CSV Pesquisa de Satisfação (P1 e NPS)</label>
+                    <input type="file" id="csvFileInputSatisfacao" accept=".csv" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 accent-text hover:file:bg-blue-100" />
+                </div>
+
+            </div>
+            
+            <button class="primary-action w-full mt-6 bg-blue-600 text-white hover:bg-blue-700 font-bold py-3 px-4 rounded-lg transition" onclick="processAllReports()">
+               ⚙️ Processar Relatórios Selecionados
+            </button>
+            <p id="processStatus" class="mt-4 text-center text-sm font-medium text-gray-600">Aguardando seleção dos arquivos...</p>
+        </div>
+
+        
+        <div id="consolidatedReportSection" class="bg-white p-6 rounded-lg card-shadow mb-8 hidden">
+            <h2 class="text-xl font-semibold primary-text mb-4 border-b pb-2">📊 Relatório 1: Consolidado Geral (NS/SLA)</h2>
+             <p class="text-sm text-gray-600 mb-4">Métricas calculadas sobre o arquivo **CSV Detalhado de Chamadas**. Meta NS fixada em **85%**.</p>
+             <div class="flex justify-end mb-4">
+                <button id="downloadTotalBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition" onclick="exportTotalToCsv(totalMetricsFinal)">⬇️ Baixar Consolidado (CSV)</button>
+             </div>
+            <div id="reportContainerConsolidado">
+                </div>
+        </div>
+
+        <div id="rechamadasReportSection" class="bg-white p-6 rounded-lg card-shadow mb-8 hidden">
+            <h2 class="text-xl font-semibold primary-text mb-4 border-b pb-2">🔄 Relatório 2: Chamadas Atendidas - Métrica de Rechamadas</h2>
+            <p class="text-sm text-gray-600 mb-4">Métricas calculadas por fila sobre o mesmo arquivo **CSV Detalhado de Chamadas**.</p>
+            <div class="flex justify-between items-center mb-4">
+                <input type="text" id="filterInputRechamadas" placeholder="🔍 Filtrar por nome da Fila..." class="border border-gray-300 p-2 rounded-md focus:ring-blue-500 focus:border-blue-500 w-64 text-sm" onkeyup="filtrarTabelaRechamadas()">
+                <button id="downloadBtnRechamadas" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition" onclick="exportarTabelaCSVRechamadas()">⬇️ Baixar Relatório (CSV)</button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table id="rechamadasReportTable" class="report-table rechamadas-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left;">FILA</th>
+                            <th>TOTAL ATENDIDAS</th>
+                            <th>1 Contato</th>
+                            <th>% 1º Contato</th>
+                            <th>2 Contatos</th>
+                            <th>3+ Contatos</th>
+                            <th>MÉDIA</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                    <tfoot></tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div id="satisfactionReportSection" class="bg-white p-6 rounded-lg card-shadow mb-8 hidden">
+            <h2 class="text-xl font-semibold primary-text mb-4 border-b pb-2">🌟 Relatório 3: Pesquisa de Satisfação (P1 e NPS)</h2>
+            <div class="flex items-center space-x-4 mb-4">
+                <label for="totalChamadasInput" class="text-sm font-medium primary-text">Total de Chamadas (Manual):</label>
+                <input type="number" id="totalChamadasInput" placeholder="Ex: 1500" class="border border-gray-300 p-2 rounded-md focus:ring-blue-500 focus:border-blue-500 w-32 text-center" oninput="calculateMetricsSatisfacao()">
+            </div>
+            
+            <div class="mt-4 pt-4 border-t grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <p class="text-sm font-medium text-gray-700">Total de Respostas Lidas (P1):</p>
+                    <p id="totalRespostas" class="font-bold text-lg accent-text">0</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-700">Taxa de Resposta da Pesquisa:</p>
+                    <p id="taxaResposta" class="font-bold text-lg accent-text">0.00%</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-700">Satisfação Atendimento (P1 - Notas 4 e 5):</p>
+                    <p id="satisfacaoAtendimento" class="font-bold text-lg accent-text">0.00%</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-700">Satisfação Unimed (NPS - Promotores):</p>
+                    <p id="satisfacaoUnimedNPS" class="font-bold text-lg accent-text">0.00%</p>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">⭐ Pergunta 1: Satisfação Geral (1 a 5)</h3>
+                <div id="p1-metrics" class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                    </div>
+            </div>
+            
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">🎯 Pergunta 2: Intenção de Recomendação (NPS - 0 a 10)</h3>
+                <div id="p2-metrics" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="p-4 rounded-lg promotor-color card-shadow text-center">
+                        <p class="text-sm font-medium mb-1">Promotores (Notas 9 e 10)</p>
+                        <p class="text-4xl font-bold" id="promotores-count">0</p>
+                        <p class="text-xs">Quantidade</p> </div>
+                    <div class="p-4 rounded-lg neutro-color card-shadow text-center">
+                        <p class="text-sm font-medium mb-1">Neutros (Notas 7 e 8)</p>
+                        <p class="text-4xl font-bold" id="neutros-count">0</p>
+                        <p class="text-xs">Quantidade</p>
+                    </div>
+                    <div class="p-4 rounded-lg detrator-color card-shadow text-center">
+                        <p class="text-sm font-medium mb-1">Detratores (Notas 0 a 6)</p>
+                        <p class="text-4xl font-bold" id="detratores-count">0</p>
+                        <p class="text-xs">Quantidade</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <footer class="mt-8 text-center text-sm text-gray-500">
+            Desenvolvido por Claudio Carvalho - 2025
+        </footer>
+    </div>
+
+    <script>
+        // --- Variáveis Globais de Dados ---
+        
+        // CONSOLIDADO (NS/SLA)
+        const REQUIRED_COLUMNS_NS = ['tipo', 'tempoAtendimento', 'tempoEspera', 'data']; 
+        const HEADER_LINE_INDEX_CONSOLIDADO = 5; 
+        const DATA_START_INDEX_CONSOLIDADO = 6;
+        const DEFAULT_NS_THRESHOLD = 85; 
+        const CSV_BOM = "\ufeff"; 
+        let totalMetricsFinal = {}; 
+
+        // RECHAMADAS
+        const REQUIRED_COLUMNS_RECHAMADAS = ['nomeFila', 'numero', 'isAtendida'];
+        const COLUNAS_RECHAMADAS = {
+            nomeFila: 'nomeFila',
+            numero: 'numero',
+            isAtendida: 'isAtendida'
+        };
+        const TABELA_BODY_RECHAMADAS = document.querySelector('#rechamadasReportTable tbody');
+        const TABELA_FOOT_RECHAMADAS = document.querySelector('#rechamadasReportTable tfoot');
+        
+        // SATISFAÇÃO (P1/NPS)
+        const CSV_DELIMITER_SATISFACAO = ';';
+        let satisfactionData = [];
+        let p1TotalRespostas = 0;
+        let p2TotalRespostas = 0;
+
+        // --- FUNÇÕES GERAIS DE CONVERSÃO/UTILIDADE ---
+
+        function timeToSeconds(timeStr) {
+            if (!timeStr || timeStr === '-') return 0;
+            const cleanStr = timeStr.replace(/\s*\(.*\)/, '').trim();
+            const parts = cleanStr.split(':').map(p => parseInt(p, 10) || 0);
+
+            if (parts.length === 3) return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+            if (parts.length === 2) return (parts[0] * 60) + parts[1];
+            return 0; 
+        }
+        
+        function formatSecondsToTime(totalSeconds) {
+            if (totalSeconds === 0) return '00:00:00';
+            const seconds = Math.round(totalSeconds); 
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const remainingSeconds = seconds % 60;
+            const pad = (num) => String(num).padStart(2, '0');
+            return `${pad(hours)}:${pad(minutes)}:${pad(remainingSeconds)}`;
+        }
+        
+        // --- PROCESSO PRINCIPAL (FLUXO FLEXÍVEL) ---
+        
+        async function processAllReports() {
+            const statusElement = document.getElementById('processStatus');
+            statusElement.textContent = "Processando arquivos. Por favor, aguarde...";
+            
+            const fileChamadas = document.getElementById('fileInputChamadas').files[0];
+            const fileSatisfacao = document.getElementById('csvFileInputSatisfacao').files[0];
+
+            let allSuccessful = true;
+            let anyReportProcessed = false;
+            let reportDataChamadas = null; 
+            
+            // Esconde todas as seções por padrão antes de processar
+            document.getElementById('consolidatedReportSection').classList.add('hidden');
+            document.getElementById('rechamadasReportSection').classList.add('hidden');
+            document.getElementById('satisfactionReportSection').classList.add('hidden');
+
+            // 1. Processar Arquivo de Chamadas (NS/SLA e Rechamadas)
+            if (fileChamadas) {
+                 try {
+                     statusElement.textContent = "Processando Relatório Detalhado de Chamadas (NS/SLA e Rechamadas)...";
+                     reportDataChamadas = await parseCsvFileChamadas(fileChamadas);
+                     
+                     // Processa NS/SLA
+                     if (validateColumns(reportDataChamadas.meta, REQUIRED_COLUMNS_NS)) {
+                         generateReportTotal(reportDataChamadas.data);
+                         document.getElementById('consolidatedReportSection').classList.remove('hidden');
+                         anyReportProcessed = true;
+                     } else {
+                         document.getElementById('reportContainerConsolidado').innerHTML = `<p class="text-red-600 font-bold">❌ ERRO NS/SLA: Colunas faltantes para Nível de Serviço. (NS e Total)</p>`;
+                         document.getElementById('consolidatedReportSection').classList.remove('hidden'); 
+                         allSuccessful = false;
+                     }
+                     
+                     // Processa Métrica de Rechamadas
+                     if (validateColumns(reportDataChamadas.meta, REQUIRED_COLUMNS_RECHAMADAS)) {
+                        const relatorio = gerarRelatorioRechamadas(reportDataChamadas.data);
+                        exibirRelatorioRechamadas(relatorio);
+                        document.getElementById('rechamadasReportSection').classList.remove('hidden');
+                        anyReportProcessed = true;
+                     } else {
+                        TABELA_FOOT_RECHAMADAS.innerHTML = `<tr><td colspan="7" class="text-red-600 font-bold">❌ ERRO RECHAMADAS: Colunas faltantes para Métrica de Rechamadas.</td></tr>`;
+                        document.getElementById('rechamadasReportSection').classList.remove('hidden'); 
+                        allSuccessful = false;
+                     }
+
+                 } catch (error) {
+                     document.getElementById('reportContainerConsolidado').innerHTML = `<p class="text-red-600 font-bold">❌ ERRO GERAL NO CSV CHAMADAS: ${error.message}</p>`;
+                     document.getElementById('consolidatedReportSection').classList.remove('hidden');
+                     allSuccessful = false;
+                 }
+            } else {
+                 // Arquivo de Chamadas não fornecido, report sections remain hidden (default)
+            }
+
+            // 2. Processar Pesquisa de Satisfação
+            if (fileSatisfacao) {
+                try {
+                    statusElement.textContent = "Processando Pesquisa de Satisfação...";
+                    const csvText = await fileToText(fileSatisfacao);
+                    parseCSVSatisfacao(csvText);
+                    document.getElementById('satisfactionReportSection').classList.remove('hidden');
+                    anyReportProcessed = true;
+                } catch (error) {
+                     document.getElementById('satisfacaoAtendimento').textContent = "0.00%";
+                     document.getElementById('satisfacaoUnimedNPS').textContent = "0.00%";
+                     document.getElementById('totalRespostas').textContent = "ERRO";
+                     document.getElementById('p1-metrics').innerHTML = `<p class="text-red-600 font-bold">❌ ERRO SATISFAÇÃO: ${error.message}</p>`;
+                     document.getElementById('satisfactionReportSection').classList.remove('hidden'); 
+                     allSuccessful = false;
+                }
+            } else {
+                 // Arquivo de Satisfação não fornecido, report section remains hidden (default)
+            }
+
+
+            if (anyReportProcessed) {
+                if (allSuccessful) {
+                    statusElement.textContent = "✅ Relatórios processados com sucesso!";
+                } else {
+                    statusElement.textContent = "⚠️ Processamento concluído. Verifique as mensagens de erro nos relatórios que falharam.";
+                }
+            } else {
+                 statusElement.textContent = "🛑 Nenhum arquivo foi selecionado para processamento. Por favor, selecione um ou mais arquivos e clique em 'Processar'.";
+            }
+        }
+        
+        function fileToText(file) {
+             return new Promise((resolve, reject) => {
+                 const reader = new FileReader();
+                 reader.onload = (e) => resolve(e.target.result);
+                 reader.onerror = reject;
+                 reader.readAsText(file, 'UTF-8');
+             });
+        }
+        
+        function validateColumns(meta, requiredColumns) {
+            const availableColumns = meta.fields || [];
+            const missingColumns = requiredColumns.filter(col => !availableColumns.includes(col));
+            return missingColumns.length === 0;
+        }
+
+        // --- LÓGICA DE PARSE UNIFICADA PARA CHAMADAS ---
+
+        async function parseCsvFileChamadas(file) {
+             const rawResults = await new Promise((resolve, reject) => {
+                 Papa.parse(file, { header: false, skipEmptyLines: false, complete: resolve, error: reject });
+             });
+             
+             if (!rawResults.data || rawResults.data.length < DATA_START_INDEX_CONSOLIDADO) {
+                 throw new Error("O arquivo está vazio ou o formato não contém cabeçalho na linha esperada.");
+             }
+
+             // REGRAS DO CSV DETALHADO (CONSOLIDADO.html):
+             // O cabeçalho real começa na linha 5 (índice 5) e os dados na linha 6 (índice 6)
+             const rawHeaderRow = rawResults.data[HEADER_LINE_INDEX_CONSOLIDADO];
+             const dataRows = rawResults.data.slice(DATA_START_INDEX_CONSOLIDADO);
+             const correctedCsvString = rawHeaderRow.join(';') + '\n' + dataRows.map(row => row.join(';')).join('\n');
+
+             // Segunda passada com o cabeçalho correto e delimitador ';', que é o usado pelo CONSOLIDADO
+             return new Promise((resolve, reject) => {
+                 Papa.parse(correctedCsvString, { 
+                     header: true, 
+                     delimiter: ';', 
+                     skipEmptyLines: true, 
+                     complete: resolve, 
+                     error: reject 
+                 });
+             });
+        }
+
+        // --- LÓGICA DO CONSOLIDADO (NS/SLA) ---
+        
+        function calculateMetricsTotal(data) {
+            let metricsBase = { 
+                totalChamadas: 0, totalAtendidas: 0, totalEsperaAtendidaSec: 0, 
+                totalTempoAtendimentoSec: 0, totalAtendidas60s: 0, totalAbandonadas60s: 0,
+                atendidas_ate_20s: 0, nao_atendidas_total: 0, desligadas_cliente: 0
+            };
+            
+            data.forEach(row => {
+                const tipo = (row.tipo || '').toLowerCase();
+                const isAtendida = tipo.includes('atendida');
+                const isAbandonada = tipo.includes('abandonada') || tipo.includes('desligada'); 
+                
+                const duracaoAtendimentoSec = timeToSeconds(row.tempoAtendimento);
+                const duracaoEsperaSec = timeToSeconds(row.tempoEspera); 
+
+                if (isAtendida || isAbandonada) {
+                    metricsBase.totalChamadas++;
+                }
+
+                if (isAtendida) {
+                    metricsBase.totalAtendidas++;
+                    metricsBase.totalEsperaAtendidaSec += duracaoEsperaSec;
+                    metricsBase.totalTempoAtendimentoSec += duracaoAtendimentoSec;
+
+                    if (duracaoAtendimentoSec <= 20) metricsBase.atendidas_ate_20s++;
+                    if (duracaoEsperaSec <= 60) metricsBase.totalAtendidas60s++;
+
+                } else if (isAbandonada) {
+                    metricsBase.nao_atendidas_total++;
+                    
+                    if (duracaoEsperaSec > 60) metricsBase.totalAbandonadas60s++;
+                    if (duracaoEsperaSec > 0 && duracaoEsperaSec <= 60) metricsBase.desligadas_cliente++; 
+                }
+            });
+            
+            const total = {};
+            const atendidas = metricsBase.totalAtendidas;
+            const totalChamadas = metricsBase.totalChamadas;
+            const atendidasEspera60s = metricsBase.totalAtendidas60s;
+            const abandonadas60s = metricsBase.totalAbandonadas60s;
+            
+            total['Total de chamadas (abandonadas+atendidas)'] = metricsBase.totalChamadas;
+            total['Chamadas Atendidas (Totais)'] = metricsBase.totalAtendidas;
+            total['Chamadas atendidas com duração até 20 segundos'] = metricsBase.atendidas_ate_20s;
+            total['Chamadas atendidas (em até 60 segundos)'] = atendidasEspera60s;
+            total['Nível de Serviço (atendidas até 60 / chamadas atendidas)'] = (atendidas > 0) ? (atendidasEspera60s / atendidas) * 100 : 0;
+            total['Tempo médio de espera das chamadas atendidas'] = (atendidas > 0) ? metricsBase.totalEsperaAtendidaSec / atendidas : 0;
+            total['Chamadas não atendidas (abandonadas + desligadas)'] = metricsBase.nao_atendidas_total; 
+            total['Chamadas abandonadas (com espera superior a 60 segundos)'] = abandonadas60s;
+            total['Taxa de abandono (com espera superior a 60 segundos)'] = (totalChamadas > 0) ? (abandonadas60s / totalChamadas) * 100 : 0;
+            total['Chamadas desligadas pelo cliente (antes de 60 segundos)'] = metricsBase.desligadas_cliente;
+            total['Tempo médio de atendimento'] = (atendidas > 0) ? metricsBase.totalTempoAtendimentoSec / atendidas : 0;
+            
+            return total;
+        }
+
+        function generateReportTotal(dataDetalhado) {
+            const reportContainer = document.getElementById('reportContainerConsolidado');
+            if (dataDetalhado.length === 0) {
+                 reportContainer.innerHTML = '<p class="text-red-600 font-bold">Nenhum dado válido encontrado no arquivo Detalhado para NS/SLA.</p>';
+                 totalMetricsFinal = {};
+                 return;
+            }
+
+            const consolidatedTotal = calculateMetricsTotal(dataDetalhado);
+            totalMetricsFinal = consolidatedTotal; 
+            
+            const METRIC_NAMES = [
+                'Total de chamadas (abandonadas+atendidas)', 
+                'Chamadas Atendidas (Totais)', 
+                'Chamadas atendidas com duração até 20 segundos', 
+                'Chamadas atendidas (em até 60 segundos)', 
+                'Nível de Serviço (atendidas até 60 / chamadas atendidas)', 
+                'Tempo médio de espera das chamadas atendidas', 
+                'Chamadas não atendidas (abandonadas + desligadas)',
+                'Chamadas abandonadas (com espera superior a 60 segundos)', 
+                'Taxa de abandono (com espera superior a 60 segundos)', 
+                'Chamadas desligadas pelo cliente (antes de 60 segundos)', 
+                'Tempo médio de atendimento'
+            ];
+
+            let html = `
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left;">Métrica</th>
+                            <th>TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            METRIC_NAMES.forEach(metric => {
+                const totalValue = consolidatedTotal[metric] || 0;
+                let displayTotal;
+                let totalCellClass = '';
+
+                if (metric.includes('Serviço') || metric.includes('abandono')) {
+                    displayTotal = `${totalValue.toFixed(2).replace('.', ',')}%`;
+                    if (metric.includes('Nível de Serviço')) {
+                        totalCellClass = totalValue >= DEFAULT_NS_THRESHOLD ? 'ns-high-green' : (totalValue > 0 ? 'ns-low-red' : '');
+                    }
+                } else if (metric.includes('Tempo médio')) {
+                    displayTotal = formatSecondsToTime(totalValue); 
+                } else {
+                    displayTotal = Math.round(totalValue).toLocaleString('pt-BR');
+                }
+                
+                html += `
+                    <tr>
+                        <td style="text-align: left;">${metric}</td>
+                        <td class="${totalCellClass}">${displayTotal}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+            `;
+            reportContainer.innerHTML = html;
+        }
+        
+        function exportTotalToCsv(consolidatedTotal) {
+             if (Object.keys(consolidatedTotal).length === 0) return;
+
+             let csv = [];
+             
+             let headerRow = ['"Métrica"', '"TOTAL"']; 
+             csv.push(headerRow.join(';'));
+             
+             const metricsToExport = [
+                'Total de chamadas (abandonadas+atendidas)', 'Chamadas Atendidas (Totais)', 'Chamadas atendidas com duração até 20 segundos', 
+                'Chamadas atendidas (em até 60 segundos)', 'Nível de Serviço (atendidas até 60 / chamadas atendidas)', 
+                'Tempo médio de espera das chamadas atendidas', 'Chamadas não atendidas (abandonadas + desligadas)',
+                'Chamadas abandonadas (com espera superior a 60 segundos)', 'Taxa de abandono (com espera superior a 60 segundos)', 
+                'Chamadas desligadas pelo cliente (antes de 60 segundos)', 'Tempo médio de atendimento'
+             ];
+             
+             metricsToExport.forEach(metric => {
+                 let row = [`"${metric}"`];
+                 const totalValue = consolidatedTotal[metric] || 0;
+                 let displayValue;
+                 
+                 if (metric.includes('Serviço') || metric.includes('abandono')) {
+                     displayValue = `${totalValue.toFixed(2).replace('.', ',')}%`;
+                 } else if (metric.includes('Tempo médio')) {
+                     displayValue = formatSecondsToTime(totalValue); 
+                 } else {
+                     displayValue = Math.round(totalValue).toLocaleString('pt-BR');
+                 }
+                 
+                 row.push(`"${displayValue.replace(/"/g, '""')}"`);
+                 csv.push(row.join(';'));
+             });
+
+             const csvContent = CSV_BOM + csv.join('\n');
+             const csvFile = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+             const downloadLink = document.createElement("a");
+             downloadLink.href = URL.createObjectURL(csvFile);
+             downloadLink.download = 'Relatorio_TOTAL_CONSOLIDADO_' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '.csv';
+             document.body.appendChild(downloadLink);
+             downloadLink.click();
+             document.body.removeChild(downloadLink);
+        }
+
+        // --- LÓGICA DE RECHAMADAS (usando os dados lidos do CSV Chamadas) ---
+
+        function gerarRelatorioRechamadas(dados) {
+            const resultadosPorFila = {};
+            
+            const primeiraLinha = dados[0] || {};
+            const colunasOK = (COLUNAS_RECHAMADAS.nomeFila in primeiraLinha) && (COLUNAS_RECHAMADAS.numero in primeiraLinha) && (COLUNAS_RECHAMADAS.isAtendida in primeiraLinha);
+            
+            if (!colunasOK) {
+                throw new Error("Colunas essenciais para Rechamadas ausentes.");
+            }
+
+            dados.forEach(chamada => {
+                const fila = chamada[COLUNAS_RECHAMADAS.nomeFila];
+                const numero = chamada[COLUNAS_RECHAMADAS.numero];
+                const isAtendida = (chamada[COLUNAS_RECHAMADAS.isAtendida] || '').toLowerCase() === 'sim' || (chamada[COLUNAS_RECHAMADAS.isAtendida] === '1');
+                
+                if (!fila || !numero || !isAtendida) return;
+
+                if (!resultadosPorFila[fila]) {
+                    resultadosPorFila[fila] = { totalAtendidas: 0, contagemPorNumero: {} };
+                }
+                
+                resultadosPorFila[fila].totalAtendidas++;
+                resultadosPorFila[fila].contagemPorNumero[numero] = 
+                    (resultadosPorFila[fila].contagemPorNumero[numero] || 0) + 1;
+            });
+
+            const relatorioFinal = [];
+            let totalGeralAtendidas = 0;
+            let totalGeral1x = 0;
+            let totalGeral2x = 0;
+            let totalGeral3xMais = 0;
+
+            for (const fila in resultadosPorFila) {
+                const dadosFila = resultadosPorFila[fila];
+                const contagens = dadosFila.contagemPorNumero;
+                
+                const numerosUnicos = Object.keys(contagens).length;
+                const totalAtendidas = dadosFila.totalAtendidas;
+                const mediaChamadas = numerosUnicos > 0 ? totalAtendidas / numerosUnicos : 0;
+                
+                let contatos1x = 0;
+                let contatos2x = 0;
+                let contatos3xMais = 0;
+                
+                for (const numero in contagens) {
+                    const contagem = contagens[numero];
+                    if (contagem === 1) contatos1x++;
+                    else if (contagem === 2) contatos2x++;
+                    else if (contagem >= 3) contatos3xMais++;
+                }
+                
+                const percent1x = totalAtendidas > 0 ? (contatos1x / totalAtendidas) * 100 : 0;
+
+                totalGeralAtendidas += totalAtendidas;
+                totalGeral1x += contatos1x;
+                totalGeral2x += contatos2x;
+                totalGeral3xMais += contatos3xMais;
+
+                relatorioFinal.push({
+                    fila: fila,
+                    atendidas: totalAtendidas,
+                    unicos: numerosUnicos,
+                    media: mediaChamadas.toFixed(2),
+                    contatos1x: contatos1x,
+                    percent1x: `${percent1x.toFixed(0)}%`,
+                    contatos2x: contatos2x,
+                    contatos3xMais: contatos3xMais
+                });
+            }
+            
+            // CORREÇÃO APLICADA AQUI: O denominador para a Média Geral é a soma dos clientes que ligaram 1x, 2x e 3+x
+            const totalGeralNumerosUnicosClientes = totalGeral1x + totalGeral2x + totalGeral3xMais;
+            
+            const mediaGeral = totalGeralNumerosUnicosClientes > 0 ? totalGeralAtendidas / totalGeralNumerosUnicosClientes : 0;
+            const percent1xGeral = totalGeralAtendidas > 0 ? (totalGeral1x / totalGeralAtendidas) * 100 : 0;
+
+            return {
+                dados: relatorioFinal.sort((a, b) => b.atendidas - a.atendidas),
+                totais: {
+                    atendidas: totalGeralAtendidas,
+                    // O campo 'unicos' no total geral reflete o denominador correto
+                    unicos: totalGeralNumerosUnicosClientes, 
+                    media: mediaGeral.toFixed(2), 
+                    contatos1x: totalGeral1x,
+                    percent1x: `${percent1xGeral.toFixed(0)}%`,
+                    contatos2x: totalGeral2x,
+                    contatos3xMais: totalGeral3xMais
+                }
+            };
+        }
+
+        function exibirRelatorioRechamadas(relatorio) {
+            TABELA_BODY_RECHAMADAS.innerHTML = '';
+            TABELA_FOOT_RECHAMADAS.innerHTML = '';
+            
+            if (relatorio.dados.length === 0) {
+                 TABELA_BODY_RECHAMADAS.innerHTML = '<tr><td colspan="7" class="text-red-600 font-bold">Nenhum dado válido encontrado para o cálculo de Rechamadas.</td></tr>';
+                 return;
+            }
+
+            relatorio.dados.forEach(item => {
+                const newRow = TABELA_BODY_RECHAMADAS.insertRow();
+                newRow.setAttribute('data-fila', item.fila.toLowerCase());
+                newRow.innerHTML = `
+                    <td style="text-align: left;">${item.fila}</td>
+                    <td>${item.atendidas}</td>
+                    <td>${item.contatos1x}</td>
+                    <td>${item.percent1x}</td>
+                    <td>${item.contatos2x}</td>
+                    <td>${item.contatos3xMais}</td>
+                    <td>${item.media}</td>
+                `;
+            });
+            
+            const totalRow = TABELA_FOOT_RECHAMADAS.insertRow();
+            totalRow.classList.add('total-row');
+            totalRow.innerHTML = `
+                <td style="text-align: left;">**TOTAL GERAL**</td>
+                <td>${relatorio.totais.atendidas}</td>
+                <td>${relatorio.totais.contatos1x}</td>
+                <td>${relatorio.totais.percent1x}</td>
+                <td>${relatorio.totais.contatos2x}</td>
+                <td>${relatorio.totais.contatos3xMais}</td>
+                <td>${relatorio.totais.media}</td>
+            `;
+        }
+        
+        function filtrarTabelaRechamadas() {
+            const input = document.getElementById("filterInputRechamadas");
+            const filter = input.value.toUpperCase();
+            const tr = TABELA_BODY_RECHAMADAS.getElementsByTagName("tr");
+
+            for (let i = 0; i < tr.length; i++) {
+                const fila = tr[i].getAttribute('data-fila');
+                if (fila) {
+                    tr[i].style.display = fila.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+                }       
+            }
+        }
+        
+        function exportarTabelaCSVRechamadas() {
+            const nomeArquivo = 'Rechamadas_Por_Fila.csv';
+            const tabela = document.getElementById('rechamadasReportTable');
+            let csv = [];
+            
+            let row = [];
+            tabela.querySelectorAll('thead th').forEach(th => { row.push(`"${th.innerText.replace(/"/g, '""')}"`); });
+            csv.push(row.join(';'));
+
+            tabela.querySelectorAll('tbody tr').forEach(tr => {
+                if (tr.style.display !== 'none') {
+                    let row = [];
+                    tr.querySelectorAll('td').forEach(td => { row.push(`"${td.innerText.replace(/"/g, '""')}"`); });
+                    csv.push(row.join(';'));
+                }
+            });
+
+            tabela.querySelectorAll('tfoot tr').forEach(tr => {
+                let row = [];
+                tr.querySelectorAll('td').forEach(td => { row.push(`"${td.innerText.replace(/"/g, '""')}"`); });
+                csv.push(row.join(';'));
+            });
+
+            const csvFile = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const downloadLink = document.createElement("a");
+            downloadLink.download = nomeArquivo;
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+            downloadLink.style.display = "none";
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+
+        // --- LÓGICA DO FECHAMENTO (SATISFAÇÃO) ---
+
+        function parseCSVSatisfacao(csvText) {
+            const lines = csvText.split('\n').slice(5).filter(line => line.trim() !== '');
+            if (lines.length === 0) throw new Error("O arquivo CSV está vazio ou o formato não é o esperado (cabeçalho esperado na linha 6).");
+
+            const header = lines[0].split(CSV_DELIMITER_SATISFACAO).map(h => h.trim().replace(/"/g, ''));
+            const dataLines = lines.slice(1);
+            
+            const p1Index = header.findIndex(h => h.includes('Pergunta_1'));
+            const p2Index = header.findIndex(h => h.includes('Pergunta_2'));
+
+            if (p1Index === -1 || p2Index === -1) throw new Error("As colunas 'Pergunta_1' ou 'Pergunta_2' não foram encontradas no cabeçalho. Verifique o nome das colunas.");
+
+            satisfactionData = dataLines.map(line => {
+                const values = line.split(CSV_DELIMITER_SATISFACAO).map(v => v.trim().replace(/"/g, ''));
+                const p1 = values[p1Index] ? parseInt(values[p1Index]) : null;
+                const p2 = values[p2Index] ? parseInt(values[p2Index]) : null;
+                return { Pergunta_1: p1, Pergunta_2: p2 };
+            }); 
+            
+            calculateMetricsSatisfacao();
+        }
+
+        function calculateMetricsSatisfacao() {
+            p1TotalRespostas = 0;
+            p2TotalRespostas = 0;
+            let p1SatisfacaoPositiva = 0;
+            // Correção do erro 'promotores is not defined' (do prompt anterior)
+            let promotoresCount = 0;
+
+            satisfactionData.forEach(item => {
+                const p1Score = item.Pergunta_1;
+                if (p1Score >= 1 && p1Score <= 5) {
+                    p1TotalRespostas++;
+                    if (p1Score >= 4) p1SatisfacaoPositiva++;
+                }
+                
+                const p2Score = item.Pergunta_2;
+                if (p2Score !== null && p2Score >= 0 && p2Score <= 10) {
+                    p2TotalRespostas++;
+                    // Usa a variável de escopo local para o cálculo
+                    if (p2Score >= 9) promotoresCount++;
+                }
+            });
+
+            document.getElementById('totalRespostas').textContent = p1TotalRespostas;
+
+            const satisfacaoAtendimento = p1TotalRespostas > 0 ? ((p1SatisfacaoPositiva / p1TotalRespostas) * 100).toFixed(2) : '0.00';
+            document.getElementById('satisfacaoAtendimento').textContent = `${satisfacaoAtendimento}%`;
+
+            // Usa a variável de escopo local para o cálculo
+            const satisfacaoUnimedNPS = p2TotalRespostas > 0 ? ((promotoresCount / p2TotalRespostas) * 100).toFixed(2) : '0.00';
+            document.getElementById('satisfacaoUnimedNPS').textContent = `${satisfacaoUnimedNPS}%`;
+            
+            const totalChamadas = parseInt(document.getElementById('totalChamadasInput').value);
+            const taxaRespostaElement = document.getElementById('taxaResposta');
+            
+            if (totalChamadas > 0 && p1TotalRespostas > 0) {
+                const taxa = (p1TotalRespostas / totalChamadas) * 100;
+                taxaRespostaElement.textContent = `${taxa.toFixed(2)}%`;
+            } else {
+                taxaRespostaElement.textContent = '0.00%';
+            }
+
+            calculateP1_Detailed();
+            calculateP2_NPS_Detailed();
+        }
+
+        function calculateP1_Detailed() {
+            const p1Counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+            satisfactionData.forEach(item => {
+                const score = item.Pergunta_1;
+                if (score >= 1 && score <= 5) p1Counts[score]++;
+            });
+
+            const p1MetricsDiv = document.getElementById('p1-metrics');
+            p1MetricsDiv.innerHTML = ''; 
+
+            for (let score = 1; score <= 5; score++) {
+                const count = p1Counts[score];
+                const percent = p1TotalRespostas > 0 ? ((count / p1TotalRespostas) * 100).toFixed(2) : '0.00';
+                
+                const card = `
+                    <div class="p-3 bg-gray-50 rounded-md border text-center hover:bg-gray-100 transition duration-150">
+                        <p class="text-4xl font-extrabold text-gray-700">${score}</p>
+                        <p class="text-xl font-bold accent-text">${count}</p>
+                        <p class="text-sm text-gray-500">${percent}%</p>
+                    </div>
+                `;
+                p1MetricsDiv.innerHTML += card;
+            }
+        }
+
+        function calculateP2_NPS_Detailed() {
+            let promotores = 0; let neutros = 0; let detratores = 0;
+            satisfactionData.forEach(item => {
+                const score = item.Pergunta_2;
+                if (score !== null && score >= 0 && score <= 10) {
+                    if (score >= 9) promotores++;
+                    else if (score >= 7) neutros++;
+                    else detratores++;
+                }
+            });
+            
+            document.getElementById('promotores-count').textContent = promotores;
+            document.getElementById('neutros-count').textContent = neutros;
+            document.getElementById('detratores-count').textContent = detratores;
+        }
+
+        // --- Inicialização ---
+        // Oculta os relatórios por padrão, permitindo que o JS os mostre se o arquivo for carregado.
+    </script>
+</body>
+</html>
