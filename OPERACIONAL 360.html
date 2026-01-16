@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operacional 360º | Intelligence</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #00b4d8;
+            --secondary: #0077b6;
+            --success: #00b894;
+            --danger: #ff7675;
+            --dark-blue: #03045e;
+            --bg-body: #f8fafc;
+            --sidebar-bg: #ffffff;
+            --card-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.05);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg-body);
+            color: #1e293b;
+            font-size: 12px;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            height: 100vh;
+            position: fixed;
+            padding: 30px 20px;
+            z-index: 1000;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content { margin-left: 280px; padding: 40px; }
+        .sidebar h4 { color: var(--dark-blue); font-weight: 800; letter-spacing: -1px; margin-bottom: 30px; }
+
+        .card-kpi {
+            background: white; border-radius: 18px; padding: 18px; border: 1px solid #f1f5f9;
+            box-shadow: var(--card-shadow); transition: transform 0.2s ease; height: 100%;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        
+        .kpi-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 5px; }
+        .kpi-value { font-size: 20px; font-weight: 800; color: var(--dark-blue); }
+
+        .table-res {
+            background: white; border-radius: 20px; padding: 25px; 
+            box-shadow: var(--card-shadow); border: 1px solid #f1f5f9; margin-bottom: 20px;
+        }
+
+        .clickable-name { color: var(--primary); cursor: pointer; font-weight: 700; text-decoration: none; }
+        .clickable-name:hover { text-decoration: underline; }
+
+        .form-control, .btn { border-radius: 10px; font-weight: 600; font-size: 12px; }
+        .multi-select-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; max-height: 140px; overflow-y: auto; }
+
+        .meta-good { color: var(--success) !important; }
+        .meta-bad { color: var(--danger) !important; }
+
+        .sidebar-footer { margin-top: auto; padding-top: 15px; }
+        .dev-credit { font-size: 10px; color: #94a3b8; font-weight: 600; margin-top: 8px; display: block; }
+
+        .loading-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9); backdrop-filter: blur(5px); z-index: 3000;
+            flex-direction: column; align-items: center; justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loader">
+    <div class="spinner-grow text-primary mb-3"></div>
+    <h6 class="fw-bold">Sincronizando...</h6>
+</div>
+
+<div class="sidebar">
+    <h4>OP 360º <span style="color: var(--primary);">●</span></h4>
+    
+    <div class="mb-4">
+        <label class="small fw-bold text-muted mb-2">IMPORTAR DADOS</label>
+        <input type="file" id="csvFiles" class="form-control form-control-sm mb-2" multiple>
+        <button class="btn btn-info btn-sm w-100 text-white" onclick="importarParaBanco()">Alimentar Base</button>
+    </div>
+
+    <div class="mb-4">
+        <label class="small fw-bold text-muted mb-2">FILTROS</label>
+        <input type="date" id="dateIni" class="form-control form-control-sm mb-2">
+        <input type="date" id="dateFim" class="form-control form-control-sm mb-3">
+        
+        <div class="multi-select-box mb-3" id="boxUnidades">
+            <label class="d-flex align-items-center mb-1"><input type="checkbox" value="SALTO ITU" checked class="me-2"> Salto/Itu</label>
+            <label class="d-flex align-items-center mb-1"><input type="checkbox" value="LIMEIRA" checked class="me-2"> Limeira</label>
+            <label class="d-flex align-items-center mb-1"><input type="checkbox" value="SÃO CARLOS" checked class="me-2"> São Carlos</label>
+            <label class="d-flex align-items-center mb-1"><input type="checkbox" value="SUL PAULISTA" checked class="me-2"> Sul Paulista</label>
+            <label class="d-flex align-items-center mb-1"><input type="checkbox" value="AMPARO" checked class="me-2"> Amparo</label>
+            <label class="d-flex align-items-center mb-1"><input type="checkbox" value="JUNDIAÍ" checked class="me-2"> Jundiaí</label>
+        </div>
+        <button class="btn btn-success w-100" onclick="consultarRelatorio()">Gerar Dashboard</button>
+    </div>
+
+    <div class="sidebar-footer border-top">
+        <div class="d-grid gap-2 mb-2">
+            <button class="btn btn-outline-secondary btn-sm" onclick="exportarBackup()">Backup</button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('fileRestore').click()">Restaurar</button>
+        </div>
+        <input type="file" id="fileRestore" style="display:none" onchange="importarBackup(event)">
+        <button class="btn btn-link btn-sm text-danger text-decoration-none w-100 text-start p-0" onclick="limparBanco()">Limpar Banco</button>
+        <span class="dev-credit">Desenvolvido por Claudio Carvalho</span>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="row row-cols-1 row-cols-md-4 row-cols-xl-7 g-3 mb-5">
+        <div class="col"><div class="card-kpi"><div class="kpi-label">Atendidas</div><div class="kpi-value" id="kAt">0</div></div></div>
+        <div class="col"><div class="card-kpi"><div class="kpi-label">NS (85%)</div><div class="kpi-value" id="kNS">0%</div></div></div>
+        <div class="col"><div class="card-kpi"><div class="kpi-label">TMA</div><div class="kpi-value" id="kTMA">00:00</div></div></div>
+        <div class="col"><div class="card-kpi"><div class="kpi-label">TME</div><div class="kpi-value" id="kTME">00:00</div></div></div>
+        <div class="col"><div class="card-kpi"><div class="kpi-label">Abandono</div><div class="kpi-value" id="kAband">0%</div></div></div>
+        <div class="col"><div class="card-kpi"><div class="kpi-label">Pesquisa</div><div class="kpi-value" id="kPesq">0%</div></div></div>
+        <div class="col"><div class="card-kpi"><div class="kpi-label">CSAT</div><div class="kpi-value" id="kSat">0%</div></div></div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-lg-7"><div class="table-res" style="height: 350px;"><canvas id="chartEvol"></canvas></div></div>
+        <div class="col-lg-5"><div class="table-res" style="height: 350px;"><canvas id="chartPizza"></canvas></div></div>
+    </div>
+
+    <div class="table-res">
+        <h6 class="fw-bold mb-4">Performance Individual</h6>
+        <div class="table-responsive">
+            <table class="table align-middle text-center" style="font-size: 11px;">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-start">Atendente</th>
+                        <th>Atend.</th>
+                        <th>NS%</th>
+                        <th>TMA</th>
+                        <th>Registro</th>
+                        <th>Digital</th>
+                        <th>Banheiro</th>
+                        <th>Água</th>
+                        <th>Pesq.</th>
+                        <th>CSAT</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalDrill" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content" style="border-radius: 20px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="drillNome">Detalhes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-sm">
+                    <thead><tr><th>ID</th><th>Data</th><th>Fila</th><th>Espera</th><th>Atend.</th><th>Nota</th></tr></thead>
+                    <tbody id="drillBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let db;
+let cacheGlobal = {};
+let chartObjEvol = null;
+let chartObjPizza = null;
+
+const request = indexedDB.open("Unimed360_Final_v3", 1);
+request.onupgradeneeded = (e) => {
+    db = e.target.result;
+    if(!db.objectStoreNames.contains("chamadas")) db.createObjectStore("chamadas", { keyPath: "uniqueID" });
+    if(!db.objectStoreNames.contains("satisfacao")) db.createObjectStore("satisfacao", { keyPath: "uniqueID" });
+    if(!db.objectStoreNames.contains("eventos")) db.createObjectStore("eventos", { autoIncrement: true });
+};
+request.onsuccess = (e) => db = e.target.result;
+
+const toSeg = (h) => { 
+    if(!h || h === "-" || h === "") return 0;
+    if(!isNaN(h)) return parseInt(h);
+    let p = h.split(':'), s = 0, m = 1;
+    while(p.length > 0) { s += m * parseInt(p.pop(), 10); m *= 60; }
+    return s;
+};
+
+const toHms = (s) => {
+    if(!s || s <= 0) return "00:00:00";
+    let h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+};
+
+const mapUnidade = (f) => {
+    f = String(f || "").toUpperCase();
+    if(f.includes("ULI")) return "LIMEIRA";
+    if(f.includes("USI")) return "SALTO ITU";
+    if(f.includes("USC")) return "SÃO CARLOS";
+    if(f.includes("USP")) return "SUL PAULISTA";
+    if(f.includes("UAM")) return "AMPARO";
+    if(f.includes("UJU")) return "JUNDIAÍ";
+    return "OUTROS";
+};
+
+async function importarParaBanco() {
+    const files = document.getElementById('csvFiles').files;
+    if (files.length === 0) return alert("Selecione arquivos.");
+    document.getElementById('loader').style.display = 'flex';
+    try {
+        for (const file of files) {
+            const text = await file.text();
+            const lines = text.split('\n');
+            const hIdx = lines.findIndex(l => l.toLowerCase().includes('uniqueid') || l.toLowerCase().includes('nomeatendente') || l.toLowerCase().includes('nomepausa'));
+            if (hIdx === -1) continue;
+            const results = Papa.parse(lines.slice(hIdx).join('\n'), { header: false, skipEmptyLines: true, delimiter: ";" });
+            const headers = results.data[0].map(h => h.trim());
+            const rows = results.data.slice(1);
+            const tx = db.transaction(["chamadas", "satisfacao", "eventos"], "readwrite");
+            rows.forEach(values => {
+                let rowData = {};
+                headers.forEach((h, i) => {
+                    let key = h;
+                    if(rowData[key] !== undefined) key = h + "_" + i; 
+                    rowData[key] = values[i] ? values[i].replace(/"/g, '').trim() : "";
+                });
+                if (rowData.uniqueID && (rowData.tipo === "Atendida" || rowData.tipo === "Abandonada")) {
+                    tx.objectStore("chamadas").put({
+                        uniqueID: rowData.uniqueID, numeroAtendente: rowData.numeroAtendente,
+                        nomeAtendente: rowData.nomeAtendente, data: rowData.data ? rowData.data.split(' ')[0] : "",
+                        nomeFila: rowData.nomeFila, espera: toSeg(rowData.tempoEspera),
+                        atend: toSeg(rowData.tempoAtendimento), tipo: rowData.tipo
+                    });
+                }
+                const uidSat = rowData.uniqueId || rowData.uniqueID;
+                if (uidSat) {
+                    let notaFinal = null;
+                    headers.forEach((h, idx) => { if(h === "Pergunta_1") { let v = parseInt(values[idx]); if(!isNaN(v) && v > 0) notaFinal = v; } });
+                    if(notaFinal !== null) tx.objectStore("satisfacao").put({ uniqueID: uidSat, nota: notaFinal });
+                }
+                if ((rowData.evento || rowData.nomePausa) && rowData.duracao) {
+                    tx.objectStore("eventos").add({
+                        numeroAtendente: rowData.atendente || rowData.numeroAtendente,
+                        nomePausa: rowData.nomePausa || rowData.evento,
+                        duracao: toSeg(rowData.duracao), data: (rowData.data || "").split(' ')[0].replace(/\//g, '-')
+                    });
+                }
+            });
+            await new Promise(r => tx.oncomplete = r);
+        }
+        alert("Dados importados!");
+    } catch (e) { console.error(e); }
+    finally { document.getElementById('loader').style.display = 'none'; }
+}
+
+async function consultarRelatorio() {
+    const dIni = document.getElementById('dateIni').value;
+    const dFim = document.getElementById('dateFim').value;
+    const unidades = Array.from(document.querySelectorAll('#boxUnidades input:checked')).map(i => i.value);
+    if(!dIni || !dFim) return alert("Selecione as datas.");
+    document.getElementById('loader').style.display = 'flex';
+    try {
+        const tx = db.transaction(["chamadas", "satisfacao", "eventos"], "readonly");
+        const [cRaw, sRaw, eRaw] = await Promise.all([
+            new Promise(r => tx.objectStore("chamadas").getAll().onsuccess = e => r(e.target.result)),
+            new Promise(r => tx.objectStore("satisfacao").getAll().onsuccess = e => r(e.target.result)),
+            new Promise(r => tx.objectStore("eventos").getAll().onsuccess = e => r(e.target.result))
+        ]);
+
+        let stats = {}, g = { atend:0, abandReal:0, totalValido:0, ns:0, tma:0, tme:0, pq:0, csat:0, uni:{} };
+        const filtradas = cRaw.filter(c => c.data >= dIni && c.data <= dFim && unidades.includes(mapUnidade(c.nomeFila)));
+
+        filtradas.forEach(c => {
+            if(c.tipo === "Atendida") {
+                g.atend++; g.totalValido++; g.tme += c.espera;
+                const id = c.numeroAtendente;
+                if(!stats[id]) stats[id] = { nome: c.nomeAtendente, at:0, ns:0, tma:0, pq:0, csat:0, reg:0, dig:0, ban:0, agu:0, calls:[] };
+                let notaObj = sRaw.find(s => s.uniqueID === c.uniqueID);
+                let nota = notaObj ? notaObj.nota : null;
+                stats[id].at++;
+                if(c.espera <= 60) { stats[id].ns++; g.ns++; }
+                stats[id].tma += c.atend; g.tma += c.atend;
+                if(nota) { g.pq++; stats[id].pq++; if(nota >= 4) { g.csat++; stats[id].csat++; } }
+                stats[id].calls.push({...c, nota: nota || '-'});
+                let u = mapUnidade(c.nomeFila); g.uni[u] = (g.uni[u] || 0) + 1;
+            } else if(c.tipo === "Abandonada" && c.espera > 60) {
+                g.abandReal++; g.totalValido++; g.tme += c.espera;
+            }
+        });
+
+        eRaw.filter(e => e.data >= dIni && e.data <= dFim).forEach(e => {
+            if(stats[e.numeroAtendente]) {
+                const p = (e.nomePausa || "").toUpperCase();
+                if(p.includes("REGISTRO")) stats[e.numeroAtendente].reg += e.duracao;
+                else if(p.includes("DIGITAL")) stats[e.numeroAtendente].dig += e.duracao;
+                else if(p.includes("BANHEIRO")) stats[e.numeroAtendente].ban += e.duracao;
+                else if(p.includes("AGUA")) stats[e.numeroAtendente].agu += e.duracao;
+            }
+        });
+        renderizarTudo(g, stats);
+    } catch (e) { console.error(e); }
+    finally { document.getElementById('loader').style.display = 'none'; }
+}
+
+function renderizarTudo(g, stats) {
+    const nsPerc = (g.ns/g.atend)*100 || 0;
+    const abandPerc = (g.abandReal/g.totalValido)*100 || 0;
+    const pesqPerc = (g.pq/g.atend)*100 || 0;
+
+    document.getElementById('kAt').innerText = g.atend;
+    document.getElementById('kNS').innerText = nsPerc.toFixed(1) + "%";
+    document.getElementById('kNS').className = "kpi-value " + (nsPerc >= 85 ? "meta-good" : "meta-bad");
+    document.getElementById('kTMA').innerText = toHms(Math.round(g.atend > 0 ? g.tma/g.atend : 0));
+    document.getElementById('kTME').innerText = toHms(Math.round(g.totalValido > 0 ? g.tme/g.totalValido : 0));
+    document.getElementById('kAband').innerText = abandPerc.toFixed(2) + "%";
+    document.getElementById('kAband').className = "kpi-value " + (abandPerc <= 5 ? "meta-good" : "meta-bad");
+    document.getElementById('kPesq').innerText = pesqPerc.toFixed(1) + "%";
+    document.getElementById('kSat').innerText = ((g.csat/g.pq)*100 || 0).toFixed(1) + "%";
+
+    cacheGlobal = stats;
+    document.getElementById('tableBody').innerHTML = Object.values(stats).sort((a,b) => b.at - a.at).map(d => {
+        const ns = (d.ns/d.at)*100 || 0;
+        const sat = d.pq > 0 ? (d.csat/d.pq)*100 : 0;
+        return `<tr>
+            <td class="text-start"><span class="clickable-name" onclick="abrirDrill('${d.nome}')">${d.nome}</span></td>
+            <td>${d.at}</td><td class="${ns>=85?'meta-good':'meta-bad'}">${ns.toFixed(1)}%</td>
+            <td>${toHms(Math.round(d.at > 0 ? d.tma/d.at : 0))}</td>
+            <td>${toHms(d.reg)}</td><td>${toHms(d.dig)}</td><td>${toHms(d.ban)}</td><td>${toHms(d.agu)}</td>
+            <td>${((d.pq/d.at)*100).toFixed(1)}%</td>
+            <td class="${sat>=85?'meta-good':'meta-bad'}">${d.pq>0?sat.toFixed(1)+'%':'-'}</td>
+        </tr>`;
+    }).join('');
+
+    if(chartObjEvol) chartObjEvol.destroy();
+    chartObjEvol = new Chart(document.getElementById('chartEvol'), {
+        type: 'bar',
+        data: { labels: ['NS %', 'Pesquisa %', 'CSAT %'], datasets: [{ data: [nsPerc, pesqPerc, (g.csat/g.pq*100)], backgroundColor: ['#00b4d8', '#0077b6', '#00b894'], borderRadius: 8 }] },
+        options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+
+    if(chartObjPizza) chartObjPizza.destroy();
+    chartObjPizza = new Chart(document.getElementById('chartPizza'), {
+        type: 'doughnut',
+        data: { labels: Object.keys(g.uni), datasets: [{ data: Object.values(g.uni), backgroundColor: ['#03045e', '#0077b6', '#00b4d8', '#90e0ef', '#caf0f8'] }] },
+        options: { maintainAspectRatio: false }
+    });
+}
+
+function abrirDrill(nome) {
+    const at = Object.values(cacheGlobal).find(x => x.nome === nome);
+    if(!at) return;
+    document.getElementById('drillNome').innerText = nome;
+    document.getElementById('drillBody').innerHTML = at.calls.map(c => `
+        <tr><td>${c.uniqueID}</td><td>${c.data}</td><td>${c.nomeFila}</td><td>${toHms(c.espera)}</td><td>${toHms(c.atend)}</td><td>${c.nota}</td></tr>
+    `).join('');
+    new bootstrap.Modal(document.getElementById('modalDrill')).show();
+}
+
+async function exportarBackup() {
+    const tx = db.transaction(["chamadas", "satisfacao", "eventos"], "readonly");
+    const data = {
+        chamadas: await new Promise(r => tx.objectStore("chamadas").getAll().onsuccess = e => r(e.target.result)),
+        satisfacao: await new Promise(r => tx.objectStore("satisfacao").getAll().onsuccess = e => r(e.target.result)),
+        eventos: await new Promise(r => tx.objectStore("eventos").getAll().onsuccess = e => r(e.target.result))
+    };
+    const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = `backup_op360.json`; a.click();
+}
+
+function importarBackup(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const data = JSON.parse(e.target.result);
+        const tx = db.transaction(["chamadas", "satisfacao", "eventos"], "readwrite");
+        data.chamadas.forEach(x => tx.objectStore("chamadas").put(x));
+        data.satisfacao.forEach(x => tx.objectStore("satisfacao").put(x));
+        data.eventos.forEach(x => tx.objectStore("eventos").add(x));
+        tx.oncomplete = () => alert("Restaurado!");
+    };
+    reader.readAsText(file);
+}
+
+function limparBanco() { if(confirm("Apagar tudo?")) { indexedDB.deleteDatabase("Unimed360_Final_v3"); location.reload(); } }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
