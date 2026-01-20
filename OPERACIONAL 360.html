@@ -124,6 +124,11 @@
             <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="SÃO FRANCISCO VIDA" checked class="me-2"> São Francisco Vida</label>
             <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="GUARULHOS" checked class="me-2"> Guarulhos</label>
             <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="GUARATINGUETA" checked class="me-2"> Guaratingueta</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="DAAE RIO CLARO" checked class="me-2"> DAAE Rio Claro</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="SAAE ATIBAIA" checked class="me-2"> SAAE Atibaia</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="SAAE SÃO CARLOS" checked class="me-2"> SAAE São Carlos</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="SAAE MOGI MIRIM" checked class="me-2"> SAAE Mogi Mirim</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="PREFEITURA MOGI MIRIM" checked class="me-2"> Prefeitura Mogi Mirim</label>
         </div>
         <button class="btn btn-success w-100" onclick="consultarRelatorio()">Gerar Dashboard</button>
     </div>
@@ -274,6 +279,11 @@ const mapUnidade = (f) => {
     if(f.includes("SFV")) return "SÃO FRANCISCO VIDA";
     if(f.includes("UGR")) return "GUARULHOS";
     if(f.includes("UGTR")) return "GUARATINGUETA";
+    if(f.includes("DAAE")) return "DAAE RIO CLARO";
+    if(f.includes("SAAE_A")) return "SAAE ATIBAIA";
+    if(f.includes("SAAE_SC")) return "SAAE SÃO CARLOS";
+    if(f.includes("SAAE_MM")) return "SAAE MOGI MIRIM";
+    if(f.includes("PMMM")) return "PREFEITURA MOGI MIRIM";
     return "OUTROS";
 };
 
