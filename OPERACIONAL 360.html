@@ -61,7 +61,7 @@
         .clickable-name:hover { text-decoration: underline; }
 
         .form-control, .btn { border-radius: 10px; font-weight: 600; font-size: 12px; }
-        .multi-select-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; max-height: 140px; overflow-y: auto; }
+        .multi-select-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; max-height: 180px; overflow-y: auto; }
 
         .meta-good { color: var(--success) !important; }
         .meta-bad { color: var(--danger) !important; }
@@ -74,6 +74,8 @@
             background: rgba(255,255,255,0.9); backdrop-filter: blur(5px); z-index: 3000;
             flex-direction: column; align-items: center; justify-content: center;
         }
+        
+        .highlight-filter { background-color: #e0f7fa; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -97,13 +99,31 @@
         <input type="date" id="dateIni" class="form-control form-control-sm mb-2">
         <input type="date" id="dateFim" class="form-control form-control-sm mb-3">
         
+        <input type="text" id="searchUnidade" class="form-control form-control-sm mb-2" placeholder="Pesquisar unidade..." onkeyup="filtrarUnidadesLista()">
+        
+        <div class="d-flex justify-content-between mb-2" style="font-size: 10px;">
+            <span class="text-primary fw-bold" style="cursor:pointer;" onclick="toggleVisiveis(true)">Selecionar visíveis</span>
+            <span class="text-danger fw-bold" style="cursor:pointer;" onclick="toggleVisiveis(false)">Limpar visíveis</span>
+        </div>
+
         <div class="multi-select-box mb-3" id="boxUnidades">
-            <label class="d-flex align-items-center mb-1"><input type="checkbox" value="SALTO ITU" checked class="me-2"> Salto/Itu</label>
-            <label class="d-flex align-items-center mb-1"><input type="checkbox" value="LIMEIRA" checked class="me-2"> Limeira</label>
-            <label class="d-flex align-items-center mb-1"><input type="checkbox" value="SÃO CARLOS" checked class="me-2"> São Carlos</label>
-            <label class="d-flex align-items-center mb-1"><input type="checkbox" value="SUL PAULISTA" checked class="me-2"> Sul Paulista</label>
-            <label class="d-flex align-items-center mb-1"><input type="checkbox" value="AMPARO" checked class="me-2"> Amparo</label>
-            <label class="d-flex align-items-center mb-1"><input type="checkbox" value="JUNDIAÍ" checked class="me-2"> Jundiaí</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="SALTO ITU" checked class="me-2"> Salto/Itu</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="LIMEIRA" checked class="me-2"> Limeira</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="SÃO CARLOS" checked class="me-2"> São Carlos</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="SUL PAULISTA" checked class="me-2"> Sul Paulista</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="AMPARO" checked class="me-2"> Amparo</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="JUNDIAÍ" checked class="me-2"> Jundiaí</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="ARARAQUARA" checked class="me-2"> Araraquara</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="BLUE" checked class="me-2"> Blue</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="CENTRO RONDÔNIA" checked class="me-2"> Centro Rondônia</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="SOROCABA" checked class="me-2"> Sorocaba</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="NORDESTE PAULISTA" checked class="me-2"> Nordeste Paulista</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="JABOTICABAL" checked class="me-2"> Jaboticabal</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="AMERICANA" checked class="me-2"> Americana</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="DOURADOS" checked class="me-2"> Dourados</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="SÃO FRANCISCO VIDA" checked class="me-2"> São Francisco Vida</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="GUARULHOS" checked class="me-2"> Guarulhos</label>
+            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="GUARATINGUETA" checked class="me-2"> Guaratingueta</label>
         </div>
         <button class="btn btn-success w-100" onclick="consultarRelatorio()">Gerar Dashboard</button>
     </div>
@@ -191,6 +211,36 @@ request.onupgradeneeded = (e) => {
 };
 request.onsuccess = (e) => db = e.target.result;
 
+function filtrarUnidadesLista() {
+    const termo = document.getElementById('searchUnidade').value.toLowerCase();
+    const labels = document.querySelectorAll('#boxUnidades label');
+    
+    labels.forEach(label => {
+        const texto = label.innerText.toLowerCase();
+        if (texto.includes(termo)) {
+            label.style.display = "flex";
+            if(termo !== "") {
+                label.classList.add('highlight-filter');
+            } else {
+                label.classList.remove('highlight-filter');
+            }
+        } else {
+            label.style.display = "none";
+            label.classList.remove('highlight-filter');
+        }
+    });
+}
+
+function toggleVisiveis(status) {
+    const labels = document.querySelectorAll('#boxUnidades label');
+    labels.forEach(label => {
+        if (label.style.display !== 'none') {
+            const checkbox = label.querySelector('input[type="checkbox"]');
+            if (checkbox) checkbox.checked = status;
+        }
+    });
+}
+
 const toSeg = (h) => { 
     if(!h || h === "-" || h === "") return 0;
     if(!isNaN(h)) return parseInt(h);
@@ -213,6 +263,17 @@ const mapUnidade = (f) => {
     if(f.includes("USP")) return "SUL PAULISTA";
     if(f.includes("UAM")) return "AMPARO";
     if(f.includes("UJU")) return "JUNDIAÍ";
+    if(f.includes("UAR")) return "ARARAQUARA";
+    if(f.includes("BLUE")) return "BLUE";
+    if(f.includes("URO")) return "CENTRO RONDÔNIA";
+    if(f.includes("USO")) return "SOROCABA";
+    if(f.includes("UNP")) return "NORDESTE PAULISTA";
+    if(f.includes("UJA")) return "JABOTICABAL";
+    if(f.includes("USA")) return "AMERICANA";
+    if(f.includes("UDO")) return "DOURADOS";
+    if(f.includes("SFV")) return "SÃO FRANCISCO VIDA";
+    if(f.includes("UGR")) return "GUARULHOS";
+    if(f.includes("UGTR")) return "GUARATINGUETA";
     return "OUTROS";
 };
 
