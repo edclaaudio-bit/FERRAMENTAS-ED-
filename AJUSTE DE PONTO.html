@@ -2,598 +2,249 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Relatório de Inconsistências (Regra 4/4) - Pontomais [Ajustado]</title>
+<title>Painel de Ajustes | Pontomais</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; background-color: #f7f7f7; }
-  h2 { color: #333; border-bottom: 2px solid #ccc; padding-bottom: 10px; }
-  
-  /* Estilos para os controles */
-  #controls { 
-    margin-bottom: 20px; 
-    padding: 15px; 
-    border: 1px solid #ddd; 
-    border-radius: 8px; 
-    background-color: #fff; 
-    display: flex; 
-    flex-wrap: wrap; 
-    gap: 20px; 
+  :root {
+    --primary: #4f46e5; --primary-hover: #4338ca;
+    --success-bg: #dcfce7; --success-text: #166534;
+    --danger-bg: #fee2e2; --danger-text: #991b1b;
+    --bg: #f3f4f6; --card: #ffffff;
+    --text-main: #1f2937; --text-sub: #6b7280;
+    --border: #e5e7eb;
   }
 
-  .control-group {
-    display: flex;
-    flex-direction: column;
-    min-width: 250px;
-    flex-grow: 1;
-  }
+  body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 20px; }
+  .container { max-width: 1400px; margin: 0 auto; }
   
-  input[type="file"], button {
-    padding: 10px 15px;
-    margin-top: 5px;
-    border: 1px solid;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.3s;
-  }
+  header { margin-bottom: 25px; text-align: center; }
+  h2 { margin: 0; font-weight: 700; letter-spacing: -0.025em; }
   
-  /* Estilo do botão padrão (Gerar Relatório) */
-  #gerarRelatorioBtn {
-    background-color: #007bff;
-    color: white;
-    border-color: #007bff;
-  }
-  #gerarRelatorioBtn:hover { background-color: #0056b3; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-bottom: 25px; }
+  .stat-card { background: var(--card); padding: 15px 20px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid var(--border); }
+  .stat-card span { display: block; font-size: 0.75rem; text-transform: uppercase; color: var(--text-sub); font-weight: 700; margin-bottom: 5px; }
+  .stat-card strong { font-size: 1.25rem; color: var(--primary); }
 
-  /* Estilo do botão Exportar */
-  #exportExcelBtn {
-    background-color: #28a745; /* Verde */
-    color: white;
-    border-color: #28a745;
-    margin-left: 10px;
-  }
-  #exportExcelBtn:hover { background-color: #1e7e34; }
+  .main-card { background: var(--card); border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid var(--border); margin-bottom: 25px; }
+  .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
   
-  textarea {
-    resize: vertical;
-    min-height: 80px;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-family: Arial, sans-serif;
-  }
-  
-  /* Estilos da Tabela */
-  #relatorio table { border-collapse: collapse; width: 100%; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-size: 0.85em; }
-  #relatorio th, #relatorio td { border: 1px solid #e0e0e0; padding: 8px 4px; text-align: center; }
-  #relatorio th { background-color: #e9ecef; color: #333; font-weight: bold; }
-  
-  /* Estilo para Inconsistência (Vermelho - Campo a Corrigir) */
-  .inconsistencia { 
-    background-color: #f8d7da; /* Vermelho claro */
-    color: #721c24; 
-    font-weight: bold; 
-  }
-  
-  /* NOVO ESTILO: Ponto/Pausa Correto (Verde) */
-  .correto {
-    background-color: #d4edda; /* Verde claro */
-    color: #155724; 
+  label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 8px; }
+  input[type="file"], textarea, input[type="text"] {
+    width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; box-sizing: border-box;
   }
 
-  /* Estilo para o botão de exclusão na linha */
-  .btn-excluir {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 3px 6px;
-    font-size: 0.75em;
-    border-radius: 3px;
-    cursor: pointer;
-    transition: background-color 0.2s;
+  .btn {
+    padding: 12px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   }
-  .btn-excluir:hover {
-    background-color: #c82333;
-  }
+  .btn-primary { background: var(--primary); color: white; width: 100%; font-size: 1rem; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-success { background: #059669; color: white; }
+  .btn-danger { background: var(--danger-text); color: white; padding: 6px 12px; font-size: 0.75rem; }
 
-  /* Estilo para mensagem de status */
-  #statusMessage { 
-    margin-top: 15px; 
-    padding: 10px; 
-    border-radius: 5px; 
-  }
-  .success { background-color: #d4edda; color: #155724; }
-  .error { background-color: #f8d7da; color: #721c24; }
+  /* Tabela Estilizada */
+  .table-container { background: var(--card); border-radius: 12px; overflow-x: auto; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 1000px; }
+  th { background: #f9fafb; padding: 12px 15px; text-align: center; border-bottom: 2px solid var(--border); color: var(--text-sub); font-weight: 600; }
+  td { padding: 10px 15px; border-bottom: 1px solid var(--border); text-align: center; }
+  
+  /* Badges de Ponto */
+  .ponto-cell { border-radius: 6px; font-weight: 600; padding: 6px; display: block; margin: 2px; }
+  .missing { background: var(--danger-bg); color: var(--danger-text); border: 1px dashed #f87171; }
+  .correct { background: var(--success-bg); color: var(--success-text); }
+  
+  .search-bar { margin-bottom: 15px; display: flex; gap: 10px; align-items: center; }
+  .search-bar input { flex-grow: 1; }
 
-  /* Estilo para o rodapé */
-  footer {
-    margin-top: 30px;
-    padding: 10px;
-    text-align: right;
-    font-size: 0.8em;
-    color: #777;
-    border-top: 1px solid #eee;
-  }
+  footer { margin-top: 40px; text-align: center; font-size: 0.8rem; color: var(--text-sub); padding-bottom: 20px; border-top: 1px solid var(--border); padding-top: 20px; }
 </style>
 </head>
 <body>
-  <h2>📊 Relatório de Inconsistências de Ponto/Pausa (Pontomais)</h2>
-  <p>Este relatório encontra inconsistências que **NÃO** possuem justificativa na coluna 'Motivo/Observação' e que não estão listadas nas exceções abaixo.</p>
-  
-  <div id="controls">
-    <div class="control-group">
-        <label for="fileInput">1. Selecione o Arquivo (XLSX, XLS ou CSV)</label>
-        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv"/>
-    </div>
 
-    <div class="control-group" style="flex-grow: 2;">
-        <label for="exceptionList">2. Lista de Exceção (Nomes Completos, um por linha):</label>
-        <textarea id="exceptionList" placeholder="Digite aqui os nomes dos colaboradores que devem ser ignorados no relatório. Ex: Fulano da Silva, Ciclana Souza..."></textarea>
-    </div>
+<div class="container">
+  <header>
+    <h2>📊 Relatório de Ajustes de Ponto</h2>
+    <p style="color: var(--text-sub)">Identificação visual de batidas ausentes (4 pontos E 4 pausas)</p>
+  </header>
 
-    <div class="control-group" style="flex-grow: 1; min-width: 150px;">
-        <label>&nbsp;</label>
-        <button id="gerarRelatorioBtn" onclick="gerarRelatorio()">3. Gerar Relatório</button>
-    </div>
-
+  <div class="stats-grid">
+    <div class="stat-card"><span>Total Registros</span><strong id="stat-total">0</strong></div>
+    <div class="stat-card"><span>Inconsistências</span><strong id="stat-errors" style="color: var(--danger-text)">0</strong></div>
+    <div class="stat-card"><span>Filtro de Cargo</span><strong id="stat-cargo" style="font-size: 0.85em;">Aguardando...</strong></div>
   </div>
-  
-  <div id="statusMessage"></div>
-  <div id="relatorio"></div>
-  <div id="exportControls" style="margin-top: 15px; text-align: right; display: none;">
-      <button id="exportExcelBtn" onclick="exportarParaExcel()">📥 Exportar para Excel</button>
+
+  <div class="main-card">
+    <div class="grid-inputs">
+      <div class="control-group">
+        <label>Cargo Alvo (Exato)</label>
+        <input type="text" id="targetJob" value="OPERADOR DE TELEMARKETING I">
+        <label style="margin-top:15px">Arquivo do Pontomais</label>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+      </div>
+      <div class="control-group">
+        <label>Exceções (Nomes por linha)</label>
+        <textarea id="exceptionList" rows="5" placeholder="Cole aqui os nomes que deseja ignorar..."></textarea>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="gerarRelatorio()">🔍 Analisar Inconsistências</button>
   </div>
-  
-  <footer>Desenvolvido por Claudio Carvalho - Versão Pontomais</footer>
+
+  <div id="resultArea" style="display: none;">
+    <div class="search-bar">
+        <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Pesquisar por nome do colaborador...">
+        <button class="btn btn-success" onclick="exportarParaExcel()">📥 Exportar Planilha de Ajustes</button>
+    </div>
+    
+    <div class="table-container">
+      <div id="relatorio"></div>
+    </div>
+  </div>
+
+  <footer>Desenvolvido por Claudio Carvalho
+</div>
 
 <script>
+const CONFIG = { CABECALHO_INDEX: 3, PONTOS_ESPERADOS: 4, PAUSAS_ESPERADAS: 4 };
+let MAPPED_COLUMNS = { DATA: -1, NOME: -1, CARGO: -1, P_INI: -1, P_FIM: -1, PAU_INI: -1, PAU_FIM: -1, MOT_IGN: -1, MOT_OBS: -1 };
+let GLOBAL_DATA = [];
+let GLOBAL_HEADER = [];
 
-// =================================================================
-// ⚙️ CONFIGURAÇÕES PRINCIPAIS (CONSTANTES)
-// =================================================================
-
-const CONFIG = {
-    // O cabeçalho é esperado na LINHA 4 (índice 3)
-    CABECALHO_INDEX: 3, 
-    
-    CARGO_ALVO: 'OPERADOR DE TELEMARKETING I', // Cargo a ser filtrado
-    PONTOS_ESPERADOS: 4,                      // Quantidade esperada de batidas de ponto (2 Entradas, 2 Saídas)
-    PAUSAS_ESPERADAS: 4,                       // Quantidade esperada de batidas de pausa (2 Pausas, 2 Retornos)
-};
-
-// =================================================================
-// 🗺️ MAPA DE COLUNAS (DINÂMICO)
-// =================================================================
-
-let MAPPED_COLUMNS = {
-    DATA: -1,
-    NOME: -1,
-    CARGO: -1,
-    PONTO_INICIO: -1,
-    PONTO_FIM: -1,
-    PAUSA_INICIO: -1,
-    PAUSA_FIM: -1,
-    MOTIVO_IGNORAR_S: -1, 
-    MOTIVO_EXIBIR_AB: -1  
-};
-
-let GLOBAL_INCONSISTENCIES = []; // Armazena os dados para exportação e manipulação
-let GLOBAL_HEADER_ROW = []; // Armazena o cabeçalho original
-
-// =================================================================
-// 📝 FUNÇÕES AUXILIARES
-// =================================================================
-
-function showStatus(message, type) {
-    const statusDiv = document.getElementById('statusMessage');
-    statusDiv.className = `statusMessage ${type}`;
-    statusDiv.innerHTML = `<strong>${type === 'success' ? '✅ Sucesso:' : '❌ Erro:'}</strong> ${message}`;
-}
-
-/**
- * Mapeia os índices das colunas a partir do cabeçalho da planilha.
- */
 function mapColumns(headerRow) {
-    const knownHeaders = {
-        'Data': 'DATA', 
-        'Nome': 'NOME', 
-        'Cargo': 'CARGO',
-        'Motivo para ignorar': 'MOTIVO_IGNORAR_S', 
-        'Motivo/Observação': 'MOTIVO_EXIBIR_AB' 
-    };
+    const searchMap = { 'Data': 'DATA', 'Nome': 'NOME', 'Cargo': 'CARGO', 'Motivo para ignorar': 'MOT_IGN', 'Motivo/Observação': 'MOT_OBS' };
+    Object.keys(MAPPED_COLUMNS).forEach(k => MAPPED_COLUMNS[k] = -1);
     
-    // Reset e inicialização
-    Object.keys(MAPPED_COLUMNS).forEach(key => MAPPED_COLUMNS[key] = -1);
-    
-    let isMappingPausas = false;
-
-    headerRow.forEach((colName, index) => {
-        const name = colName ? colName.toString().trim() : '';
-        const lowerName = name.toLowerCase();
-
-        // 1. Mapeia colunas de nome fixo/conhecido
-        for (const [key, value] of Object.entries(knownHeaders)) {
-            if (lowerName.includes(key.toLowerCase())) {
-                MAPPED_COLUMNS[value] = index;
-            }
+    let pausasIniciadas = false;
+    headerRow.forEach((name, i) => {
+        const n = name?.toString().toLowerCase() || '';
+        for (const [key, val] of Object.entries(searchMap)) {
+            if (n.includes(key.toLowerCase())) MAPPED_COLUMNS[val] = i;
         }
-        
-        // 2. Detecta o início do bloco de PONTOS (Entrada/Saída)
-        if (lowerName.includes('entrada') && MAPPED_COLUMNS.PONTO_INICIO === -1 && MAPPED_COLUMNS.PAUSA_INICIO === -1) {
-            MAPPED_COLUMNS.PONTO_INICIO = index; 
+        if (n.includes('entrada') && MAPPED_COLUMNS.P_INI === -1) MAPPED_COLUMNS.P_INI = i;
+        if (n.includes('pausa') && MAPPED_COLUMNS.PAU_INI === -1) {
+            MAPPED_COLUMNS.PAU_INI = i;
+            MAPPED_COLUMNS.P_FIM = i - 1;
+            pausasIniciadas = true;
         }
-
-        // 3. Detecta o início do bloco de PAUSAS (Pausa/Retorno)
-        if (lowerName.includes('pausa') && MAPPED_COLUMNS.PAUSA_INICIO === -1) {
-            MAPPED_COLUMNS.PAUSA_INICIO = index;
-            isMappingPausas = true;
-            
-            // Define o fim dos Pontos como a coluna anterior ao início das Pausas
-            MAPPED_COLUMNS.PONTO_FIM = index - 1;
-        }
-
-        // 4. Continua mapeando o bloco de PAUSAS
-        if (isMappingPausas) {
-            if (lowerName.includes('pausa') || lowerName.includes('retorno')) {
-                MAPPED_COLUMNS.PAUSA_FIM = index;
-            } else if (lowerName.includes('crédito') || lowerName.includes('débito') || lowerName.includes('horas')) {
-                isMappingPausas = false;
-            }
-        }
+        if (pausasIniciadas && (n.includes('pausa') || n.includes('retorno'))) MAPPED_COLUMNS.PAU_FIM = i;
     });
-    
-    // Ajuste se o bloco de pausas não foi detectado (caso extremo)
-    if (MAPPED_COLUMNS.PAUSA_INICIO === -1 && MAPPED_COLUMNS.PONTO_INICIO !== -1) {
-        // Assume que PONTO_FIM é a última coluna da linha, se PAUSA não for encontrada
-        MAPPED_COLUMNS.PONTO_FIM = headerRow.length - 1; 
-    }
-
-
-    if (MAPPED_COLUMNS.DATA === -1 || MAPPED_COLUMNS.NOME === -1 || MAPPED_COLUMNS.PONTO_INICIO === -1 || MAPPED_COLUMNS.PAUSA_INICIO === -1) {
-        throw new Error('Não foi possível identificar as colunas essenciais (Data, Nome, Ponto/Entrada, Pausa) no cabeçalho (Linha 4). Verifique os nomes das colunas.');
-    }
 }
-
-/**
- * Processa uma única linha da planilha, aplicando todos os filtros e regras.
- */
-function processRow(row, exceptionNames) {
-    const map = MAPPED_COLUMNS; 
-    
-    // 1. FILTRO: Ignora a linha se a coluna DATA contém "Colaborador" (Linha de resumo)
-    if (row[map.DATA] && row[map.DATA].toString().toLowerCase().includes('colaborador')) {
-        return null;
-    }
-
-    // 2. FILTRO: Ignora se a linha não tem Data ou Nome
-    if (!row[map.DATA] || !row[map.NOME]) return null;
-    
-    const nome = row[map.NOME].toString().trim();
-
-    // 3. FILTRO: Lista de Exceção por Nome
-    if (exceptionNames.has(nome.toLowerCase())) {
-        return null; 
-    }
-
-    // 4. FILTRO: Cargo Alvo
-    if(map.CARGO !== -1){
-        const cargo = row[map.CARGO] ? row[map.CARGO].toString().trim() : '';
-        if (cargo !== CONFIG.CARGO_ALVO) return null;
-    }
-
-    // 5. FILTRO: Motivo Ignorar
-    if (map.MOTIVO_IGNORAR_S !== -1) {
-        const motivoS = row[map.MOTIVO_IGNORAR_S] ? row[map.MOTIVO_IGNORAR_S].toString().trim() : '';
-        if (motivoS) return null;
-    }
-
-    // 6. Extrai e conta Pontos e Pausas
-    const pontos = row.slice(map.PONTO_INICIO, map.PONTO_FIM + 1).filter(x => x !== undefined && x !== '' && x.toString().trim() !== '00:00');
-    const pausas = row.slice(map.PAUSA_INICIO, map.PAUSA_FIM + 1).filter(x => x !== undefined && x !== '' && x.toString().trim() !== '00:00');
-
-    // 7. Verifica Inconsistência
-    const isPontoInconsistente = pontos.length !== CONFIG.PONTOS_ESPERADOS;
-    const isPausaInconsistente = pausas.length !== CONFIG.PAUSAS_ESPERADAS;
-
-    if (isPontoInconsistente || isPausaInconsistente) {
-        
-        // FILTRO: Verifica se a inconsistência está justificada na coluna Motivo/Observação
-        let motivoAB = '';
-        if (map.MOTIVO_EXIBIR_AB !== -1) {
-            motivoAB = row[map.MOTIVO_EXIBIR_AB] ? row[map.MOTIVO_EXIBIR_AB].toString().trim() : '';
-        }
-
-        // Se houver inconsistência E houver justificativa, a linha é IGNORADA.
-        if (motivoAB) {
-            return null; 
-        }
-        
-        // Se a inconsistência não tiver justificativa, a linha ENTRA no relatório.
-        let alerta = '';
-        if (isPontoInconsistente && isPausaInconsistente) {
-            alerta = 'Pontos e Pausas';
-        } else if (isPontoInconsistente) {
-            alerta = 'Pontos';
-        } else {
-            alerta = 'Pausas';
-        }
-
-        return {
-            id: Date.now() + Math.random(), // ID único para exclusão
-            data: row[map.DATA],
-            nome: nome,
-            motivo: motivoAB || '-', 
-            alerta,
-            isPontoInconsistente,
-            isPausaInconsistente,
-            fullRow: row
-        };
-    }
-
-    return null; // Linha consistente (4/4)
-}
-
-/**
- * Monta o HTML da tabela usando os dados globais.
- */
-function generateTableHTML(inconsistencies, headerRow) {
-    const map = MAPPED_COLUMNS;
-    let html = '<table id="inconsistencyTable">'; // Adicionado ID
-    
-    // 1. Definição das colunas para exibição na tabela (Baseado no mapeamento)
-    const colunasParaExibir = [];
-    
-    colunasParaExibir.push({ index: map.DATA, label: headerRow[map.DATA], type: 'data' });
-    colunasParaExibir.push({ index: map.NOME, label: headerRow[map.NOME], type: 'nome' });
-
-    // Adiciona as colunas de Ponto detectadas (Entrada/Saída)
-    for(let i = map.PONTO_INICIO; i <= map.PONTO_FIM; i++) {
-        colunasParaExibir.push({ index: i, label: headerRow[i], type: 'ponto' });
-    }
-    
-    // Adiciona as colunas de Pausa detectadas (Pausa/Retorno)
-    for(let i = map.PAUSA_INICIO; i <= map.PAUSA_FIM; i++) {
-        colunasParaExibir.push({ index: i, label: headerRow[i], type: 'pausa' });
-    }
-
-    // Coluna de Alerta
-    colunasParaExibir.push({ index: -2, label: 'Alerta', type: 'alerta' }); 
-    
-    // Coluna de Ações
-    colunasParaExibir.push({ index: -3, label: 'Ação', type: 'acao' }); 
-
-
-    // 2. Criação do Cabeçalho da Tabela
-    html += '<tr>';
-    colunasParaExibir.forEach(col => {
-        html += `<th>${col.label}</th>`;
-    });
-    html += '</tr>'; 
-    
-    // 3. Criação das Linhas de Dados
-    inconsistencies.forEach(r => {
-        // Usa o ID único para a linha
-        html += `<tr id="row-${r.id}">`; 
-        
-        colunasParaExibir.forEach(col => {
-            let val = '';
-            let classe = '';
-
-            switch(col.type) {
-                case 'data':
-                    val = r.data;
-                    break;
-                case 'nome':
-                    val = r.nome;
-                    break;
-                case 'ponto':
-                    val = r.fullRow[col.index];
-                    
-                    // Se estiver inconsistente E vazio/00:00 -> VERMELHO
-                    if (r.isPontoInconsistente && (!val || val.toString().trim() === '' || val.toString().trim() === '00:00')) {
-                        classe = 'inconsistencia'; // Vermelho
-                    } else if (val && val.toString().trim() !== '' && val.toString().trim() !== '00:00') {
-                        classe = 'correto'; // Verde
-                    }
-                    break;
-                case 'pausa':
-                    val = r.fullRow[col.index];
-
-                    // Se estiver inconsistente E vazio/00:00 -> VERMELHO
-                    if (r.isPausaInconsistente && (!val || val.toString().trim() === '' || val.toString().trim() === '00:00')) {
-                        classe = 'inconsistencia'; // Vermelho
-                    } else if (val && val.toString().trim() !== '' && val.toString().trim() !== '00:00') {
-                        classe = 'correto'; // Verde
-                    }
-                    break;
-                case 'alerta':
-                    val = r.alerta;
-                    break;
-                case 'acao':
-                    // Botão de Excluir
-                    val = `<button class="btn-excluir" onclick="excluirLinha('${r.id}')">Excluir</button>`;
-                    break;
-            }
-            
-            html += `<td class="${classe}">${val}</td>`;
-        });
-
-        html += '</tr>';
-    });
-
-    html += '</table>';
-    return html;
-}
-
-
-/**
- * Remove a linha da tabela e do array de dados global.
- */
-function excluirLinha(id) {
-    if (confirm("Tem certeza que deseja EXCLUIR esta linha do relatório?")) {
-        // 1. Remove da DOM (Tabela)
-        const row = document.getElementById(`row-${id}`);
-        if (row) {
-            row.remove();
-        }
-
-        // 2. Remove do array de dados global
-        GLOBAL_INCONSISTENCIES = GLOBAL_INCONSISTENCIES.filter(r => r.id.toString() !== id.toString());
-        
-        // Atualiza a mensagem de status
-        const count = GLOBAL_INCONSISTENCIES.length;
-        if (count > 0) {
-            showStatus(`Linha excluída com sucesso! Restam ${count} inconsistência(s) na lista.`, 'success');
-        } else {
-            document.getElementById('relatorio').innerHTML = '<p>🎉 Não restam inconsistências PENDENTES no relatório.</p>';
-            document.getElementById('exportControls').style.display = 'none';
-            showStatus('Análise concluída. Nenhuma inconsistência pendente.', 'success');
-        }
-    }
-}
-
-
-/**
- * Exporta o relatório filtrado (atual) para um arquivo Excel (XLSX).
- */
-function exportarParaExcel() {
-    if (GLOBAL_INCONSISTENCIES.length === 0) {
-        alert('Não há dados para exportar.');
-        return;
-    }
-
-    const map = MAPPED_COLUMNS; 
-    const headerRow = GLOBAL_HEADER_ROW;
-
-    // 1. Monta o cabeçalho final do Excel (apenas as colunas visíveis no relatório)
-    const finalHeader = [
-        headerRow[map.DATA], 
-        headerRow[map.NOME],
-    ];
-    // Adiciona as colunas de Ponto
-    for(let i = map.PONTO_INICIO; i <= map.PONTO_FIM; i++) {
-        finalHeader.push(headerRow[i]);
-    }
-    // Adiciona as colunas de Pausa
-    for(let i = map.PAUSA_INICIO; i <= map.PAUSA_FIM; i++) {
-        finalHeader.push(headerRow[i]);
-    }
-    finalHeader.push('Alerta');
-
-
-    // 2. Monta o corpo de dados
-    const finalData = GLOBAL_INCONSISTENCIES.map(item => {
-        const row = [
-            item.data,
-            item.nome
-        ];
-        // Adiciona valores de Ponto
-        for(let i = map.PONTO_INICIO; i <= map.PONTO_FIM; i++) {
-            row.push(item.fullRow[i]);
-        }
-        // Adiciona valores de Pausa
-        for(let i = map.PAUSA_INICIO; i <= map.PAUSA_FIM; i++) {
-            row.push(item.fullRow[i]);
-        }
-        row.push(item.alerta);
-        return row;
-    });
-
-    const dataForExport = [finalHeader, ...finalData];
-    
-    // 3. Cria o Workbook e Sheet
-    const ws = XLSX.utils.aoa_to_sheet(dataForExport);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Inconsistencias");
-
-    // 4. Exporta o arquivo
-    const fileName = `Relatorio_Inconsistencias_Pontomais_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`;
-    XLSX.writeFile(wb, fileName);
-
-    showStatus('Exportação concluída! O arquivo Excel foi baixado.', 'success');
-}
-
-
-// =================================================================
-// ⚡ FUNÇÃO PRINCIPAL
-// =================================================================
 
 function gerarRelatorio() {
-    document.getElementById('relatorio').innerHTML = '';
-    document.getElementById('exportControls').style.display = 'none';
-    const fileInput = document.getElementById('fileInput');
-    const exceptionListInput = document.getElementById('exceptionList').value;
-    
-    if(!fileInput.files.length) { 
-        showStatus('Selecione um arquivo .xlsx, .xls ou .csv para continuar.', 'error');
-        return; 
-    }
+    const file = document.getElementById('fileInput').files[0];
+    const targetJob = document.getElementById('targetJob').value.trim();
+    if (!file) return alert("Por favor, selecione o arquivo XLSX primeiro.");
 
-    showStatus('Analisando o arquivo... Por favor, aguarde.', 'success');
-    
-    // Processa a lista de exceções
-    const exceptionNames = new Set(
-        exceptionListInput.split('\n')
-            .map(name => name.trim().toLowerCase())
-            .filter(name => name.length > 0)
-    );
-    
+    const exceptions = new Set(document.getElementById('exceptionList').value.split('\n').map(n => n.trim().toLowerCase()).filter(n => n));
     const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
-            const ws = workbook.Sheets[workbook.SheetNames[0]]; 
-            const json = XLSX.utils.sheet_to_json(ws, {header:1, defval: ''}); 
 
-            if(json.length < CONFIG.CABECALHO_INDEX + 1) { 
-                showStatus('O arquivo não contém dados suficientes.', 'error');
-                return;
-            }
+    reader.onload = (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet, {header:1, defval: ''});
 
-            // 1. Mapeamento
-            GLOBAL_HEADER_ROW = json[CONFIG.CABECALHO_INDEX];
-            mapColumns(GLOBAL_HEADER_ROW); 
+        GLOBAL_HEADER = json[CONFIG.CABECALHO_INDEX];
+        mapColumns(GLOBAL_HEADER);
+        GLOBAL_DATA = [];
 
-            const inconsistencies = [];
+        json.forEach((row, idx) => {
+            if (idx <= CONFIG.CABECALHO_INDEX || !row[MAPPED_COLUMNS.DATA] || row[MAPPED_COLUMNS.DATA].toString().includes('Colaborador')) return;
             
-            // 2. Processamento dos Dados
-            for(let i = 0; i < json.length; i++){
-                const row = json[i];
-                // Passa a lista de exceções para a função de processamento
-                const result = processRow(row, exceptionNames);
+            const nome = row[MAPPED_COLUMNS.NOME]?.toString().trim();
+            const cargo = row[MAPPED_COLUMNS.CARGO]?.toString().trim();
+            const motIgn = row[MAPPED_COLUMNS.MOT_IGN]?.toString().trim();
+            const motObs = row[MAPPED_COLUMNS.MOT_OBS]?.toString().trim();
 
-                if (result) {
-                    inconsistencies.push(result);
-                }
-            }
+            if (exceptions.has(nome.toLowerCase()) || (targetJob && cargo !== targetJob) || motIgn || motObs) return;
+
+            const ptsRange = row.slice(MAPPED_COLUMNS.P_INI, MAPPED_COLUMNS.P_FIM + 1);
+            const pasRange = row.slice(MAPPED_COLUMNS.PAU_INI, MAPPED_COLUMNS.PAU_FIM + 1);
             
-            // 3. Geração do Relatório
-            GLOBAL_INCONSISTENCIES = inconsistencies; // Atualiza dados globais
+            const ptsValidos = ptsRange.filter(v => v && v !== '00:00');
+            const pasValidos = pasRange.filter(v => v && v !== '00:00');
 
-            if(GLOBAL_INCONSISTENCIES.length === 0){
-                 document.getElementById('relatorio').innerHTML = '<p>🎉 Não foram encontradas inconsistências PENDENTES (Após filtros e lista de exceções).</p>';
-                 showStatus('Análise concluída. Nenhuma inconsistência pendente.', 'success');
-                 document.getElementById('exportControls').style.display = 'none';
-                 return;
+            if (ptsValidos.length !== CONFIG.PONTOS_ESPERADOS || pasValidos.length !== CONFIG.PAUSAS_ESPERADAS) {
+                GLOBAL_DATA.push({
+                    id: Math.random().toString(36).substr(2, 9),
+                    data: row[MAPPED_COLUMNS.DATA],
+                    nome,
+                    pontos: ptsRange,
+                    pausas: pasRange,
+                    full: row
+                });
             }
+        });
 
-            const relHTML = generateTableHTML(GLOBAL_INCONSISTENCIES, GLOBAL_HEADER_ROW);
-            document.getElementById('relatorio').innerHTML = relHTML;
-            document.getElementById('exportControls').style.display = 'block'; // Mostra botão de exportar
-            showStatus(`Relatório gerado com sucesso! ${GLOBAL_INCONSISTENCIES.length} inconsistência(s) NÃO JUSTIFICADA(S) encontrada(s).`, 'success');
-
-        } catch (error) {
-            console.error("Erro ao processar o arquivo:", error);
-            showStatus(`Erro ao processar o arquivo. Detalhes: ${error.message}`, 'error');
-        }
+        renderTable();
+        document.getElementById('stat-total').innerText = json.length - 4;
+        document.getElementById('stat-errors').innerText = GLOBAL_DATA.length;
+        document.getElementById('stat-cargo').innerText = targetJob || "Todos";
+        document.getElementById('resultArea').style.display = 'block';
     };
+    reader.readAsArrayBuffer(file);
+}
+
+function renderTable() {
+    let html = `<table id="inconsistencyTable"><thead><tr>
+        <th>Data</th><th>Colaborador</th>`;
     
-    reader.onerror = function() {
-        showStatus('Erro ao ler o arquivo. Tente novamente.', 'error');
-    };
+    // Cabeçalhos Dinâmicos de Batida
+    for(let i = MAPPED_COLUMNS.P_INI; i <= MAPPED_COLUMNS.P_FIM; i++) html += `<th>${GLOBAL_HEADER[i]}</th>`;
+    for(let i = MAPPED_COLUMNS.PAU_INI; i <= MAPPED_COLUMNS.PAU_FIM; i++) html += `<th>${GLOBAL_HEADER[i]}</th>`;
+    
+    html += `<th>Ação</th></tr></thead><tbody>`;
 
-    reader.readAsArrayBuffer(fileInput.files[0]);
+    GLOBAL_DATA.forEach(r => {
+        html += `<tr id="row-${r.id}">
+            <td>${r.data}</td>
+            <td style="text-align:left"><strong>${r.nome}</strong></td>`;
+        
+        // Renderiza células de ponto
+        r.pontos.forEach(v => {
+            const isMissing = !v || v === '00:00';
+            html += `<td><span class="ponto-cell ${isMissing ? 'missing' : 'correct'}">${isMissing ? 'VAZIO' : v}</span></td>`;
+        });
+
+        // Renderiza células de pausa
+        r.pausas.forEach(v => {
+            const isMissing = !v || v === '00:00';
+            html += `<td><span class="ponto-cell ${isMissing ? 'missing' : 'correct'}">${isMissing ? 'VAZIO' : v}</span></td>`;
+        });
+
+        html += `<td><button class="btn btn-danger" onclick="excluirLinha('${r.id}')">Remover</button></td></tr>`;
+    });
+    
+    html += `</tbody></table>`;
+    document.getElementById('relatorio').innerHTML = html;
+}
+
+function filterTable() {
+    const input = document.getElementById("tableSearch").value.toUpperCase();
+    const trs = document.querySelectorAll("#inconsistencyTable tbody tr");
+    trs.forEach(tr => {
+        tr.style.display = tr.textContent.toUpperCase().includes(input) ? "" : "none";
+    });
+}
+
+function excluirLinha(id) {
+    GLOBAL_DATA = GLOBAL_DATA.filter(r => r.id !== id);
+    document.getElementById(`row-${id}`).remove();
+    document.getElementById('stat-errors').innerText = GLOBAL_DATA.length;
+}
+
+function exportarParaExcel() {
+    if(!GLOBAL_DATA.length) return;
+    const exportRows = GLOBAL_DATA.map(r => {
+        const obj = { "Data": r.data, "Colaborador": r.nome };
+        r.pontos.forEach((v, i) => obj[GLOBAL_HEADER[MAPPED_COLUMNS.P_INI + i]] = v || "FALTANTE");
+        r.pausas.forEach((v, i) => obj[GLOBAL_HEADER[MAPPED_COLUMNS.PAU_INI + i]] = v || "FALTANTE");
+        return obj;
+    });
+    const ws = XLSX.utils.json_to_sheet(exportRows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Ajustes");
+    XLSX.writeFile(wb, `Ajustes_Ponto_${new Date().toLocaleDateString().replace(/\//g,'-')}.xlsx`);
 }
 </script>
 </body>
