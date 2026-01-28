@@ -11,22 +11,20 @@
     
     <style>
         :root {
-            --bg-body: #f8fafc;
             --sidebar-bg: #ffffff;
             --accent: #3b82f6;
             --text-main: #1e293b;
             --text-muted: #64748b;
-            --sidebar-width: 280px;
-            --sidebar-collapsed: 60px; /* Reduzido para ficar mais fino */
-            --topbar-height: 70px;
-            --transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --sidebar-width: 240px;
+            --sidebar-collapsed: 60px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-body);
+            background-color: #fff;
             height: 100vh;
             display: flex;
             overflow: hidden;
@@ -46,35 +44,45 @@
 
         #sidebar.collapsed { width: var(--sidebar-collapsed); }
 
-        .logo-area {
-            height: var(--topbar-height);
+        /* Área do Botão de Controle Estabilizada */
+        .toggle-area {
+            height: 60px;
             display: flex;
             align-items: center;
-            padding: 0 12px; /* Ajustado para alinhar com a barra fina */
-            overflow: hidden;
-            border-bottom: 1px solid #f1f5f9;
             cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            overflow: hidden;
+            flex-shrink: 0;
         }
 
-        .logo-icon { 
-            background: linear-gradient(135deg, var(--accent), #1d4ed8);
-            color: white;
-            width: 35px;
-            height: 35px;
-            border-radius: 8px;
+        .menu-icon-container {
+            width: var(--sidebar-collapsed);
+            min-width: var(--sidebar-collapsed);
+            height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 15px;
-            min-width: 35px;
+            font-size: 1.1rem;
+            color: var(--text-main);
         }
 
-        .logo-text { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.5px; transition: 0.3s; white-space: nowrap; }
-        #sidebar.collapsed .logo-text { opacity: 0; transform: translateX(-20px); }
+        .logo-text-top {
+            font-weight: 700;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            transition: opacity 0.2s ease;
+            color: var(--text-main);
+        }
 
+        #sidebar.collapsed .logo-text-top {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Lista de Navegação */
         .nav-list {
             flex-grow: 1;
-            padding: 20px 8px; /* Ajustado */
+            padding: 10px 0;
             list-style: none;
             overflow-y: auto;
             scrollbar-width: none;
@@ -84,110 +92,98 @@
         .nav-item {
             display: flex;
             align-items: center;
-            padding: 12px;
+            height: 45px;
             color: var(--text-muted);
             text-decoration: none;
-            border-radius: 10px;
-            margin-bottom: 5px;
             transition: var(--transition);
             cursor: pointer;
-            white-space: nowrap;
             overflow: hidden;
+            margin: 0 8px 4px 8px;
+            border-radius: 8px;
         }
 
         .nav-item:hover { background-color: #f1f5f9; color: var(--accent); }
         .nav-item.active { background-color: #eff6ff; color: var(--accent); font-weight: 600; }
 
-        .nav-item i { font-size: 18px; min-width: 20px; margin-right: 20px; text-align: center; }
+        .nav-item i { 
+            width: calc(var(--sidebar-collapsed) - 16px);
+            min-width: calc(var(--sidebar-collapsed) - 16px);
+            text-align: center; 
+            font-size: 1.1rem;
+        }
         
-        #sidebar.collapsed .nav-text { opacity: 0; pointer-events: none; }
-        /* Garante que o ícone fique centralizado na barra fina */
-        #sidebar.collapsed .nav-item i { margin-right: 0; min-width: 100%; }
+        .nav-text { 
+            margin-left: 10px;
+            white-space: nowrap; 
+            font-size: 0.88rem;
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
 
-        /* --- MAIN CONTENT --- */
+        #sidebar.collapsed .nav-text { opacity: 0; }
+
+        /* --- CONTEÚDO --- */
         .main-wrapper {
             flex-grow: 1;
             display: flex;
             flex-direction: column;
             min-width: 0;
+            background: #fff;
         }
-
-        .top-bar {
-            height: var(--topbar-height);
-            padding: 0 30px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .toggle-btn {
-            background: white;
-            border: 1px solid #e2e8f0;
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-        }
-
-        .toggle-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
 
         .iframe-container {
             flex-grow: 1;
-            padding: 0 30px 30px 30px;
             position: relative;
         }
 
-        .iframe-card {
-            width: 100%;
-            height: 100%;
-            background: white;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
-            border: 1px solid #e2e8f0;
-        }
+        iframe { width: 100%; height: 100%; border: none; display: block; }
 
-        iframe { width: 100%; height: 100%; border: none; }
-
-        /* Loader */
+        /* Loader Slim */
         #loader {
             position: absolute;
-            top: 0; left: 30px; right: 30px; height: 3px;
-            background: transparent;
-            z-index: 10;
+            top: 0; left: 0; right: 0; height: 3px;
+            z-index: 2000;
             display: none;
         }
         #loader-bar {
-            width: 40%; height: 100%;
+            width: 30%; height: 100%;
             background: var(--accent);
-            border-radius: 10px;
-            animation: loading 1.2s infinite ease-in-out;
+            animation: loading 1s infinite linear;
             position: absolute;
         }
         @keyframes loading {
-            0% { left: -40%; }
+            0% { left: -30%; }
             100% { left: 100%; }
         }
 
+        /* Mobile */
         @media (max-width: 768px) {
-            #sidebar { position: fixed; left: -280px; height: 100%; }
-            #sidebar.mobile-open { left: 0; box-shadow: 20px 0 50px rgba(0,0,0,0.1); width: 280px !important; }
+            #sidebar { position: fixed; left: -240px; height: 100%; }
+            #sidebar.mobile-open { left: 0; width: 240px !important; box-shadow: 10px 0 30px rgba(0,0,0,0.1); }
+            #sidebar.mobile-open .logo-text-top, 
             #sidebar.mobile-open .nav-text { opacity: 1; }
-            .iframe-container { padding: 15px; }
+            
+            .mobile-trigger {
+                position: fixed; bottom: 25px; right: 25px;
+                width: 50px; height: 50px; background: var(--accent);
+                color: white; border-radius: 50%; display: flex;
+                align-items: center; justify-content: center; z-index: 999;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
         }
+        @media (min-width: 769px) { .mobile-trigger { display: none; } }
     </style>
 </head>
 <body>
 
-    <aside id="sidebar" class="collapsed"> <div class="logo-area" onclick="location.reload()">
-            <div class="logo-icon"><i class="fas fa-rocket"></i></div>
-            <span class="logo-text">Central Operacional</span>
+    <div id="loader"><div id="loader-bar"></div></div>
+
+    <aside id="sidebar" class="collapsed"> 
+        <div class="toggle-area" id="toggle-sidebar">
+            <div class="menu-icon-container">
+                <i class="fas fa-bars" id="toggle-icon"></i>
+            </div>
+            <span class="logo-text-top">Central Operacional</span>
         </div>
         
         <ul class="nav-list">
@@ -206,7 +202,7 @@
             <li class="nav-item" onclick="selectTool(this, 'CALCULADORA DE NS.html', 'Calculadora de NS')">
                 <i class="fas fa-calculator"></i><span class="nav-text">Calculadora de NS</span>
             </li>
-            <li class="nav-item" onclick="selectTool(this, 'ACOMPANHAMENTO DE METAS.html', 'Acompanhamento de Metas')">
+            <li class="nav-item" onclick="selectTool(this, 'ACOMPANHAMENTO DE METAS.html', 'Metas')">
                 <i class="fas fa-bullseye"></i><span class="nav-text">Metas</span>
             </li>
             <li class="nav-item" onclick="selectTool(this, 'AJUSTE DE PONTO.html', 'Ajuste de Ponto')">
@@ -218,11 +214,11 @@
             <li class="nav-item" onclick="selectTool(this, 'NUMEROS QUE LIGARAM 3 VEZES OU MAIS.html', 'Recorrentes')">
                 <i class="fas fa-phone-volume"></i><span class="nav-text">Recorrentes</span>
             </li>
-            <li class="nav-item" onclick="selectTool(this, 'CONSOLIDADO DIÁRIO E DETALHADO DE BAIXA DURAÇÃO.html', 'Consolidado e Baixa Duração')">
-                <i class="fas fa-file-invoice"></i><span class="nav-text">NS e Baixa Duração</span>
+            <li class="nav-item" onclick="selectTool(this, 'CONSOLIDADO DIÁRIO E DETALHADO DE BAIXA DURAÇÃO.html', 'NS e Baixa Duração')">
+                <i class="fas fa-file-invoice"></i><span class="nav-text">NS/Baixa Duração</span>
             </li>
-            <li class="nav-item" onclick="selectTool(this, 'Ferramenta de Auditoria de Pesquisa de Satisfação.html', 'Auditoria de Satisfação')">
-                <i class="fas fa-star-half-alt"></i><span class="nav-text">Auditoria de Satisfação</span>
+            <li class="nav-item" onclick="selectTool(this, 'Ferramenta de Auditoria de Pesquisa de Satisfação.html', 'Auditoria')">
+                <i class="fas fa-star-half-alt"></i><span class="nav-text">Auditoria</span>
             </li>
             <li class="nav-item" onclick="selectTool(this, 'LINKS_UTEIS.html', 'Links Úteis')">
                 <i class="fas fa-external-link-alt"></i><span class="nav-text">Links Úteis</span>
@@ -230,25 +226,13 @@
         </ul>
     </aside>
 
-    <div class="main-wrapper">
-        <header class="top-bar">
-            <div style="display: flex; align-items: center;">
-                <button class="toggle-btn" id="toggle-sidebar">
-                    <i class="fas fa-times" id="toggle-icon"></i> </button>
-                <div style="margin-left: 20px; font-weight: 600; color: var(--text-muted); font-size: 0.95rem;" id="tool-title">
-                    Painel Principal
-                </div>
-            </div>
-            <div style="font-size: 11px; font-weight: 600; color: #cbd5e1; text-transform: uppercase; letter-spacing: 1px;">
-                v2.1.0
-            </div>
-        </header>
+    <div class="mobile-trigger" onclick="toggleSidebarMobile()">
+        <i class="fas fa-bars"></i>
+    </div>
 
+    <div class="main-wrapper">
         <main class="iframe-container">
-            <div id="loader"><div id="loader-bar"></div></div>
-            <div class="iframe-card">
-                <iframe id="content-iframe" src="Bem_Vindo.html"></iframe>
-            </div>
+            <iframe id="content-iframe" src="Bem_Vindo.html"></iframe>
         </main>
     </div>
 
@@ -258,61 +242,41 @@
         const toggleIcon = document.getElementById('toggle-icon');
         const iframe = document.getElementById('content-iframe');
         const loader = document.getElementById('loader');
-        const titleText = document.getElementById('tool-title');
 
-        // Função para atualizar o ícone baseado no estado da sidebar
-        function updateToggleIcon() {
-            const isCollapsed = sidebar.classList.contains('collapsed');
-            const isMobileOpen = sidebar.classList.contains('mobile-open');
-
-            if (window.innerWidth <= 768) {
-                // No mobile: se aberto mostra X, se fechado mostra Bars
-                toggleIcon.className = isMobileOpen ? 'fas fa-times' : 'fas fa-bars';
+        function updateIcon() {
+            if (sidebar.classList.contains('collapsed')) {
+                toggleIcon.className = 'fas fa-bars';
             } else {
-                // No desktop: se recolhido (fino) mostra Bars, se expandido mostra X
-                toggleIcon.className = isCollapsed ? 'fas fa-bars' : 'fas fa-times';
+                toggleIcon.className = 'fas fa-times';
             }
         }
 
-        // Inicializa o ícone corretamente
-        updateToggleIcon();
-
-        // Toggle Manual
         toggleBtn.addEventListener('click', () => {
-            if (window.innerWidth <= 768) {
-                sidebar.classList.toggle('mobile-open');
-            } else {
-                sidebar.classList.toggle('collapsed');
-            }
-            updateToggleIcon();
+            sidebar.classList.toggle('collapsed');
+            updateIcon();
         });
 
-        // Função de Seleção
+        function toggleSidebarMobile() {
+            sidebar.classList.toggle('mobile-open');
+        }
+
         window.selectTool = function(el, file, title) {
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             el.classList.add('active');
 
             loader.style.display = 'block';
             iframe.src = file;
-            titleText.innerText = title;
 
-            // Auto-recolher a barra lateral após o clique
+            // Fecha a barra após seleção para priorizar o espaço
             if (window.innerWidth <= 768) {
                 sidebar.classList.remove('mobile-open');
             } else {
                 sidebar.classList.add('collapsed');
+                updateIcon();
             }
             
-            updateToggleIcon();
-
             iframe.onload = () => { loader.style.display = 'none'; };
         }
-
-        // Reajusta ícones caso a janela mude de tamanho
-        window.addEventListener('resize', updateToggleIcon);
     </script>
 </body>
 </html>
-
-
-
