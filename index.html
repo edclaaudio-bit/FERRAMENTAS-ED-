@@ -1,376 +1,315 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <link rel="icon" type="image/x-icon" href="favicon.ico.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Central de Ferramentas Operacionais</title>
+    <link rel="icon" type="image/png" href="favicon.ico.png">
+    <title>Central</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        /* Variáveis de Cores (Paleta Profissional) */
         :root {
-            --primary-color: #082161; /* Azul Marinho Escuro */
-            --accent-color: #17a2b8;  /* Ciano/Azul Claro (Ação) */
-            --background-light: #f0f2f5; /* Fundo Cinza Claro Suave */
-            --text-color: #333;
+            --bg-body: #f8fafc;
+            --sidebar-bg: #ffffff;
+            --accent: #3b82f6;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
             --sidebar-width: 280px;
-            --sidebar-collapsed-width: 60px;
+            --sidebar-collapsed: 60px; /* Reduzido para ficar mais fino */
+            --topbar-height: 70px;
+            --transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
-        /* Estilos Básicos para o "App" */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--background-light);
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            height: 100vh;
             display: flex;
-            min-height: 100vh;
-            color: var(--text-color);
-        }
-
-        /* Menu de Navegação (Sidebar) */
-        .sidebar {
-            width: var(--sidebar-width);
-            background-color: var(--primary-color);
-            color: white;
-            padding: 20px 0; 
-            box-shadow: 2px 0 10px rgba(0,0,0,0.3);
-            flex-shrink: 0;
-            transition: width 0.3s ease-in-out, transform 0.3s ease-in-out;
-            overflow-x: hidden;
-            z-index: 100;
-        }
-
-        /* Estado Colapsado no Desktop */
-        .sidebar.collapsed {
-            width: var(--sidebar-collapsed-width);
-        }
-
-        .sidebar.collapsed .tool-name,
-        .sidebar.collapsed .footer-text { 
-            opacity: 0;
-            width: 0;
-            transition: opacity 0.1s;
-        }
-
-        .sidebar.collapsed .tool-icon {
-            margin-right: 0;
-        }
-        
-        /* Logo */
-        .logo-area {
-            display: flex;
-            align-items: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 0 20px 15px 20px;
-            margin-bottom: 20px;
-            transition: justify-content 0.3s;
-        }
-        
-        .logo-area h2 {
-            margin: 0;
-            font-size: 1.2em;
             overflow: hidden;
-            white-space: nowrap;
+            color: var(--text-main);
         }
 
-        .logo-area .logo-link {
-            color: white;
-            text-decoration: none;
+        /* --- SIDEBAR --- */
+        #sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            transition: var(--transition);
+            border-right: 1px solid #e2e8f0;
+            z-index: 1000;
+        }
+
+        #sidebar.collapsed { width: var(--sidebar-collapsed); }
+
+        .logo-area {
+            height: var(--topbar-height);
             display: flex;
             align-items: center;
+            padding: 0 12px; /* Ajustado para alinhar com a barra fina */
+            overflow: hidden;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
         }
 
-        .logo-icon {
-            font-size: 1.5em;
-            margin-right: 10px;
-            flex-shrink: 0;
-        }
-
-        /* Links da Ferramenta */
-        .tool-links {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .tool-links li a {
+        .logo-icon { 
+            background: linear-gradient(135deg, var(--accent), #1d4ed8);
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
-            color: white;
-            text-decoration: none;
-            padding: 12px 20px;
-            margin: 4px 0;
-            border-radius: 0 6px 6px 0; 
-            transition: background-color 0.2s ease, border-left 0.2s ease;
-            white-space: nowrap; 
-        }
-
-        .tool-links li a:hover {
-            background-color: #2a3d76; 
-        }
-        
-        .tool-links li a.active {
-            background-color: var(--accent-color); 
-            font-weight: 600;
-            box-shadow: inset 5px 0 0 var(--accent-color), 0 2px 5px rgba(0, 0, 0, 0.3);
-            border-left: 5px solid white; 
-        }
-        
-        .tool-icon {
-            font-size: 1.1em;
+            justify-content: center;
             margin-right: 15px;
-            flex-shrink: 0;
-            transition: margin-right 0.3s;
+            min-width: 35px;
         }
 
-        .sidebar.collapsed .tool-links li a {
-            padding: 12px 18px; 
-        }
-        
-        /* Área de Conteúdo Principal */
-        .content-area {
+        .logo-text { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.5px; transition: 0.3s; white-space: nowrap; }
+        #sidebar.collapsed .logo-text { opacity: 0; transform: translateX(-20px); }
+
+        .nav-list {
             flex-grow: 1;
-            padding: 0;
-            background-color: #ffffff;
-            transition: margin-left 0.3s ease-in-out;
+            padding: 20px 8px; /* Ajustado */
+            list-style: none;
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+        .nav-list::-webkit-scrollbar { display: none; }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 10px;
+            margin-bottom: 5px;
+            transition: var(--transition);
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
         }
 
-        .content-area iframe {
+        .nav-item:hover { background-color: #f1f5f9; color: var(--accent); }
+        .nav-item.active { background-color: #eff6ff; color: var(--accent); font-weight: 600; }
+
+        .nav-item i { font-size: 18px; min-width: 20px; margin-right: 20px; text-align: center; }
+        
+        #sidebar.collapsed .nav-text { opacity: 0; pointer-events: none; }
+        /* Garante que o ícone fique centralizado na barra fina */
+        #sidebar.collapsed .nav-item i { margin-right: 0; min-width: 100%; }
+
+        /* --- MAIN CONTENT --- */
+        .main-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .top-bar {
+            height: var(--topbar-height);
+            padding: 0 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .toggle-btn {
+            background: white;
+            border: 1px solid #e2e8f0;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .toggle-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+
+        .iframe-container {
+            flex-grow: 1;
+            padding: 0 30px 30px 30px;
+            position: relative;
+        }
+
+        .iframe-card {
             width: 100%;
             height: 100%;
-            border: none;
-            display: block;
-        }
-
-        /* Botão de Toggle da Sidebar */
-        .toggle-button {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            cursor: pointer;
-            border-radius: 8px;
-            font-size: 1.2em;
-            z-index: 101;
-            transition: background-color 0.2s, left 0.3s ease-in-out;
-        }
-        
-        .toggle-button:hover {
-             background-color: var(--accent-color);
-        }
-
-        /* Rodapé no Menu */
-        .sidebar-footer {
-            position: absolute; 
-            bottom: 20px; 
-            left: 20px; 
-            font-size: 0.8em; 
-            opacity: 0.7; 
-            transition: opacity 0.3s; 
-            pointer-events: none;
+            background: white;
+            border-radius: 16px;
             overflow: hidden;
-            white-space: nowrap;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
         }
 
-        /* Reposiciona o botão quando a sidebar está expandida no desktop */
-        @media (min-width: 769px) {
-            .sidebar.collapsed + .toggle-button {
-                left: 10px;
-            }
-            .sidebar + .toggle-button {
-                left: 20px;
-            }
+        iframe { width: 100%; height: 100%; border: none; }
+
+        /* Loader */
+        #loader {
+            position: absolute;
+            top: 0; left: 30px; right: 30px; height: 3px;
+            background: transparent;
+            z-index: 10;
+            display: none;
+        }
+        #loader-bar {
+            width: 40%; height: 100%;
+            background: var(--accent);
+            border-radius: 10px;
+            animation: loading 1.2s infinite ease-in-out;
+            position: absolute;
+        }
+        @keyframes loading {
+            0% { left: -40%; }
+            100% { left: 100%; }
         }
 
-        /* Responsividade (Mobile) */
         @media (max-width: 768px) {
-            .sidebar {
-                position: fixed;
-                height: 100vh;
-                top: 0;
-                left: 0;
-                width: var(--sidebar-width);
-                transform: translateX(-100%);
-                box-shadow: 3px 0 10px rgba(0,0,0,0.5);
-                padding-top: 60px;
-                width: var(--sidebar-width) !important;
-            }
-            
-            .sidebar.visible {
-                transform: translateX(0);
-            }
-
-            .toggle-button {
-                display: block;
-                left: 10px;
-                top: 10px;
-            }
+            #sidebar { position: fixed; left: -280px; height: 100%; }
+            #sidebar.mobile-open { left: 0; box-shadow: 20px 0 50px rgba(0,0,0,0.1); width: 280px !important; }
+            #sidebar.mobile-open .nav-text { opacity: 1; }
+            .iframe-container { padding: 15px; }
         }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
 
-    <button class="toggle-button" id="toggle-sidebar" title="Expandir Menu">☰</button>
-
-    <div class="sidebar" id="sidebar">
-        <div class="logo-area">
-            <a href="javascript:void(0)" class="logo-link" onclick="window.location.reload()">
-                <span class="logo-icon">📊</span>
-                <h2>Central Operacional</h2>
-            </a>
+    <aside id="sidebar" class="collapsed"> <div class="logo-area" onclick="location.reload()">
+            <div class="logo-icon"><i class="fas fa-chart-line"></i></div>
+            <span class="logo-text">Central Operacional</span>
         </div>
         
-        <ul class="tool-links">
-            <li>
-                <a href="javascript:void(0)" onclick="selectTool(this, 'Escala Diária.html')">
-                    <span class="tool-icon">📅</span>
-                    <span class="tool-name">Escala Diária</span>
-                </a>
+        <ul class="nav-list">
+            <li class="nav-item active" onclick="selectTool(this, 'Bem_Vindo.html', 'Painel Principal')">
+                <i class="fas fa-home"></i><span class="nav-text">Início</span>
             </li>
-            <li>
-                <a href="javascript:void(0)" onclick="selectTool(this, 'PERFORMANCE DIÁRIA.html')">
-                    <span class="tool-icon">📈</span>
-                    <span class="tool-name">Performance Diária</span>
-                </a>
+            <li class="nav-item" onclick="selectTool(this, 'Escala Diária.html', 'Escala Diária')">
+                <i class="fas fa-users"></i><span class="nav-text">Escala Diária</span>
             </li>
-            <li>
-                <a href="javascript:void(0)" onclick="selectTool(this, 'OPERACIONAL 360.html')">
-                    <span class="tool-icon">🔄</span>
-                    <span class="tool-name">Operacional 360º</span>
-                </a>
+            <li class="nav-item" onclick="selectTool(this, 'PERFORMANCE DIÁRIA.html', 'Performance Diária')">
+                <i class="fas fa-bolt"></i><span class="nav-text">Performance Diária</span>
             </li>
-            <li>
-                <a href="javascript:void(0)" onclick="selectTool(this, 'CALCULADORA DE NS.html')">
-                    <span class="tool-icon">🧮</span>
-                    <span class="tool-name">Calculadora de NS</span>
-                </a>
+            <li class="nav-item" onclick="selectTool(this, 'OPERACIONAL 360.html', 'Operacional 360º')">
+                <i class="fas fa-circle-notch"></i><span class="nav-text">Operacional 360º</span>
             </li>
-            <li>
-                <a href="javascript:void(0)" onclick="selectTool(this, 'ACOMPANHAMENTO DE METAS.html')">
-                    <span class="tool-icon">🎯</span>
-                    <span class="tool-name">Acompanhamento de Metas</span>
-                </a>
+            <li class="nav-item" onclick="selectTool(this, 'CALCULADORA DE NS.html', 'Calculadora de NS')">
+                <i class="fas fa-calculator"></i><span class="nav-text">Calculadora de NS</span>
             </li>
-            <li>
-                <a href="javascript:void(0)" onclick="selectTool(this, 'AJUSTE DE PONTO.html')">
-                    <span class="tool-icon">⏰</span>
-                    <span class="tool-name">Ajuste de Ponto</span>
-                </a>
+            <li class="nav-item" onclick="selectTool(this, 'ACOMPANHAMENTO DE METAS.html', 'Acompanhamento de Metas')">
+                <i class="fas fa-bullseye"></i><span class="nav-text">Metas</span>
             </li>
-            <li>
-                <a href="javascript:void(0)" onclick="selectTool(this, 'FECHAMENTO.html')">
-                    <span class="tool-icon">📞</span>
-                    <span class="tool-name">Fechamento DG</span>
-                </a>
+            <li class="nav-item" onclick="selectTool(this, 'AJUSTE DE PONTO.html', 'Ajuste de Ponto')">
+                <i class="fas fa-user-clock"></i><span class="nav-text">Ajuste de Ponto</span>
             </li>
-            <li>
-                <a href="javascript:void(0)" onclick="selectTool(this, 'NUMEROS QUE LIGARAM 3 VEZES OU MAIS.html')">
-                    <span class="tool-icon">📵</span>
-                    <span class="tool-name">Chamadas Recorrentes</span>
-                </a>
+            <li class="nav-item" onclick="selectTool(this, 'FECHAMENTO.html', 'Fechamento DG')">
+                <i class="fas fa-door-closed"></i><span class="nav-text">Fechamento DG</span>
             </li>
-            <li>
-                <a href="javascript:void(0)" onclick="selectTool(this, 'CONSOLIDADO DIÁRIO E DETALHADO DE BAIXA DURAÇÃO.html')">
-                    <span class="tool-icon">📉</span>
-                    <span class="tool-name">Consolidado e Baixa Duração</span>
-                </a>
+            <li class="nav-item" onclick="selectTool(this, 'NUMEROS QUE LIGARAM 3 VEZES OU MAIS.html', 'Recorrentes')">
+                <i class="fas fa-phone-volume"></i><span class="nav-text">Recorrentes</span>
             </li>
-            <li>
-                <a href="javascript:void(0)" onclick="selectTool(this, 'Ferramenta de Auditoria de Pesquisa de Satisfação.html')">
-                    <span class="tool-icon">⭐</span>
-                    <span class="tool-name">Auditoria de Satisfação</span>
-                </a>
+            <li class="nav-item" onclick="selectTool(this, 'CONSOLIDADO DIÁRIO E DETALHADO DE BAIXA DURAÇÃO.html', 'Consolidado e Baixa Duração')">
+                <i class="fas fa-file-invoice"></i><span class="nav-text">NS e Baixa Duração</span>
             </li>
-            
-            <li>
-                <a href="javascript:void(0)" onclick="selectTool(this, 'LINKS_UTEIS.html')">
-                    <span class="tool-icon">🔗</span>
-                    <span class="tool-name">Links Úteis</span>
-                </a>
+            <li class="nav-item" onclick="selectTool(this, 'Ferramenta de Auditoria de Pesquisa de Satisfação.html', 'Auditoria de Satisfação')">
+                <i class="fas fa-star-half-alt"></i><span class="nav-text">Auditoria de Satisfação</span>
             </li>
-            
+            <li class="nav-item" onclick="selectTool(this, 'LINKS_UTEIS.html', 'Links Úteis')">
+                <i class="fas fa-external-link-alt"></i><span class="nav-text">Links Úteis</span>
+            </li>
         </ul>
-        
-        <div class="sidebar-footer">
-            <span class="footer-text">v1.0.1</span>
-        </div>
-    </div>
+    </aside>
 
-    <div class="content-area">
-        <iframe id="content-iframe" src="Bem_Vindo.html"></iframe>
+    <div class="main-wrapper">
+        <header class="top-bar">
+            <div style="display: flex; align-items: center;">
+                <button class="toggle-btn" id="toggle-sidebar">
+                    <i class="fas fa-times" id="toggle-icon"></i> </button>
+                <div style="margin-left: 20px; font-weight: 600; color: var(--text-muted); font-size: 0.95rem;" id="tool-title">
+                    Painel Principal
+                </div>
+            </div>
+            <div style="font-size: 11px; font-weight: 600; color: #cbd5e1; text-transform: uppercase; letter-spacing: 1px;">
+                v2.1.0
+            </div>
+        </header>
+
+        <main class="iframe-container">
+            <div id="loader"><div id="loader-bar"></div></div>
+            <div class="iframe-card">
+                <iframe id="content-iframe" src="Bem_Vindo.html"></iframe>
+            </div>
+        </main>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const sidebar = document.getElementById('sidebar');
-            const toggleButton = document.getElementById('toggle-sidebar');
-            const iframe = document.getElementById('content-iframe');
-            const toolLinks = document.querySelectorAll('.tool-links a');
-            const isMobile = window.matchMedia("(max-width: 768px)").matches;
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('toggle-sidebar');
+        const toggleIcon = document.getElementById('toggle-icon');
+        const iframe = document.getElementById('content-iframe');
+        const loader = document.getElementById('loader');
+        const titleText = document.getElementById('tool-title');
 
-            // --- Toggle da Sidebar (Expandir/Recolher) ---
-            toggleButton.addEventListener('click', () => {
-                if (isMobile) {
-                    sidebar.classList.toggle('visible');
-                    if (sidebar.classList.contains('visible')) {
-                        toggleButton.innerHTML = '✕'; 
-                        toggleButton.title = 'Recolher Menu';
-                    } else {
-                        toggleButton.innerHTML = '☰';
-                        toggleButton.title = 'Mostrar Menu';
-                    }
-                } else {
-                    sidebar.classList.toggle('collapsed');
-                    if (sidebar.classList.contains('collapsed')) {
-                        toggleButton.innerHTML = '☰'; 
-                        toggleButton.title = 'Expandir Menu';
-                    } else {
-                        toggleButton.innerHTML = '✕';
-                        toggleButton.title = 'Recolher Menu';
-                    }
-                }
-            });
-            // --------------------------------------------------
+        // Função para atualizar o ícone baseado no estado da sidebar
+        function updateToggleIcon() {
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            const isMobileOpen = sidebar.classList.contains('mobile-open');
 
-            // Inicialmente, colapsa a barra lateral no desktop.
-            if (!isMobile) {
-                sidebar.classList.add('collapsed');
-                toggleButton.innerHTML = '☰'; 
-                toggleButton.title = 'Expandir Menu';
+            if (window.innerWidth <= 768) {
+                // No mobile: se aberto mostra X, se fechado mostra Bars
+                toggleIcon.className = isMobileOpen ? 'fas fa-times' : 'fas fa-bars';
             } else {
-                toggleButton.innerHTML = '☰'; 
-                toggleButton.title = 'Mostrar Menu';
+                // No desktop: se recolhido (fino) mostra Bars, se expandido mostra X
+                toggleIcon.className = isCollapsed ? 'fas fa-bars' : 'fas fa-times';
             }
+        }
 
-            // Função para gerenciar o estado 'active' do link, carregar o conteúdo e recolher a barra
-            window.selectTool = function(selectedLink, filename) { 
-                // Remove 'active' de todos
-                toolLinks.forEach(link => link.classList.remove('active'));
+        // Inicializa o ícone corretamente
+        updateToggleIcon();
 
-                // Adiciona 'active' ao link clicado
-                selectedLink.classList.add('active');
-                
-                // Carrega o arquivo HTML no iframe
-                iframe.src = filename;
-
-                // 1. Mobile: Oculta a barra completamente
-                if (isMobile) {
-                    sidebar.classList.remove('visible');
-                    toggleButton.innerHTML = '☰';
-                    toggleButton.title = 'Mostrar Menu';
-                }
-                // 2. Desktop: Colapsa a barra
-                if (!isMobile) {
-                    sidebar.classList.add('collapsed');
-                    toggleButton.innerHTML = '☰'; 
-                    toggleButton.title = 'Expandir Menu';
-                }
+        // Toggle Manual
+        toggleBtn.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('mobile-open');
+            } else {
+                sidebar.classList.toggle('collapsed');
             }
+            updateToggleIcon();
         });
+
+        // Função de Seleção
+        window.selectTool = function(el, file, title) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+
+            loader.style.display = 'block';
+            iframe.src = file;
+            titleText.innerText = title;
+
+            // Auto-recolher a barra lateral após o clique
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('mobile-open');
+            } else {
+                sidebar.classList.add('collapsed');
+            }
+            
+            updateToggleIcon();
+
+            iframe.onload = () => { loader.style.display = 'none'; };
+        }
+
+        // Reajusta ícones caso a janela mude de tamanho
+        window.addEventListener('resize', updateToggleIcon);
     </script>
 </body>
 </html>
