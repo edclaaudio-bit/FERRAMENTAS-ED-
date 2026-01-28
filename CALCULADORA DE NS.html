@@ -3,104 +3,199 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Calculadora Automática de NS</title>
+  <title>Dashboard Operacional - NS</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { 
+      font-family: 'Plus Jakarta Sans', sans-serif; 
+      background-color: #fcfcfd;
+    }
+    .card-shadow {
+      box-shadow: 0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06);
+    }
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
-  <div id="app" class="w-full max-w-3xl bg-white rounded-2xl shadow-lg p-6 relative"></div>
+<body class="text-slate-900">
+
+  <div id="app" class="w-full min-h-screen flex flex-col p-4 md:p-8 lg:p-12">
+    
+    <header class="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4 border-b border-slate-100 pb-8">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">Calculadora de Nível de Serviço</h1>
+        </div>
+        <p class="text-slate-500 text-sm font-medium">Simule cenários de recuperação e projete o volume necessário para metas de NS</p>
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <button id="limpar" class="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          Limpar
+        </button>
+        <button id="calcular" class="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/></svg>
+          Calcular Projeção
+        </button>
+      </div>
+    </header>
+
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow transition-all focus-within:ring-2 focus-within:ring-indigo-500/20">
+        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Total Atendidas</label>
+        <input id="total" type="number" placeholder="0" class="w-full text-xl font-bold outline-none placeholder:text-slate-300" />
+      </div>
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow transition-all focus-within:ring-2 focus-within:ring-indigo-500/20">
+        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Atendidas ≤ 60s</label>
+        <input id="ate60" type="number" placeholder="0" class="w-full text-xl font-bold outline-none placeholder:text-slate-300 text-indigo-600" />
+      </div>
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow transition-all focus-within:ring-2 focus-within:ring-indigo-500/20">
+        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Meta NS (%)</label>
+        <div class="flex items-center">
+          <input id="meta" type="number" value="85" class="w-full text-xl font-bold outline-none" />
+          <span class="text-slate-400 font-bold">%</span>
+        </div>
+      </div>
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow transition-all focus-within:ring-2 focus-within:ring-indigo-500/20">
+        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Performance Novos Atend. (%)</label>
+        <div class="flex items-center">
+          <input id="media" type="number" value="90" class="w-full text-xl font-bold outline-none text-emerald-600" />
+          <span class="text-slate-400 font-bold">%</span>
+        </div>
+      </div>
+    </section>
+
+    <main id="resultado" class="w-full grid grid-cols-1 lg:grid-cols-12 gap-8"></main>
+
+    <footer class="mt-auto pt-8 flex justify-between items-center text-slate-400 text-xs font-medium">
+      <div class="flex gap-4">
+      </div>
+      <p> <span class="text-slate-600 font-bold"> Desenvolvido por Claudio Carvalho</span></p>
+    </footer>
+  </div>
 
   <script>
-    function renderCalculator() {
-      const app = document.getElementById('app');
+    const btnCalcular = document.getElementById('calcular');
+    const btnLimpar = document.getElementById('limpar');
 
-      app.innerHTML = `
-        <h1 class='text-2xl font-bold mb-4 text-indigo-700'>Calculadora automática de NS</h1>
-        <p class='text-sm text-gray-600 mb-6'>Informe os valores e veja automaticamente seu NS atual, quanto falta para atingir a meta e quantas ligações adicionais são necessárias, considerando uma média de atendimento até 60s.</p>
+    btnCalcular.addEventListener('click', doCalc);
+    btnLimpar.addEventListener('click', () => {
+      document.getElementById('total').value = '';
+      document.getElementById('ate60').value = '';
+      document.getElementById('meta').value = 85;
+      document.getElementById('media').value = 90;
+      document.getElementById('resultado').innerHTML = '';
+    });
 
-        <div class='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
-          <label class='block'>
-            <div class='text-xs text-gray-700'>Ligações atendidas (total)</div>
-            <input id='total' type='number' placeholder='Ex: 4200' class='mt-1 w-full border rounded p-2' />
-          </label>
-          <label class='block'>
-            <div class='text-xs text-gray-700'>Atendidas até 60s</div>
-            <input id='ate60' type='number' placeholder='Ex: 3500' class='mt-1 w-full border rounded p-2' />
-          </label>
-          <label class='block'>
-            <div class='text-xs text-gray-700'>Meta NS (%)</div>
-            <input id='meta' type='number' value='85' class='mt-1 w-full border rounded p-2' />
-          </label>
-          <label class='block'>
-            <div class='text-xs text-gray-700'>Média esperada das novas atendidas ≤60s (%)</div>
-            <input id='media' type='number' value='90' class='mt-1 w-full border rounded p-2' />
-          </label>
+    function doCalc() {
+      const total = parseFloat(document.getElementById('total').value) || 0;
+      const ate60 = parseFloat(document.getElementById('ate60').value) || 0;
+      const metaPerc = parseFloat(document.getElementById('meta').value) || 0;
+      const mediaPerc = parseFloat(document.getElementById('media').value) || 0;
+      
+      const meta = metaPerc / 100;
+      const media = mediaPerc / 100;
+
+      if (total === 0) {
+        document.getElementById('resultado').innerHTML = `
+          <div class="col-span-12 p-4 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-sm font-medium">
+            Aguardando dados de entrada para processar a análise.
+          </div>`;
+        return;
+      }
+
+      const nsAtual = (ate60 / total) * 100;
+      const gaps = Math.max(0, Math.ceil(meta * total - ate60));
+      let adicional = Math.ceil((meta * total - ate60) / (media - meta));
+      let possivel = media > meta;
+
+      let corStatus = nsAtual >= metaPerc ? 'text-emerald-600' : 'text-rose-600';
+      let bgStatus = nsAtual >= metaPerc ? 'bg-emerald-50' : 'bg-rose-50';
+
+      let html = `
+        <div class="lg:col-span-4 flex flex-col gap-6">
+          <div class="bg-white p-8 rounded-[2rem] border border-slate-200 card-shadow flex flex-col items-center text-center">
+            <span class="text-xs font-extrabold text-slate-400 uppercase tracking-[0.2em] mb-4">Nível de Serviço Atual</span>
+            <div class="relative flex items-center justify-center">
+                <svg class="w-40 h-40 transform -rotate-90">
+                    <circle cx="80" cy="80" r="70" stroke="currentColor" stroke-width="12" fill="transparent" class="text-slate-100" />
+                    <circle cx="80" cy="80" r="70" stroke="currentColor" stroke-width="12" fill="transparent" 
+                        stroke-dasharray="440" 
+                        stroke-dashoffset="${440 - (440 * (nsAtual > 100 ? 100 : nsAtual) / 100)}" 
+                        class="${corStatus} transition-all duration-1000 ease-out" 
+                    />
+                </svg>
+                <span class="absolute text-3xl font-black text-slate-900">${nsAtual.toFixed(1)}%</span>
+            </div>
+            <div class="mt-6 px-4 py-1.5 ${bgStatus} ${corStatus} rounded-full text-[11px] font-black uppercase tracking-wider italic">
+              Status: ${nsAtual >= metaPerc ? 'Dentro da Meta' : 'Abaixo da Meta'}
+            </div>
+          </div>
         </div>
 
-        <div class="flex gap-3 mb-4">
-          <button id='calcular' class='px-4 py-2 bg-indigo-600 text-white rounded shadow hover:bg-indigo-700 transition'>Calcular</button>
-          <button id='limpar' class='px-4 py-2 border rounded hover:bg-gray-100 transition'>Limpar</button>
+        <div class="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 card-shadow">
+            <h4 class="text-slate-900 font-bold mb-1">Gap de Performance</h4>
+            <p class="text-slate-400 text-xs mb-6">Para atingir os ${metaPerc}% no volume atual:</p>
+            <div class="flex items-end gap-3">
+                <span class="text-4xl font-black text-slate-800">${gaps}</span>
+                <span class="text-sm font-semibold text-slate-500 mb-1">atendidas ≤ 60s</span>
+            </div>
+            <div class="mt-6 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full bg-indigo-500" style="width: ${nsAtual}%"></div>
+            </div>
+          </div>
+
+          <div class="bg-slate-900 p-6 rounded-2xl shadow-2xl shadow-slate-200 text-white">
+            <h4 class="font-bold mb-1">Esforço Adicional</h4>
+            <p class="text-slate-400 text-xs mb-6 font-medium uppercase tracking-wider">Simulação Baseada em Performance</p>
+            
+            ${!possivel ? `
+              <div class="text-rose-400 text-sm font-bold bg-rose-400/10 p-4 rounded-xl border border-rose-400/20">
+                Performance projetada insuficiente (${mediaPerc}%). <br>Deve ser superior à meta (${metaPerc}%).
+              </div>
+            ` : `
+              <div class="space-y-4">
+                <div class="flex justify-between items-baseline">
+                    <span class="text-slate-400 text-sm">Novas Chamadas:</span>
+                    <span class="text-2xl font-black text-indigo-400">${adicional > 0 ? adicional.toLocaleString() : '0'}</span>
+                </div>
+                <div class="flex justify-between items-baseline border-t border-slate-800 pt-4">
+                    <span class="text-slate-400 text-sm text-emerald-400">Eficiência Necessária:</span>
+                    <span class="text-lg font-bold">${mediaPerc}%</span>
+                </div>
+              </div>
+            `}
+          </div>
+
+          <div class="md:col-span-2 bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
+            <div class="flex items-start gap-4">
+                <div class="bg-indigo-600 p-2 rounded-lg text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10"/><path d="m16 8-4 4-4-4"/><path d="M4 20h16"/></svg>
+                </div>
+                <div>
+                    <h5 class="text-indigo-900 font-extrabold text-sm uppercase tracking-tight">REGRA DE OURO</h5>
+                    <p class="text-indigo-800/80 text-sm leading-relaxed mt-1">
+                        ${nsAtual >= metaPerc ? 
+                          'Operação em conformidade. Recomenda-se manter o monitoramento em tempo real para evitar oscilações no TMA.' : 
+                          `Para estabilizar o NS em <b>${metaPerc}%</b>, direcione a equipe para atender as próximas <b>${adicional.toLocaleString()}</b> chamadas garantindo que <b>${mediaPerc}%</b> delas não ultrapassem 60s.`
+                        }
+                    </p>
+                </div>
+            </div>
+          </div>
+
         </div>
-
-        <div id='resultado' class='mt-6 text-sm text-gray-800'></div>
-
-        <footer class='absolute bottom-2 right-4 text-xs text-gray-400 italic select-none'>
-          Desenvolvido por <span class='text-indigo-600 font-semibold'>Claudio Carvalho</span>
-        </footer>
       `;
 
-      document.getElementById('calcular').addEventListener('click', doCalc);
-      document.getElementById('limpar').addEventListener('click', () => {
-        document.getElementById('total').value = '';
-        document.getElementById('ate60').value = '';
-        document.getElementById('meta').value = 85;
-        document.getElementById('media').value = 90;
-        document.getElementById('resultado').innerHTML = '';
-      });
-
-      function doCalc() {
-        const total = parseFloat(document.getElementById('total').value) || 0;
-        const ate60 = parseFloat(document.getElementById('ate60').value) || 0;
-        const meta = (parseFloat(document.getElementById('meta').value) || 0) / 100;
-        const media = (parseFloat(document.getElementById('media').value) || 0) / 100;
-
-        if (total === 0) {
-          document.getElementById('resultado').innerHTML = `<div class='text-red-600'>Informe pelo menos o total de ligações.</div>`;
-          return;
-        }
-
-        const nsAtual = ate60 / total;
-        const faltam60 = Math.max(0, Math.ceil(meta * total - ate60));
-
-        let adicional = null;
-        let possivel = true;
-
-        if (media <= meta) {
-          possivel = false;
-        } else {
-          adicional = Math.ceil((meta * total - ate60) / (media - meta));
-        }
-
-        let html = `<div class='mt-4'><strong>NS atual:</strong> ${(nsAtual * 100).toFixed(2)}%</div>`;
-        html += `<div>Faltam <strong>${faltam60}</strong> atendidas ≤60s para atingir ${(meta * 100).toFixed(2)}% (mantendo total atual).</div>`;
-
-        if (possivel && adicional !== null && adicional > 0) {
-          const totalNovo = total + adicional;
-          const ate60Novo = ate60 + Math.round(adicional * media);
-          const nsNovo = (ate60Novo / totalNovo) * 100;
-
-          html += `<div class='mt-3'>Para atingir ${(meta * 100).toFixed(2)}%, considerando ${(media * 100).toFixed(1)}% das novas ≤60s, será necessário atender aproximadamente <strong>${adicional}</strong> ligações adicionais.</div>`;
-          html += `<div class='text-gray-600 text-xs'>Estimativa final: ${nsNovo.toFixed(2)}% com total de ${totalNovo} ligações (${ate60Novo} atendidas ≤60s).</div>`;
-        } else if (possivel && adicional === 0) {
-          html += `<div class='mt-3 text-green-700'>Você já atinge a meta com os números atuais.</div>`;
-        } else {
-          html += `<div class='mt-3 text-yellow-700'>Com a média esperada de ${(media * 100).toFixed(1)}%, não é possível atingir ${(meta * 100).toFixed(2)}%. A média precisa ser superior à meta.</div>`;
-        }
-
-        document.getElementById('resultado').innerHTML = html;
-      }
+      document.getElementById('resultado').innerHTML = html;
     }
-
-    renderCalculator();
   </script>
 </body>
 </html>
