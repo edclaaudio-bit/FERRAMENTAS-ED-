@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Links Úteis</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>Painel de Links Úteis | Operacional</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #082161; 
-            --accent-color: #17a2b8;  
-            --bg-body: #f8fafc;
-            --bg-card: #ffffff;
+            --primary-color: #0f172a;
+            --accent-color: #0ea5e9;
+            --bg-body: #f1f5f9;
+            --bg-card: rgba(255, 255, 255, 0.9);
             --text-main: #1e293b;
             --text-muted: #64748b;
             --border-color: #e2e8f0;
-            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --transition: all 0.3s ease;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+            --shadow-md: 0 10px 15px -3px rgba(0,0,0,0.1);
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         * {
@@ -25,76 +26,84 @@
         }
 
         body { 
-            font-family: 'Inter', sans-serif; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
             background-color: var(--bg-body); 
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 30px 30px;
             color: var(--text-main);
             line-height: 1.6;
-            padding: 40px 20px;
+            padding: 30px;
+            min-height: 100vh;
         }
 
         .container {
-            max-width: 1000px;
+            width: 100%;
+            max-width: 100%;
             margin: 0 auto;
         }
 
         header {
             text-align: center;
-            margin-bottom: 50px;
+            margin-bottom: 40px;
         }
 
         h1 { 
             color: var(--primary-color); 
-            font-size: 2.2rem;
-            font-weight: 700;
-            letter-spacing: -0.025em;
-            text-transform: uppercase;
-            position: relative;
-            display: inline-block;
-            padding-bottom: 15px;
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.05em;
+            margin-bottom: 10px;
         }
 
-        h1::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 25%;
-            width: 50%;
-            height: 4px;
+        .header-line {
+            width: 80px;
+            height: 5px;
             background: var(--accent-color);
-            border-radius: 2px;
+            margin: 0 auto;
+            border-radius: 10px;
         }
 
-        /* Grid System */
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
         }
 
         .link-group { 
-            background-color: var(--bg-card); 
-            padding: 25px; 
-            border-radius: 12px; 
+            background: var(--bg-card); 
+            backdrop-filter: blur(10px);
+            padding: 24px; 
+            border-radius: 16px; 
             border: 1px solid var(--border-color);
-            box-shadow: var(--shadow);
+            box-shadow: var(--shadow-sm);
             transition: var(--transition);
             display: flex;
             flex-direction: column;
         }
 
         .link-group:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--accent-color);
         }
 
         h2 { 
             color: var(--primary-color); 
             font-size: 1.1rem; 
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             text-transform: uppercase;
             font-weight: 700;
-            border-left: 4px solid var(--accent-color);
-            padding-left: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2::before {
+            content: '';
+            width: 4px;
+            height: 18px;
+            background: var(--accent-color);
+            border-radius: 4px;
         }
 
         ul { 
@@ -102,20 +111,20 @@
         }
 
         li { 
-            margin-bottom: 12px; 
+            margin-bottom: 10px; 
         }
 
         li a { 
             color: var(--text-main); 
             text-decoration: none; 
             font-weight: 600; 
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 16px; 
+            padding: 14px 18px; 
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 12px;
             background: #fff;
             transition: var(--transition);
         }
@@ -123,32 +132,32 @@
         li a:hover { 
             background-color: var(--primary-color);
             color: #fff;
-            border-color: var(--primary-color);
+            transform: scale(1.02);
         }
 
         .note { 
-            font-size: 0.85rem; 
+            font-size: 0.8rem; 
             color: var(--text-muted); 
-            margin-top: 10px; 
-            padding: 10px;
-            background: #f1f5f9;
-            border-radius: 6px;
-            font-style: italic;
+            margin-top: auto;
+            padding-top: 15px;
+            font-style: normal;
+            font-weight: 500;
         }
 
         .external-icon::after {
-            content: '↗';
-            font-size: 1.1rem;
-            margin-left: 8px;
-            opacity: 0.7;
+            content: '→';
+            font-size: 1.2rem;
+            opacity: 0.5;
+            transition: var(--transition);
         }
 
-        /* Destaque para as Novas Ferramentas */
-        .new-section {
-            border-top: 4px solid var(--accent-color);
+        li a:hover .external-icon::after {
+            opacity: 1;
+            transform: translateX(4px);
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
+            body { padding: 15px; }
             h1 { font-size: 1.8rem; }
             .grid { grid-template-columns: 1fr; }
         }
@@ -158,10 +167,23 @@
     <div class="container">
         <header>
             <h1>Links Úteis e Formulários</h1>
+            <div class="header-line"></div>
         </header>
         
         <div class="grid">
-            <div class="link-group new-section">
+            <div class="link-group">
+                <h2>Suporte Técnico</h2>
+                <ul>
+                    <li>
+                        <a href="https://192.168.3.214" target="_blank" rel="noopener noreferrer" class="external-icon">
+                            Chamados para TI - GLPI
+                        </a>
+                    </li>
+                </ul>
+                <p class="note">Abertura de tickets e suporte interno.</p>
+            </div>
+
+            <div class="link-group">
                 <h2>Operacional</h2>
                 <ul>
                     <li>
@@ -246,4 +268,3 @@
     </div>
 </body>
 </html>
-
