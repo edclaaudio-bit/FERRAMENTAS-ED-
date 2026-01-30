@@ -26,22 +26,50 @@
             background: var(--bg-body);
             color: #1e293b;
             font-size: 12px;
+            margin: 0;
         }
 
+        /* Ajuste na Sidebar para fixar topo e rodapé */
         .sidebar {
             width: 280px;
             background: var(--sidebar-bg);
             height: 100vh;
             position: fixed;
-            padding: 30px 20px;
+            left: 0;
+            top: 0;
+            padding: 25px 20px;
             z-index: 1000;
             border-right: 1px solid #e2e8f0;
             display: flex;
             flex-direction: column;
         }
 
+        .sidebar h4 { 
+            color: var(--dark-blue); 
+            font-weight: 800; 
+            letter-spacing: -1px; 
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+
+        /* Container que permite scroll apenas no meio */
+        .sidebar-scrollable-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+            margin-bottom: 15px;
+        }
+
+        /* Esconder scrollbar para navegadores modernos mas permitir scroll */
+        .sidebar-scrollable-content::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar-scrollable-content::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+
         .main-content { margin-left: 280px; padding: 40px; }
-        .sidebar h4 { color: var(--dark-blue); font-weight: 800; letter-spacing: -1px; margin-bottom: 30px; }
 
         .card-kpi {
             background: white; border-radius: 18px; padding: 18px; border: 1px solid #f1f5f9;
@@ -60,22 +88,34 @@
         .clickable-name { color: var(--primary); cursor: pointer; font-weight: 700; text-decoration: none; }
         .clickable-name:hover { text-decoration: underline; }
 
-        .form-control, .btn { border-radius: 10px; font-weight: 600; font-size: 12px; }
-        .multi-select-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; max-height: 180px; overflow-y: auto; }
+        .form-control, .btn { border-radius: 10px; font-weight: 600; font-size: 11px; }
+        
+        /* Box de Filas com fonte pequena e altura flexível */
+        .multi-select-box { 
+            background: #f8fafc; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 10px; 
+            padding: 8px; 
+            max-height: 250px; 
+            overflow-y: auto; 
+            font-size: 10px;
+        }
 
         .meta-good { color: var(--success) !important; }
         .meta-bad { color: var(--danger) !important; }
 
-        .sidebar-footer { margin-top: auto; padding-top: 15px; }
-        .dev-credit { font-size: 10px; color: #94a3b8; font-weight: 600; margin-top: 8px; display: block; }
+        .sidebar-footer { 
+            flex-shrink: 0;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .dev-credit { font-size: 9px; color: #94a3b8; font-weight: 600; margin-top: 8px; display: block; }
 
         .loading-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255,255,255,0.9); backdrop-filter: blur(5px); z-index: 3000;
             flex-direction: column; align-items: center; justify-content: center;
         }
-        
-        .highlight-filter { background-color: #e0f7fa; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -88,58 +128,39 @@
 <div class="sidebar">
     <h4>OP 360º <span style="color: var(--primary);">●</span></h4>
     
-    <div class="mb-4">
-        <label class="small fw-bold text-muted mb-2">IMPORTAR DADOS</label>
-        <input type="file" id="csvFiles" class="form-control form-control-sm mb-2" multiple>
-        <button class="btn btn-info btn-sm w-100 text-white" onclick="importarParaBanco()">Alimentar Base</button>
-    </div>
-
-    <div class="mb-4">
-        <label class="small fw-bold text-muted mb-2">FILTROS</label>
-        <input type="date" id="dateIni" class="form-control form-control-sm mb-2">
-        <input type="date" id="dateFim" class="form-control form-control-sm mb-3">
-        
-        <input type="text" id="searchUnidade" class="form-control form-control-sm mb-2" placeholder="Pesquisar unidade..." onkeyup="filtrarUnidadesLista()">
-        
-        <div class="d-flex justify-content-between mb-2" style="font-size: 10px;">
-            <span class="text-primary fw-bold" style="cursor:pointer;" onclick="toggleVisiveis(true)">Selecionar visíveis</span>
-            <span class="text-danger fw-bold" style="cursor:pointer;" onclick="toggleVisiveis(false)">Limpar visíveis</span>
+    <div class="sidebar-scrollable-content">
+        <div class="mb-4">
+            <label class="small fw-bold text-muted mb-2">IMPORTAR DADOS</label>
+            <input type="file" id="csvFiles" class="form-control form-control-sm mb-2" multiple>
+            <button class="btn btn-info btn-sm w-100 text-white" onclick="importarParaBanco()">Alimentar Base</button>
         </div>
 
-        <div class="multi-select-box mb-3" id="boxUnidades">
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="SALTO ITU" checked class="me-2"> Salto/Itu</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="LIMEIRA" checked class="me-2"> Limeira</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="SÃO CARLOS" checked class="me-2"> São Carlos</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="SUL PAULISTA" checked class="me-2"> Sul Paulista</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="AMPARO" checked class="me-2"> Amparo</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="JUNDIAÍ" checked class="me-2"> Jundiaí</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="ARARAQUARA" checked class="me-2"> Araraquara</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="BLUE" checked class="me-2"> Blue</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="CENTRO RONDÔNIA" checked class="me-2"> Centro Rondônia</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="SOROCABA" checked class="me-2"> Sorocaba</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="NORDESTE PAULISTA" checked class="me-2"> Nordeste Paulista</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="JABOTICABAL" checked class="me-2"> Jaboticabal</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="AMERICANA" checked class="me-2"> Americana</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="DOURADOS" checked class="me-2"> Dourados</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="SÃO FRANCISCO VIDA" checked class="me-2"> São Francisco Vida</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="GUARULHOS" checked class="me-2"> Guarulhos</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="GUARATINGUETA" checked class="me-2"> Guaratingueta</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="DAAE RIO CLARO" checked class="me-2"> DAAE Rio Claro</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="SAAE ATIBAIA" checked class="me-2"> SAAE Atibaia</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="SAAE SÃO CARLOS" checked class="me-2"> SAAE São Carlos</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="SAAE MOGI MIRIM" checked class="me-2"> SAAE Mogi Mirim</label>
-            <label class="d-flex align-items-center mb-1 p-1"><input type="checkbox" value="PREFEITURA MOGI MIRIM" checked class="me-2"> Prefeitura Mogi Mirim</label>
+        <div class="mb-3">
+            <label class="small fw-bold text-muted mb-2">FILTROS</label>
+            <input type="date" id="dateIni" class="form-control form-control-sm mb-2">
+            <input type="date" id="dateFim" class="form-control form-control-sm mb-3">
+            
+            <input type="text" id="searchFila" class="form-control form-control-sm mb-2" placeholder="Pesquisar fila..." onkeyup="filtrarFilasDinamico()">
+            
+            <div class="d-flex justify-content-between mb-2" style="font-size: 9px;">
+                <span class="text-primary fw-bold" style="cursor:pointer;" onclick="toggleVisiveis(true)">Selecionar todos</span>
+                <span class="text-danger fw-bold" style="cursor:pointer;" onclick="toggleVisiveis(false)">Limpar todos</span>
+            </div>
+
+            <div class="multi-select-box mb-3" id="boxFilas">
+                <div class="text-center text-muted py-3">Importe dados para listar</div>
+            </div>
+            <button class="btn btn-success w-100" onclick="consultarRelatorio()">Gerar Dashboard</button>
         </div>
-        <button class="btn btn-success w-100" onclick="consultarRelatorio()">Gerar Dashboard</button>
     </div>
 
-    <div class="sidebar-footer border-top">
+    <div class="sidebar-footer">
         <div class="d-grid gap-2 mb-2">
             <button class="btn btn-outline-secondary btn-sm" onclick="exportarBackup()">Backup</button>
             <button class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('fileRestore').click()">Restaurar</button>
         </div>
         <input type="file" id="fileRestore" style="display:none" onchange="importarBackup(event)">
-        <button class="btn btn-link btn-sm text-danger text-decoration-none w-100 text-start p-0" onclick="limparBanco()">Limpar Banco</button>
+        <button class="btn btn-link btn-sm text-danger text-decoration-none w-100 text-start p-0" style="font-size: 10px;" onclick="limparBanco()">Limpar Banco</button>
         <span class="dev-credit">Desenvolvido por Claudio Carvalho</span>
     </div>
 </div>
@@ -214,32 +235,60 @@ request.onupgradeneeded = (e) => {
     if(!db.objectStoreNames.contains("satisfacao")) db.createObjectStore("satisfacao", { keyPath: "uniqueID" });
     if(!db.objectStoreNames.contains("eventos")) db.createObjectStore("eventos", { autoIncrement: true });
 };
-request.onsuccess = (e) => db = e.target.result;
+request.onsuccess = (e) => {
+    db = e.target.result;
+    carregarFilasDoBanco();
+};
 
-function filtrarUnidadesLista() {
-    const termo = document.getElementById('searchUnidade').value.toLowerCase();
-    const labels = document.querySelectorAll('#boxUnidades label');
+async function carregarFilasDoBanco() {
+    const tx = db.transaction("chamadas", "readonly");
+    const store = tx.objectStore("chamadas");
+    const filasSet = new Set();
+    
+    store.openCursor().onsuccess = (e) => {
+        const cursor = e.target.result;
+        if (cursor) {
+            if (cursor.value.nomeFila) filasSet.add(cursor.value.nomeFila.toUpperCase());
+            cursor.continue();
+        } else {
+            renderizarListaFilas(Array.from(filasSet).sort());
+        }
+    };
+}
+
+function renderizarListaFilas(filas) {
+    const container = document.getElementById('boxFilas');
+    if (filas.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted py-3">Base vazia</div>';
+        return;
+    }
+    container.innerHTML = filas.map(fila => `
+        <label class="d-flex align-items-center mb-1 p-1 fila-item" data-fila="${fila}">
+            <input type="checkbox" value="${fila}" class="me-2"> ${fila}
+        </label>
+    `).join('');
+}
+
+function filtrarFilasDinamico() {
+    const termo = document.getElementById('searchFila').value.toUpperCase();
+    const labels = document.querySelectorAll('.fila-item');
     
     labels.forEach(label => {
-        const texto = label.innerText.toLowerCase();
-        if (texto.includes(termo)) {
-            label.style.display = "flex";
-            if(termo !== "") {
-                label.classList.add('highlight-filter');
-            } else {
-                label.classList.remove('highlight-filter');
-            }
+        const nomeFila = label.getAttribute('data-fila');
+        if (nomeFila.startsWith(termo)) {
+            label.classList.remove('d-none');
+            label.classList.add('d-flex');
         } else {
-            label.style.display = "none";
-            label.classList.remove('highlight-filter');
+            label.classList.add('d-none');
+            label.classList.remove('d-flex');
         }
     });
 }
 
 function toggleVisiveis(status) {
-    const labels = document.querySelectorAll('#boxUnidades label');
+    const labels = document.querySelectorAll('.fila-item');
     labels.forEach(label => {
-        if (label.style.display !== 'none') {
+        if (!label.classList.contains('d-none')) {
             const checkbox = label.querySelector('input[type="checkbox"]');
             if (checkbox) checkbox.checked = status;
         }
@@ -258,33 +307,6 @@ const toHms = (s) => {
     if(!s || s <= 0) return "00:00:00";
     let h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
     return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
-};
-
-const mapUnidade = (f) => {
-    f = String(f || "").toUpperCase();
-    if(f.includes("ULI")) return "LIMEIRA";
-    if(f.includes("USI")) return "SALTO ITU";
-    if(f.includes("USC")) return "SÃO CARLOS";
-    if(f.includes("USP")) return "SUL PAULISTA";
-    if(f.includes("UAM")) return "AMPARO";
-    if(f.includes("UJU")) return "JUNDIAÍ";
-    if(f.includes("UAR")) return "ARARAQUARA";
-    if(f.includes("BLUE")) return "BLUE";
-    if(f.includes("URO")) return "CENTRO RONDÔNIA";
-    if(f.includes("USO")) return "SOROCABA";
-    if(f.includes("UNP")) return "NORDESTE PAULISTA";
-    if(f.includes("UJA")) return "JABOTICABAL";
-    if(f.includes("USA")) return "AMERICANA";
-    if(f.includes("UDO")) return "DOURADOS";
-    if(f.includes("SFV")) return "SÃO FRANCISCO VIDA";
-    if(f.includes("UGR")) return "GUARULHOS";
-    if(f.includes("UGTR")) return "GUARATINGUETA";
-    if(f.includes("DAAE")) return "DAAE RIO CLARO";
-    if(f.includes("SAAE_A")) return "SAAE ATIBAIA";
-    if(f.includes("SAAE_SC")) return "SAAE SÃO CARLOS";
-    if(f.includes("SAAE_MM")) return "SAAE MOGI MIRIM";
-    if(f.includes("PMMM")) return "PREFEITURA MOGI MIRIM";
-    return "OUTROS";
 };
 
 async function importarParaBanco() {
@@ -332,7 +354,8 @@ async function importarParaBanco() {
             });
             await new Promise(r => tx.oncomplete = r);
         }
-        alert("Dados importados!");
+        alert("Importação concluída!");
+        carregarFilasDoBanco();
     } catch (e) { console.error(e); }
     finally { document.getElementById('loader').style.display = 'none'; }
 }
@@ -340,8 +363,11 @@ async function importarParaBanco() {
 async function consultarRelatorio() {
     const dIni = document.getElementById('dateIni').value;
     const dFim = document.getElementById('dateFim').value;
-    const unidades = Array.from(document.querySelectorAll('#boxUnidades input:checked')).map(i => i.value);
+    const filasSelecionadas = Array.from(document.querySelectorAll('#boxFilas input:checked')).map(i => i.value);
+    
     if(!dIni || !dFim) return alert("Selecione as datas.");
+    if(filasSelecionadas.length === 0) return alert("Selecione ao menos uma fila.");
+
     document.getElementById('loader').style.display = 'flex';
     try {
         const tx = db.transaction(["chamadas", "satisfacao", "eventos"], "readonly");
@@ -352,7 +378,7 @@ async function consultarRelatorio() {
         ]);
 
         let stats = {}, g = { atend:0, abandReal:0, totalValido:0, ns:0, tma:0, tme:0, pq:0, csat:0, uni:{} };
-        const filtradas = cRaw.filter(c => c.data >= dIni && c.data <= dFim && unidades.includes(mapUnidade(c.nomeFila)));
+        const filtradas = cRaw.filter(c => c.data >= dIni && c.data <= dFim && filasSelecionadas.includes(c.nomeFila.toUpperCase()));
 
         filtradas.forEach(c => {
             if(c.tipo === "Atendida") {
@@ -366,7 +392,9 @@ async function consultarRelatorio() {
                 stats[id].tma += c.atend; g.tma += c.atend;
                 if(nota) { g.pq++; stats[id].pq++; if(nota >= 4) { g.csat++; stats[id].csat++; } }
                 stats[id].calls.push({...c, nota: nota || '-'});
-                let u = mapUnidade(c.nomeFila); g.uni[u] = (g.uni[u] || 0) + 1;
+                
+                let f = c.nomeFila.toUpperCase(); 
+                g.uni[f] = (g.uni[f] || 0) + 1;
             } else if(c.tipo === "Abandonada" && c.espera > 60) {
                 g.abandReal++; g.totalValido++; g.tme += c.espera;
             }
@@ -462,12 +490,12 @@ function importarBackup(event) {
         data.chamadas.forEach(x => tx.objectStore("chamadas").put(x));
         data.satisfacao.forEach(x => tx.objectStore("satisfacao").put(x));
         data.eventos.forEach(x => tx.objectStore("eventos").add(x));
-        tx.oncomplete = () => alert("Restaurado!");
+        tx.oncomplete = () => { alert("Restaurado!"); carregarFilasDoBanco(); };
     };
     reader.readAsText(file);
 }
 
-function limparBanco() { if(confirm("Apagar tudo?")) { indexedDB.deleteDatabase("Unimed360_Final_v3"); location.reload(); } }
+function limparBanco() { if(confirm("Deseja apagar tudo?")) { indexedDB.deleteDatabase("Unimed360_Final_v3"); location.reload(); } }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
