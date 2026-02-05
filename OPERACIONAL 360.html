@@ -15,6 +15,7 @@
             --secondary: #0077b6;
             --success: #00b894;
             --danger: #ff7675;
+            --warning: #fdcb6e;
             --dark-blue: #03045e;
             --bg-body: #f8fafc;
             --sidebar-bg: #ffffff;
@@ -71,8 +72,9 @@
         .card-kpi {
             background: white; border-radius: 18px; padding: 18px; border: 1px solid #f1f5f9;
             box-shadow: var(--card-shadow); transition: transform 0.2s ease; height: 100%;
-            display: flex; flex-direction: column; justify-content: center;
+            display: flex; flex-direction: column; justify-content: center; cursor: pointer;
         }
+        .card-kpi:hover { transform: translateY(-5px); }
         
         .kpi-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 5px; }
         .kpi-value { font-size: 20px; font-weight: 800; color: var(--dark-blue); }
@@ -112,6 +114,11 @@
             background: rgba(255,255,255,0.9); backdrop-filter: blur(5px); z-index: 3000;
             flex-direction: column; align-items: center; justify-content: center;
         }
+
+        .nps-badge { padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 10px; }
+        .bg-promotor { background: #d1fae5; color: #065f46; }
+        .bg-neutro { background: #fef3c7; color: #92400e; }
+        .bg-detrator { background: #fee2e2; color: #991b1b; }
     </style>
 </head>
 <body>
@@ -167,14 +174,15 @@
 </div>
 
 <div class="main-content">
-    <div class="row row-cols-1 row-cols-md-4 row-cols-xl-7 g-3 mb-5">
-        <div class="col"><div class="card-kpi"><div class="kpi-label">Atendidas</div><div class="kpi-value" id="kAt">0</div></div></div>
-        <div class="col"><div class="card-kpi"><div class="kpi-label">NS (85%)</div><div class="kpi-value" id="kNS">0%</div></div></div>
+    <div class="row row-cols-1 row-cols-md-4 row-cols-xl-8 g-2 mb-5">
+        <div class="col"><div class="card-kpi" onclick="abrirModalAtendidas()"><div class="kpi-label">Atendidas</div><div class="kpi-value" id="kAt">0</div></div></div>
+        <div class="col"><div class="card-kpi" onclick="abrirModalNS()"><div class="kpi-label">NS (85%)</div><div class="kpi-value" id="kNS">0%</div></div></div>
         <div class="col"><div class="card-kpi"><div class="kpi-label">TMA</div><div class="kpi-value" id="kTMA">00:00</div></div></div>
         <div class="col"><div class="card-kpi"><div class="kpi-label">TME</div><div class="kpi-value" id="kTME">00:00</div></div></div>
-        <div class="col"><div class="card-kpi"><div class="kpi-label">Abandono</div><div class="kpi-value" id="kAband">0%</div></div></div>
+        <div class="col"><div class="card-kpi" onclick="abrirModalAbandono()"><div class="kpi-label">Abandono</div><div class="kpi-value" id="kAband">0%</div></div></div>
         <div class="col"><div class="card-kpi"><div class="kpi-label">Pesquisa</div><div class="kpi-value" id="kPesq">0%</div></div></div>
-        <div class="col"><div class="card-kpi"><div class="kpi-label">CSAT</div><div class="kpi-value" id="kSat">0%</div></div></div>
+        <div class="col"><div class="card-kpi" onclick="abrirModalCSAT()"><div class="kpi-label">CSAT</div><div class="kpi-value" id="kSat">0%</div></div></div>
+        <div class="col"><div class="card-kpi" onclick="abrirModalNPS()"><div class="kpi-label">NPS</div><div class="kpi-value" id="kNPS">0</div></div></div>
     </div>
 
     <div class="row g-4 mb-5">
@@ -206,6 +214,86 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalAtendidas" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius: 20px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Volumetria de Contatos por Fila</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-sm text-center">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-start">Fila</th>
+                                <th>1 Contato</th>
+                                <th>2 Contatos</th>
+                                <th>3+ Contatos</th>
+                                <th>Total Atendidas</th> </tr>
+                        </thead>
+                        <tbody id="atendidasFilaBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalNS" tabindex="-1">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content" style="border-radius: 20px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Detalhamento Nível de Serviço</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Atendidas em até 60s</span>
+                        <span class="badge bg-success rounded-pill" id="nsDentro">0</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Atendidas após 60s</span>
+                        <span class="badge bg-danger rounded-pill" id="nsFora">0</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center fw-bold">
+                        <span>Total de Chamadas Atendidas</span>
+                        <span id="nsTotal">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalAbandono" tabindex="-1">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content" style="border-radius: 20px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Detalhamento de Abandono</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Abandonadas (Espera > 60s)</span>
+                        <span class="badge bg-danger rounded-pill" id="abReal">0</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Desligadas (Espera <= 60s)</span>
+                        <span class="badge bg-warning rounded-pill" id="abCurto">0</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center fw-bold">
+                        <span>Total de Chamadas Abandonadas</span>
+                        <span id="abTotal">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="modalDrill" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content" style="border-radius: 20px;">
@@ -223,9 +311,74 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalNPS" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius: 20px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Detalhamento NPS</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row text-center mb-4">
+                    <div class="col-4"><div class="p-3 bg-light rounded"><h6>Promotores</h6><h3 class="text-success" id="npsCountProm">0</h3><small>(9 e 10)</small></div></div>
+                    <div class="col-4"><div class="p-3 bg-light rounded"><h6>Neutros</h6><h3 class="text-warning" id="npsCountNeut">0</h3><small>(7 e 8)</small></div></div>
+                    <div class="col-4"><div class="p-3 bg-light rounded"><h6>Detratores</h6><h3 class="text-danger" id="npsCountDetr">0</h3><small>(1 a 6)</small></div></div>
+                </div>
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-sm">
+                        <thead class="table-light"><tr><th>Atendente</th><th>Data</th><th>Nota NPS</th><th>Status</th></tr></thead>
+                        <tbody id="npsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCSAT" tabindex="-1">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content" style="border-radius: 20px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Volume de Notas CSAT</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div><span class="badge bg-success me-2">Nota 5</span> Excelente</div>
+                        <span class="fw-bold h5 mb-0" id="csat5">0</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div><span class="badge bg-info me-2">Nota 4</span> Bom</div>
+                        <span class="fw-bold h5 mb-0" id="csat4">0</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div><span class="badge bg-warning me-2">Nota 3</span> Regular</div>
+                        <span class="fw-bold h5 mb-0" id="csat3">0</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div><span class="badge bg-danger me-2">Nota 2</span> Ruim</div>
+                        <span class="fw-bold h5 mb-0" id="csat2">0</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div><span class="badge bg-dark me-2">Nota 1</span> Muito Ruim</div>
+                        <span class="fw-bold h5 mb-0" id="csat1">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 let db;
 let cacheGlobal = {};
+let cacheNPS = [];
+let cacheCSATCounts = { 1:0, 2:0, 3:0, 4:0, 5:0 };
+let cacheNSData = { dentro: 0, fora: 0, total: 0 };
+let cacheAbandonoData = { real: 0, curto: 0, total: 0 };
+let cacheAtendidasPorFila = {}; 
+
 let chartObjEvol = null;
 let chartObjPizza = null;
 
@@ -273,7 +426,6 @@ function renderizarListaFilas(filas) {
 function filtrarFilasDinamico() {
     const termo = document.getElementById('searchFila').value.toUpperCase();
     const labels = document.querySelectorAll('.fila-item');
-    
     labels.forEach(label => {
         const nomeFila = label.getAttribute('data-fila');
         if (nomeFila.startsWith(termo)) {
@@ -318,12 +470,14 @@ async function importarParaBanco() {
         for (const file of files) {
             const text = await file.text();
             const lines = text.split('\n');
-            const hIdx = lines.findIndex(l => l.toLowerCase().includes('uniqueid') || l.toLowerCase().includes('nomeatendente') || l.toLowerCase().includes('nomepausa'));
+            const hIdx = lines.findIndex(l => l.toLowerCase().includes('uniqueid') || l.toLowerCase().includes('pergunta_1') || l.toLowerCase().includes('nomepausa'));
             if (hIdx === -1) continue;
+            
             const results = Papa.parse(lines.slice(hIdx).join('\n'), { header: false, skipEmptyLines: true, delimiter: ";" });
             const headers = results.data[0].map(h => h.trim());
             const rows = results.data.slice(1);
             const tx = db.transaction(["chamadas", "satisfacao", "eventos"], "readwrite");
+            
             rows.forEach(values => {
                 let rowData = {};
                 headers.forEach((h, i) => {
@@ -331,20 +485,36 @@ async function importarParaBanco() {
                     if(rowData[key] !== undefined) key = h + "_" + i; 
                     rowData[key] = values[i] ? values[i].replace(/"/g, '').trim() : "";
                 });
+                
+                let contactID = rowData.origem || rowData.telefone || rowData.uniqueID;
+
                 if (rowData.uniqueID && (rowData.tipo === "Atendida" || rowData.tipo === "Abandonada")) {
                     tx.objectStore("chamadas").put({
                         uniqueID: rowData.uniqueID, numeroAtendente: rowData.numeroAtendente,
                         nomeAtendente: rowData.nomeAtendente, data: rowData.data ? rowData.data.split(' ')[0] : "",
                         nomeFila: rowData.nomeFila, espera: toSeg(rowData.tempoEspera),
-                        atend: toSeg(rowData.tempoAtendimento), tipo: rowData.tipo
+                        atend: toSeg(rowData.tempoAtendimento), tipo: rowData.tipo,
+                        contactID: contactID
                     });
                 }
+                
                 const uidSat = rowData.uniqueId || rowData.uniqueID;
                 if (uidSat) {
-                    let notaFinal = null;
-                    headers.forEach((h, idx) => { if(h === "Pergunta_1") { let v = parseInt(values[idx]); if(!isNaN(v) && v > 0) notaFinal = v; } });
-                    if(notaFinal !== null) tx.objectStore("satisfacao").put({ uniqueID: uidSat, nota: notaFinal });
+                    let notaCSAT = null;
+                    let notaNPS = null;
+                    headers.forEach((h, idx) => { 
+                        if(h === "Pergunta_1") { let v = parseInt(values[idx]); if(!isNaN(v) && v > 0) notaCSAT = v; }
+                        if(h === "Pergunta_2") { let v = parseInt(values[idx]); if(!isNaN(v) && v >= 0) notaNPS = v; }
+                    });
+                    if(notaCSAT !== null || notaNPS !== null) {
+                        tx.objectStore("satisfacao").put({ 
+                            uniqueID: uidSat, 
+                            nota: notaCSAT,
+                            notaNps: notaNPS 
+                        });
+                    }
                 }
+                
                 if ((rowData.evento || rowData.nomePausa) && rowData.duracao) {
                     tx.objectStore("eventos").add({
                         numeroAtendente: rowData.atendente || rowData.numeroAtendente,
@@ -379,31 +549,80 @@ async function consultarRelatorio() {
             new Promise(r => tx.objectStore("eventos").getAll().onsuccess = e => r(e.target.result))
         ]);
 
-        let stats = {}, g = { atend:0, abandReal:0, totalValido:0, ns:0, tma:0, tme:0, pq:0, csat:0, uni:{} };
+        let stats = {}, g = { atend:0, abandReal:0, totalValido:0, ns:0, tma:0, tme:0, pq:0, csat:0, uni:{}, prom:0, neut:0, detr:0, npsTotal:0 };
+        
+        cacheNPS = []; 
+        cacheCSATCounts = { 1:0, 2:0, 3:0, 4:0, 5:0 };
+        cacheNSData = { dentro: 0, fora: 0, total: 0 };
+        cacheAbandonoData = { real: 0, curto: 0, total: 0 };
+        cacheAtendidasPorFila = {};
+
         const filtradas = cRaw.filter(c => c.data >= dIni && c.data <= dFim && filasSelecionadas.includes(c.nomeFila.toUpperCase()));
 
         filtradas.forEach(c => {
-            // APLICAÇÃO DO FILTRO DE DURAÇÃO MÍNIMA
+            const filaKey = c.nomeFila.toUpperCase();
+            if(!cacheAtendidasPorFila[filaKey]) cacheAtendidasPorFila[filaKey] = { c1:0, c2:0, c3:0, total:0, ids:{} };
+
             if(c.tipo === "Atendida") {
                 if (c.atend >= duracaoMinima) {
                     g.atend++; g.totalValido++; g.tme += c.espera;
+                    cacheNSData.total++;
+                    
+                    if(c.espera <= 60) { g.ns++; cacheNSData.dentro++; }
+                    else { cacheNSData.fora++; }
+
+                    let cid = c.contactID || c.uniqueID;
+                    cacheAtendidasPorFila[filaKey].total++;
+                    cacheAtendidasPorFila[filaKey].ids[cid] = (cacheAtendidasPorFila[filaKey].ids[cid] || 0) + 1;
+
                     const id = c.numeroAtendente;
                     if(!stats[id]) stats[id] = { nome: c.nomeAtendente, at:0, ns:0, tma:0, pq:0, csat:0, reg:0, dig:0, ban:0, agu:0, calls:[] };
+                    
                     let notaObj = sRaw.find(s => s.uniqueID === c.uniqueID);
                     let nota = notaObj ? notaObj.nota : null;
+                    let nps = (notaObj && notaObj.notaNps !== undefined) ? notaObj.notaNps : null;
+
                     stats[id].at++;
-                    if(c.espera <= 60) { stats[id].ns++; g.ns++; }
+                    if(c.espera <= 60) { stats[id].ns++; }
                     stats[id].tma += c.atend; g.tma += c.atend;
-                    if(nota) { g.pq++; stats[id].pq++; if(nota >= 4) { g.csat++; stats[id].csat++; } }
-                    stats[id].calls.push({...c, nota: nota || '-'});
                     
-                    let f = c.nomeFila.toUpperCase(); 
-                    g.uni[f] = (g.uni[f] || 0) + 1;
+                    if(nota) { 
+                        g.pq++; stats[id].pq++; 
+                        if(nota >= 4) { g.csat++; stats[id].csat++; }
+                        if(cacheCSATCounts[nota] !== undefined) cacheCSATCounts[nota]++;
+                    }
+                    
+                    if(nps !== null) {
+                        g.npsTotal++;
+                        let status = "";
+                        if(nps >= 9) { g.prom++; status = "Promotor"; }
+                        else if(nps >= 7) { g.neut++; status = "Neutro"; }
+                        else { g.detr++; status = "Detrator"; }
+                        cacheNPS.push({ atendente: c.nomeAtendente, data: c.data, nota: nps, status: status });
+                    }
+
+                    stats[id].calls.push({...c, nota: nota || '-'});
+                    g.uni[filaKey] = (g.uni[filaKey] || 0) + 1;
                 }
-            } else if(c.tipo === "Abandonada" && c.espera > 60) {
-                g.abandReal++; g.totalValido++; g.tme += c.espera;
+            } else if(c.tipo === "Abandonada") {
+                cacheAbandonoData.total++;
+                if(c.espera > 60) {
+                    g.abandReal++; g.totalValido++; g.tme += c.espera;
+                    cacheAbandonoData.real++;
+                } else {
+                    cacheAbandonoData.curto++;
+                }
             }
         });
+
+        for(let f in cacheAtendidasPorFila) {
+            let o = cacheAtendidasPorFila[f];
+            Object.values(o.ids).forEach(qtd => {
+                if(qtd === 1) o.c1++;
+                else if(qtd === 2) o.c2++;
+                else o.c3++;
+            });
+        }
 
         eRaw.filter(e => e.data >= dIni && e.data <= dFim).forEach(e => {
             if(stats[e.numeroAtendente]) {
@@ -423,6 +642,7 @@ function renderizarTudo(g, stats) {
     const nsPerc = (g.ns/g.atend)*100 || 0;
     const abandPerc = (g.abandReal/g.totalValido)*100 || 0;
     const pesqPerc = (g.pq/g.atend)*100 || 0;
+    const npsFinal = g.npsTotal > 0 ? ((g.prom - g.detr) / g.npsTotal) * 100 : 0;
 
     document.getElementById('kAt').innerText = g.atend;
     document.getElementById('kNS').innerText = nsPerc.toFixed(1) + "%";
@@ -433,6 +653,22 @@ function renderizarTudo(g, stats) {
     document.getElementById('kAband').className = "kpi-value " + (abandPerc <= 5 ? "meta-good" : "meta-bad");
     document.getElementById('kPesq').innerText = pesqPerc.toFixed(1) + "%";
     document.getElementById('kSat').innerText = ((g.csat/g.pq)*100 || 0).toFixed(1) + "%";
+    
+    document.getElementById('kNPS').innerText = npsFinal.toFixed(0);
+    document.getElementById('kNPS').className = "kpi-value " + (npsFinal >= 70 ? "meta-good" : npsFinal < 40 ? "meta-bad" : "text-warning");
+
+    // Correção NPS: Injetando valores no modal de detalhes
+    document.getElementById('npsCountProm').innerText = g.prom;
+    document.getElementById('npsCountNeut').innerText = g.neut;
+    document.getElementById('npsCountDetr').innerText = g.detr;
+
+    document.getElementById('nsDentro').innerText = cacheNSData.dentro;
+    document.getElementById('nsFora').innerText = cacheNSData.fora;
+    document.getElementById('nsTotal').innerText = cacheNSData.total;
+
+    document.getElementById('abReal').innerText = cacheAbandonoData.real;
+    document.getElementById('abCurto').innerText = cacheAbandonoData.curto;
+    document.getElementById('abTotal').innerText = cacheAbandonoData.total;
 
     cacheGlobal = stats;
     document.getElementById('tableBody').innerHTML = Object.values(stats).sort((a,b) => b.at - a.at).map(d => {
@@ -451,7 +687,7 @@ function renderizarTudo(g, stats) {
     if(chartObjEvol) chartObjEvol.destroy();
     chartObjEvol = new Chart(document.getElementById('chartEvol'), {
         type: 'bar',
-        data: { labels: ['NS %', 'Pesquisa %', 'CSAT %'], datasets: [{ data: [nsPerc, pesqPerc, (g.csat/g.pq*100)], backgroundColor: ['#00b4d8', '#0077b6', '#00b894'], borderRadius: 8 }] },
+        data: { labels: ['NS %', 'Pesquisa %', 'CSAT %', 'NPS'], datasets: [{ data: [nsPerc, pesqPerc, (g.csat/g.pq*100), npsFinal], backgroundColor: ['#00b4d8', '#0077b6', '#00b894', '#03045e'], borderRadius: 8 }] },
         options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
     });
 
@@ -461,6 +697,52 @@ function renderizarTudo(g, stats) {
         data: { labels: Object.keys(g.uni), datasets: [{ data: Object.values(g.uni), backgroundColor: ['#03045e', '#0077b6', '#00b4d8', '#90e0ef', '#caf0f8'] }] },
         options: { maintainAspectRatio: false }
     });
+}
+
+function abrirModalAtendidas() {
+    let html = "";
+    for(let fila in cacheAtendidasPorFila) {
+        let d = cacheAtendidasPorFila[fila];
+        html += `<tr>
+            <td class="text-start fw-bold">${fila}</td>
+            <td>${d.c1}</td>
+            <td>${d.c2}</td>
+            <td>${d.c3}</td>
+            <td class="fw-bold">${d.total}</td>
+        </tr>`;
+    }
+    document.getElementById('atendidasFilaBody').innerHTML = html || '<tr><td colspan="5">Sem dados</td></tr>';
+    new bootstrap.Modal(document.getElementById('modalAtendidas')).show();
+}
+
+function abrirModalNS() {
+    new bootstrap.Modal(document.getElementById('modalNS')).show();
+}
+
+function abrirModalAbandono() {
+    new bootstrap.Modal(document.getElementById('modalAbandono')).show();
+}
+
+function abrirModalNPS() {
+    document.getElementById('npsBody').innerHTML = cacheNPS.map(n => {
+        const badgeClass = n.status === "Promotor" ? "bg-promotor" : n.status === "Neutro" ? "bg-neutro" : "bg-detrator";
+        return `<tr>
+            <td>${n.atendente}</td>
+            <td>${n.data}</td>
+            <td class="fw-bold">${n.nota}</td>
+            <td><span class="nps-badge ${badgeClass}">${n.status}</span></td>
+        </tr>`;
+    }).join('');
+    new bootstrap.Modal(document.getElementById('modalNPS')).show();
+}
+
+function abrirModalCSAT() {
+    document.getElementById('csat5').innerText = cacheCSATCounts[5];
+    document.getElementById('csat4').innerText = cacheCSATCounts[4];
+    document.getElementById('csat3').innerText = cacheCSATCounts[3];
+    document.getElementById('csat2').innerText = cacheCSATCounts[2];
+    document.getElementById('csat1').innerText = cacheCSATCounts[1];
+    new bootstrap.Modal(document.getElementById('modalCSAT')).show();
 }
 
 function abrirDrill(nome) {
