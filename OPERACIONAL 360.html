@@ -227,7 +227,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th class="text-start">Fila</th>
-                                <th class="table-success">Atend. Imediato</th> <th class="table-info">Atend. até 20s</th>   <th>1 Contato</th>
+                                <th>1 Contato</th>
                                 <th>2 Contatos</th>
                                 <th>3+ Contatos</th>
                                 <th class="fw-bold">Total Contatos</th>
@@ -384,7 +384,6 @@ let db;
 let cacheGlobal = {};
 let cacheNPS = [];
 let cacheCSATCounts = { 1:0, 2:0, 3:0, 4:0, 5:0 };
-// AJUSTE: Expansão do cache de NS para incluir as novas métricas
 let cacheNSData = { dentro: 0, fora: 0, total: 0, imediato: 0, ate20s: 0 }; 
 let cacheAbandonoData = { real: 0, curto: 0, total: 0 };
 let cacheAtendidasPorFila = {}; 
@@ -546,31 +545,22 @@ async function consultarRelatorio() {
         ]);
         let stats = {}, g = { atend:0, abandReal:0, totalValido:0, ns:0, tma:0, tme:0, pq:0, csat:0, uni:{}, prom:0, neut:0, detr:0, npsTotal:0 };
         cacheNPS = []; cacheCSATCounts = { 1:0, 2:0, 3:0, 4:0, 5:0 };
-        // AJUSTE: Inicializando os contadores de Imediato e Até 20s
         cacheNSData = { dentro: 0, fora: 0, total: 0, imediato: 0, ate20s: 0 };
         cacheAbandonoData = { real: 0, curto: 0, total: 0 };
         cacheAtendidasPorFila = {};
         const filtradas = cRaw.filter(c => c.data >= dIni && c.data <= dFim && filasSelecionadas.includes(c.nomeFila.toUpperCase()));
         filtradas.forEach(c => {
             const filaKey = c.nomeFila.toUpperCase();
-            if(!cacheAtendidasPorFila[filaKey]) cacheAtendidasPorFila[filaKey] = { c1:0, c2:0, c3:0, total:0, ids:{}, imediato:0, ate20s:0 };
+            if(!cacheAtendidasPorFila[filaKey]) cacheAtendidasPorFila[filaKey] = { c1:0, c2:0, c3:0, total:0, ids:{} };
             if(c.tipo === "Atendida") {
                 if (c.atend >= duracaoMinima) {
                     g.atend++; g.totalValido++; g.tme += c.espera;
                     cacheNSData.total++;
-                    
-                    // Lógica NS 60s
                     if(c.espera <= 60) { g.ns++; cacheNSData.dentro++; } else { cacheNSData.fora++; }
                     
-                    // AJUSTE: Incremento de Imediato (Espera 0) e Até 20s (Duração)
-                    if(c.espera === 0) { 
-                        cacheNSData.imediato++; 
-                        cacheAtendidasPorFila[filaKey].imediato++; 
-                    }
-                    if(c.atend <= 20) { 
-                        cacheNSData.ate20s++; 
-                        cacheAtendidasPorFila[filaKey].ate20s++; 
-                    }
+                    // Dados para o Modal de NS (Mantidos conforme solicitado)
+                    if(c.espera === 0) cacheNSData.imediato++;
+                    if(c.atend <= 20) cacheNSData.ate20s++;
 
                     let cid = c.contactID || c.uniqueID;
                     cacheAtendidasPorFila[filaKey].total++;
@@ -643,7 +633,6 @@ function renderizarTudo(g, stats) {
     document.getElementById('npsCountNeut').innerText = g.neut;
     document.getElementById('npsCountDetr').innerText = g.detr;
     
-    // AJUSTE: Renderização dos novos dados no Modal NS
     document.getElementById('nsDentro').innerText = cacheNSData.dentro;
     document.getElementById('nsFora').innerText = cacheNSData.fora;
     document.getElementById('nsImediato').innerText = cacheNSData.imediato;
@@ -682,13 +671,11 @@ function abrirModalAtendidas() {
         let d = cacheAtendidasPorFila[fila];
         html += `<tr>
             <td class="text-start fw-bold">${fila}</td>
-            <td class="table-success fw-bold">${d.imediato}</td>
-            <td class="table-info fw-bold">${d.ate20s}</td>
             <td>${d.c1}</td><td>${d.c2}</td><td>${d.c3}</td>
             <td class="fw-bold">${d.total}</td>
         </tr>`;
     }
-    document.getElementById('atendidasFilaBody').innerHTML = html || '<tr><td colspan="7">Sem dados</td></tr>';
+    document.getElementById('atendidasFilaBody').innerHTML = html || '<tr><td colspan="5">Sem dados</td></tr>';
     new bootstrap.Modal(document.getElementById('modalAtendidas')).show();
 }
 
