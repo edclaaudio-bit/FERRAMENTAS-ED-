@@ -215,7 +215,7 @@
 </div>
 
 <div class="modal fade" id="modalAtendidas" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content" style="border-radius: 20px;">
             <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title fw-bold">Volumetria de Contatos por Fila</h5>
@@ -227,10 +227,11 @@
                         <thead class="table-light">
                             <tr>
                                 <th class="text-start">Fila</th>
-                                <th>1 Contato</th>
+                                <th class="table-success">Atend. Imediato</th> <th class="table-info">Atend. até 20s</th>   <th>1 Contato</th>
                                 <th>2 Contatos</th>
                                 <th>3+ Contatos</th>
-                                <th>Total Atendidas</th> </tr>
+                                <th class="fw-bold">Total Contatos</th>
+                            </tr>
                         </thead>
                         <tbody id="atendidasFilaBody"></tbody>
                     </table>
@@ -256,6 +257,14 @@
                     <div class="list-group-item d-flex justify-content-between align-items-center">
                         <span>Atendidas após 60s</span>
                         <span class="badge bg-danger rounded-pill" id="nsFora">0</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center list-group-item-success">
+                        <span>Atendimento Imediato (Espera 0s)</span>
+                        <span class="badge bg-primary rounded-pill" id="nsImediato">0</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center list-group-item-info">
+                        <span>Chamadas até 20s (Duração)</span>
+                        <span class="badge bg-secondary rounded-pill" id="nsAte20s">0</span>
                     </div>
                     <div class="list-group-item d-flex justify-content-between align-items-center fw-bold">
                         <span>Total de Chamadas Atendidas</span>
@@ -375,7 +384,8 @@ let db;
 let cacheGlobal = {};
 let cacheNPS = [];
 let cacheCSATCounts = { 1:0, 2:0, 3:0, 4:0, 5:0 };
-let cacheNSData = { dentro: 0, fora: 0, total: 0 };
+// AJUSTE: Expansão do cache de NS para incluir as novas métricas
+let cacheNSData = { dentro: 0, fora: 0, total: 0, imediato: 0, ate20s: 0 }; 
 let cacheAbandonoData = { real: 0, curto: 0, total: 0 };
 let cacheAtendidasPorFila = {}; 
 
@@ -398,7 +408,6 @@ async function carregarFilasDoBanco() {
     const tx = db.transaction("chamadas", "readonly");
     const store = tx.objectStore("chamadas");
     const filasSet = new Set();
-    
     store.openCursor().onsuccess = (e) => {
         const cursor = e.target.result;
         if (cursor) {
@@ -472,12 +481,10 @@ async function importarParaBanco() {
             const lines = text.split('\n');
             const hIdx = lines.findIndex(l => l.toLowerCase().includes('uniqueid') || l.toLowerCase().includes('pergunta_1') || l.toLowerCase().includes('nomepausa'));
             if (hIdx === -1) continue;
-            
             const results = Papa.parse(lines.slice(hIdx).join('\n'), { header: false, skipEmptyLines: true, delimiter: ";" });
             const headers = results.data[0].map(h => h.trim());
             const rows = results.data.slice(1);
             const tx = db.transaction(["chamadas", "satisfacao", "eventos"], "readwrite");
-            
             rows.forEach(values => {
                 let rowData = {};
                 headers.forEach((h, i) => {
@@ -485,9 +492,7 @@ async function importarParaBanco() {
                     if(rowData[key] !== undefined) key = h + "_" + i; 
                     rowData[key] = values[i] ? values[i].replace(/"/g, '').trim() : "";
                 });
-                
                 let contactID = rowData.origem || rowData.telefone || rowData.uniqueID;
-
                 if (rowData.uniqueID && (rowData.tipo === "Atendida" || rowData.tipo === "Abandonada")) {
                     tx.objectStore("chamadas").put({
                         uniqueID: rowData.uniqueID, numeroAtendente: rowData.numeroAtendente,
@@ -497,24 +502,17 @@ async function importarParaBanco() {
                         contactID: contactID
                     });
                 }
-                
                 const uidSat = rowData.uniqueId || rowData.uniqueID;
                 if (uidSat) {
-                    let notaCSAT = null;
-                    let notaNPS = null;
+                    let notaCSAT = null, notaNPS = null;
                     headers.forEach((h, idx) => { 
                         if(h === "Pergunta_1") { let v = parseInt(values[idx]); if(!isNaN(v) && v > 0) notaCSAT = v; }
                         if(h === "Pergunta_2") { let v = parseInt(values[idx]); if(!isNaN(v) && v >= 0) notaNPS = v; }
                     });
                     if(notaCSAT !== null || notaNPS !== null) {
-                        tx.objectStore("satisfacao").put({ 
-                            uniqueID: uidSat, 
-                            nota: notaCSAT,
-                            notaNps: notaNPS 
-                        });
+                        tx.objectStore("satisfacao").put({ uniqueID: uidSat, nota: notaCSAT, notaNps: notaNPS });
                     }
                 }
-                
                 if ((rowData.evento || rowData.nomePausa) && rowData.duracao) {
                     tx.objectStore("eventos").add({
                         numeroAtendente: rowData.atendente || rowData.numeroAtendente,
@@ -536,10 +534,8 @@ async function consultarRelatorio() {
     const dFim = document.getElementById('dateFim').value;
     const duracaoMinima = parseInt(document.getElementById('minDuracao').value) || 0;
     const filasSelecionadas = Array.from(document.querySelectorAll('#boxFilas input:checked')).map(i => i.value);
-    
     if(!dIni || !dFim) return alert("Selecione as datas.");
     if(filasSelecionadas.length === 0) return alert("Selecione ao menos uma fila.");
-
     document.getElementById('loader').style.display = 'flex';
     try {
         const tx = db.transaction(["chamadas", "satisfacao", "eventos"], "readonly");
@@ -548,50 +544,50 @@ async function consultarRelatorio() {
             new Promise(r => tx.objectStore("satisfacao").getAll().onsuccess = e => r(e.target.result)),
             new Promise(r => tx.objectStore("eventos").getAll().onsuccess = e => r(e.target.result))
         ]);
-
         let stats = {}, g = { atend:0, abandReal:0, totalValido:0, ns:0, tma:0, tme:0, pq:0, csat:0, uni:{}, prom:0, neut:0, detr:0, npsTotal:0 };
-        
-        cacheNPS = []; 
-        cacheCSATCounts = { 1:0, 2:0, 3:0, 4:0, 5:0 };
-        cacheNSData = { dentro: 0, fora: 0, total: 0 };
+        cacheNPS = []; cacheCSATCounts = { 1:0, 2:0, 3:0, 4:0, 5:0 };
+        // AJUSTE: Inicializando os contadores de Imediato e Até 20s
+        cacheNSData = { dentro: 0, fora: 0, total: 0, imediato: 0, ate20s: 0 };
         cacheAbandonoData = { real: 0, curto: 0, total: 0 };
         cacheAtendidasPorFila = {};
-
         const filtradas = cRaw.filter(c => c.data >= dIni && c.data <= dFim && filasSelecionadas.includes(c.nomeFila.toUpperCase()));
-
         filtradas.forEach(c => {
             const filaKey = c.nomeFila.toUpperCase();
-            if(!cacheAtendidasPorFila[filaKey]) cacheAtendidasPorFila[filaKey] = { c1:0, c2:0, c3:0, total:0, ids:{} };
-
+            if(!cacheAtendidasPorFila[filaKey]) cacheAtendidasPorFila[filaKey] = { c1:0, c2:0, c3:0, total:0, ids:{}, imediato:0, ate20s:0 };
             if(c.tipo === "Atendida") {
                 if (c.atend >= duracaoMinima) {
                     g.atend++; g.totalValido++; g.tme += c.espera;
                     cacheNSData.total++;
                     
-                    if(c.espera <= 60) { g.ns++; cacheNSData.dentro++; }
-                    else { cacheNSData.fora++; }
+                    // Lógica NS 60s
+                    if(c.espera <= 60) { g.ns++; cacheNSData.dentro++; } else { cacheNSData.fora++; }
+                    
+                    // AJUSTE: Incremento de Imediato (Espera 0) e Até 20s (Duração)
+                    if(c.espera === 0) { 
+                        cacheNSData.imediato++; 
+                        cacheAtendidasPorFila[filaKey].imediato++; 
+                    }
+                    if(c.atend <= 20) { 
+                        cacheNSData.ate20s++; 
+                        cacheAtendidasPorFila[filaKey].ate20s++; 
+                    }
 
                     let cid = c.contactID || c.uniqueID;
                     cacheAtendidasPorFila[filaKey].total++;
                     cacheAtendidasPorFila[filaKey].ids[cid] = (cacheAtendidasPorFila[filaKey].ids[cid] || 0) + 1;
-
                     const id = c.numeroAtendente;
                     if(!stats[id]) stats[id] = { nome: c.nomeAtendente, at:0, ns:0, tma:0, pq:0, csat:0, reg:0, dig:0, ban:0, agu:0, calls:[] };
-                    
                     let notaObj = sRaw.find(s => s.uniqueID === c.uniqueID);
                     let nota = notaObj ? notaObj.nota : null;
                     let nps = (notaObj && notaObj.notaNps !== undefined) ? notaObj.notaNps : null;
-
                     stats[id].at++;
                     if(c.espera <= 60) { stats[id].ns++; }
                     stats[id].tma += c.atend; g.tma += c.atend;
-                    
                     if(nota) { 
                         g.pq++; stats[id].pq++; 
                         if(nota >= 4) { g.csat++; stats[id].csat++; }
                         if(cacheCSATCounts[nota] !== undefined) cacheCSATCounts[nota]++;
                     }
-                    
                     if(nps !== null) {
                         g.npsTotal++;
                         let status = "";
@@ -600,30 +596,21 @@ async function consultarRelatorio() {
                         else { g.detr++; status = "Detrator"; }
                         cacheNPS.push({ atendente: c.nomeAtendente, data: c.data, nota: nps, status: status });
                     }
-
                     stats[id].calls.push({...c, nota: nota || '-'});
                     g.uni[filaKey] = (g.uni[filaKey] || 0) + 1;
                 }
             } else if(c.tipo === "Abandonada") {
                 cacheAbandonoData.total++;
-                if(c.espera > 60) {
-                    g.abandReal++; g.totalValido++; g.tme += c.espera;
-                    cacheAbandonoData.real++;
-                } else {
-                    cacheAbandonoData.curto++;
-                }
+                if(c.espera > 60) { g.abandReal++; g.totalValido++; g.tme += c.espera; cacheAbandonoData.real++; }
+                else { cacheAbandonoData.curto++; }
             }
         });
-
         for(let f in cacheAtendidasPorFila) {
             let o = cacheAtendidasPorFila[f];
             Object.values(o.ids).forEach(qtd => {
-                if(qtd === 1) o.c1++;
-                else if(qtd === 2) o.c2++;
-                else o.c3++;
+                if(qtd === 1) o.c1++; else if(qtd === 2) o.c2++; else o.c3++;
             });
         }
-
         eRaw.filter(e => e.data >= dIni && e.data <= dFim).forEach(e => {
             if(stats[e.numeroAtendente]) {
                 const p = (e.nomePausa || "").toUpperCase();
@@ -639,11 +626,8 @@ async function consultarRelatorio() {
 }
 
 function renderizarTudo(g, stats) {
-    const nsPerc = (g.ns/g.atend)*100 || 0;
-    const abandPerc = (g.abandReal/g.totalValido)*100 || 0;
-    const pesqPerc = (g.pq/g.atend)*100 || 0;
+    const nsPerc = (g.ns/g.atend)*100 || 0, abandPerc = (g.abandReal/g.totalValido)*100 || 0, pesqPerc = (g.pq/g.atend)*100 || 0;
     const npsFinal = g.npsTotal > 0 ? ((g.prom - g.detr) / g.npsTotal) * 100 : 0;
-
     document.getElementById('kAt').innerText = g.atend;
     document.getElementById('kNS').innerText = nsPerc.toFixed(1) + "%";
     document.getElementById('kNS').className = "kpi-value " + (nsPerc >= 85 ? "meta-good" : "meta-bad");
@@ -653,44 +637,37 @@ function renderizarTudo(g, stats) {
     document.getElementById('kAband').className = "kpi-value " + (abandPerc <= 5 ? "meta-good" : "meta-bad");
     document.getElementById('kPesq').innerText = pesqPerc.toFixed(1) + "%";
     document.getElementById('kSat').innerText = ((g.csat/g.pq)*100 || 0).toFixed(1) + "%";
-    
     document.getElementById('kNPS').innerText = npsFinal.toFixed(0);
     document.getElementById('kNPS').className = "kpi-value " + (npsFinal >= 70 ? "meta-good" : npsFinal < 40 ? "meta-bad" : "text-warning");
-
-    // Correção NPS: Injetando valores no modal de detalhes
     document.getElementById('npsCountProm').innerText = g.prom;
     document.getElementById('npsCountNeut').innerText = g.neut;
     document.getElementById('npsCountDetr').innerText = g.detr;
-
+    
+    // AJUSTE: Renderização dos novos dados no Modal NS
     document.getElementById('nsDentro').innerText = cacheNSData.dentro;
     document.getElementById('nsFora').innerText = cacheNSData.fora;
+    document.getElementById('nsImediato').innerText = cacheNSData.imediato;
+    document.getElementById('nsAte20s').innerText = cacheNSData.ate20s;
     document.getElementById('nsTotal').innerText = cacheNSData.total;
 
     document.getElementById('abReal').innerText = cacheAbandonoData.real;
     document.getElementById('abCurto').innerText = cacheAbandonoData.curto;
     document.getElementById('abTotal').innerText = cacheAbandonoData.total;
-
     cacheGlobal = stats;
     document.getElementById('tableBody').innerHTML = Object.values(stats).sort((a,b) => b.at - a.at).map(d => {
-        const ns = (d.ns/d.at)*100 || 0;
-        const sat = d.pq > 0 ? (d.csat/d.pq)*100 : 0;
-        return `<tr>
-            <td class="text-start"><span class="clickable-name" onclick="abrirDrill('${d.nome}')">${d.nome}</span></td>
+        const ns = (d.ns/d.at)*100 || 0, sat = d.pq > 0 ? (d.csat/d.pq)*100 : 0;
+        return `<tr><td class="text-start"><span class="clickable-name" onclick="abrirDrill('${d.nome}')">${d.nome}</span></td>
             <td>${d.at}</td><td class="${ns>=85?'meta-good':'meta-bad'}">${ns.toFixed(1)}%</td>
-            <td>${toHms(Math.round(d.at > 0 ? d.tma/d.at : 0))}</td>
-            <td>${toHms(d.reg)}</td><td>${toHms(d.dig)}</td><td>${toHms(d.ban)}</td><td>${toHms(d.agu)}</td>
-            <td>${((d.pq/d.at)*100).toFixed(1)}%</td>
-            <td class="${sat>=85?'meta-good':'meta-bad'}">${d.pq>0?sat.toFixed(1)+'%':'-'}</td>
-        </tr>`;
+            <td>${toHms(Math.round(d.at > 0 ? d.tma/d.at : 0))}</td><td>${toHms(d.reg)}</td><td>${toHms(d.dig)}</td>
+            <td>${toHms(d.ban)}</td><td>${toHms(d.agu)}</td><td>${((d.pq/d.at)*100).toFixed(1)}%</td>
+            <td class="${sat>=85?'meta-good':'meta-bad'}">${d.pq>0?sat.toFixed(1)+'%':'-'}</td></tr>`;
     }).join('');
-
     if(chartObjEvol) chartObjEvol.destroy();
     chartObjEvol = new Chart(document.getElementById('chartEvol'), {
         type: 'bar',
         data: { labels: ['NS %', 'Pesquisa %', 'CSAT %', 'NPS'], datasets: [{ data: [nsPerc, pesqPerc, (g.csat/g.pq*100), npsFinal], backgroundColor: ['#00b4d8', '#0077b6', '#00b894', '#03045e'], borderRadius: 8 }] },
         options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
     });
-
     if(chartObjPizza) chartObjPizza.destroy();
     chartObjPizza = new Chart(document.getElementById('chartPizza'), {
         type: 'doughnut',
@@ -705,56 +682,36 @@ function abrirModalAtendidas() {
         let d = cacheAtendidasPorFila[fila];
         html += `<tr>
             <td class="text-start fw-bold">${fila}</td>
-            <td>${d.c1}</td>
-            <td>${d.c2}</td>
-            <td>${d.c3}</td>
+            <td class="table-success fw-bold">${d.imediato}</td>
+            <td class="table-info fw-bold">${d.ate20s}</td>
+            <td>${d.c1}</td><td>${d.c2}</td><td>${d.c3}</td>
             <td class="fw-bold">${d.total}</td>
         </tr>`;
     }
-    document.getElementById('atendidasFilaBody').innerHTML = html || '<tr><td colspan="5">Sem dados</td></tr>';
+    document.getElementById('atendidasFilaBody').innerHTML = html || '<tr><td colspan="7">Sem dados</td></tr>';
     new bootstrap.Modal(document.getElementById('modalAtendidas')).show();
 }
 
-function abrirModalNS() {
-    new bootstrap.Modal(document.getElementById('modalNS')).show();
-}
-
-function abrirModalAbandono() {
-    new bootstrap.Modal(document.getElementById('modalAbandono')).show();
-}
-
+function abrirModalNS() { new bootstrap.Modal(document.getElementById('modalNS')).show(); }
+function abrirModalAbandono() { new bootstrap.Modal(document.getElementById('modalAbandono')).show(); }
 function abrirModalNPS() {
     document.getElementById('npsBody').innerHTML = cacheNPS.map(n => {
         const badgeClass = n.status === "Promotor" ? "bg-promotor" : n.status === "Neutro" ? "bg-neutro" : "bg-detrator";
-        return `<tr>
-            <td>${n.atendente}</td>
-            <td>${n.data}</td>
-            <td class="fw-bold">${n.nota}</td>
-            <td><span class="nps-badge ${badgeClass}">${n.status}</span></td>
-        </tr>`;
+        return `<tr><td>${n.atendente}</td><td>${n.data}</td><td class="fw-bold">${n.nota}</td><td><span class="nps-badge ${badgeClass}">${n.status}</span></td></tr>`;
     }).join('');
     new bootstrap.Modal(document.getElementById('modalNPS')).show();
 }
-
 function abrirModalCSAT() {
-    document.getElementById('csat5').innerText = cacheCSATCounts[5];
-    document.getElementById('csat4').innerText = cacheCSATCounts[4];
-    document.getElementById('csat3').innerText = cacheCSATCounts[3];
-    document.getElementById('csat2').innerText = cacheCSATCounts[2];
-    document.getElementById('csat1').innerText = cacheCSATCounts[1];
+    [1,2,3,4,5].forEach(v => document.getElementById(`csat${v}`).innerText = cacheCSATCounts[v]);
     new bootstrap.Modal(document.getElementById('modalCSAT')).show();
 }
-
 function abrirDrill(nome) {
     const at = Object.values(cacheGlobal).find(x => x.nome === nome);
     if(!at) return;
     document.getElementById('drillNome').innerText = nome;
-    document.getElementById('drillBody').innerHTML = at.calls.map(c => `
-        <tr><td>${c.uniqueID}</td><td>${c.data}</td><td>${c.nomeFila}</td><td>${toHms(c.espera)}</td><td>${toHms(c.atend)}</td><td>${c.nota}</td></tr>
-    `).join('');
+    document.getElementById('drillBody').innerHTML = at.calls.map(c => `<tr><td>${c.uniqueID}</td><td>${c.data}</td><td>${c.nomeFila}</td><td>${toHms(c.espera)}</td><td>${toHms(c.atend)}</td><td>${c.nota}</td></tr>`).join('');
     new bootstrap.Modal(document.getElementById('modalDrill')).show();
 }
-
 async function exportarBackup() {
     const tx = db.transaction(["chamadas", "satisfacao", "eventos"], "readonly");
     const data = {
@@ -763,10 +720,8 @@ async function exportarBackup() {
         eventos: await new Promise(r => tx.objectStore("eventos").getAll().onsuccess = e => r(e.target.result))
     };
     const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob); a.download = `backup_op360.json`; a.click();
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `backup_op360.json`; a.click();
 }
-
 function importarBackup(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -781,7 +736,6 @@ function importarBackup(event) {
     };
     reader.readAsText(file);
 }
-
 function limparBanco() { if(confirm("Deseja apagar tudo?")) { indexedDB.deleteDatabase("Unimed360_Final_v3"); location.reload(); } }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
