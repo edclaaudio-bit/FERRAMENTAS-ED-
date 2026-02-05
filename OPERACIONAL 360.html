@@ -29,7 +29,6 @@
             margin: 0;
         }
 
-        /* Ajuste na Sidebar para fixar topo e rodapé */
         .sidebar {
             width: 280px;
             background: var(--sidebar-bg);
@@ -52,7 +51,6 @@
             flex-shrink: 0;
         }
 
-        /* Container que permite scroll apenas no meio */
         .sidebar-scrollable-content {
             flex-grow: 1;
             overflow-y: auto;
@@ -60,7 +58,6 @@
             margin-bottom: 15px;
         }
 
-        /* Esconder scrollbar para navegadores modernos mas permitir scroll */
         .sidebar-scrollable-content::-webkit-scrollbar {
             width: 4px;
         }
@@ -90,7 +87,6 @@
 
         .form-control, .btn { border-radius: 10px; font-weight: 600; font-size: 11px; }
         
-        /* Box de Filas com fonte pequena e altura flexível */
         .multi-select-box { 
             background: #f8fafc; 
             border: 1px solid #e2e8f0; 
@@ -138,8 +134,13 @@
         <div class="mb-3">
             <label class="small fw-bold text-muted mb-2">FILTROS</label>
             <input type="date" id="dateIni" class="form-control form-control-sm mb-2">
-            <input type="date" id="dateFim" class="form-control form-control-sm mb-3">
+            <input type="date" id="dateFim" class="form-control form-control-sm mb-2">
             
+            <div class="mb-3">
+                <label class="small fw-bold text-muted mb-1">DURAÇÃO MÍNIMA ATENDIMENTO (SEG)</label>
+                <input type="number" id="minDuracao" class="form-control form-control-sm" placeholder="Ex: 45" value="0">
+            </div>
+
             <input type="text" id="searchFila" class="form-control form-control-sm mb-2" placeholder="Pesquisar fila..." onkeyup="filtrarFilasDinamico()">
             
             <div class="d-flex justify-content-between mb-2" style="font-size: 9px;">
@@ -363,6 +364,7 @@ async function importarParaBanco() {
 async function consultarRelatorio() {
     const dIni = document.getElementById('dateIni').value;
     const dFim = document.getElementById('dateFim').value;
+    const duracaoMinima = parseInt(document.getElementById('minDuracao').value) || 0;
     const filasSelecionadas = Array.from(document.querySelectorAll('#boxFilas input:checked')).map(i => i.value);
     
     if(!dIni || !dFim) return alert("Selecione as datas.");
@@ -381,20 +383,23 @@ async function consultarRelatorio() {
         const filtradas = cRaw.filter(c => c.data >= dIni && c.data <= dFim && filasSelecionadas.includes(c.nomeFila.toUpperCase()));
 
         filtradas.forEach(c => {
+            // APLICAÇÃO DO FILTRO DE DURAÇÃO MÍNIMA
             if(c.tipo === "Atendida") {
-                g.atend++; g.totalValido++; g.tme += c.espera;
-                const id = c.numeroAtendente;
-                if(!stats[id]) stats[id] = { nome: c.nomeAtendente, at:0, ns:0, tma:0, pq:0, csat:0, reg:0, dig:0, ban:0, agu:0, calls:[] };
-                let notaObj = sRaw.find(s => s.uniqueID === c.uniqueID);
-                let nota = notaObj ? notaObj.nota : null;
-                stats[id].at++;
-                if(c.espera <= 60) { stats[id].ns++; g.ns++; }
-                stats[id].tma += c.atend; g.tma += c.atend;
-                if(nota) { g.pq++; stats[id].pq++; if(nota >= 4) { g.csat++; stats[id].csat++; } }
-                stats[id].calls.push({...c, nota: nota || '-'});
-                
-                let f = c.nomeFila.toUpperCase(); 
-                g.uni[f] = (g.uni[f] || 0) + 1;
+                if (c.atend >= duracaoMinima) {
+                    g.atend++; g.totalValido++; g.tme += c.espera;
+                    const id = c.numeroAtendente;
+                    if(!stats[id]) stats[id] = { nome: c.nomeAtendente, at:0, ns:0, tma:0, pq:0, csat:0, reg:0, dig:0, ban:0, agu:0, calls:[] };
+                    let notaObj = sRaw.find(s => s.uniqueID === c.uniqueID);
+                    let nota = notaObj ? notaObj.nota : null;
+                    stats[id].at++;
+                    if(c.espera <= 60) { stats[id].ns++; g.ns++; }
+                    stats[id].tma += c.atend; g.tma += c.atend;
+                    if(nota) { g.pq++; stats[id].pq++; if(nota >= 4) { g.csat++; stats[id].csat++; } }
+                    stats[id].calls.push({...c, nota: nota || '-'});
+                    
+                    let f = c.nomeFila.toUpperCase(); 
+                    g.uni[f] = (g.uni[f] || 0) + 1;
+                }
             } else if(c.tipo === "Abandonada" && c.espera > 60) {
                 g.abandReal++; g.totalValido++; g.tme += c.espera;
             }
