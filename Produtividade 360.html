@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Produtividade 360º | Foco em Ocupação</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --primary: #4361ee; --success: #2ec4b6; --danger: #e71d36; --warning: #f7b731; --bg: #f8fafc; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); font-size: 13px; margin: 0; }
+        .sidebar { width: 320px; height: 100vh; position: fixed; background: white; border-right: 1px solid #eef2f7; padding: 25px; z-index: 1000; display: flex; flex-direction: column; overflow-y: auto; }
+        .main-content { margin-left: 320px; padding: 30px; }
+        .card-metric { background: white; border-radius: 16px; padding: 30px; border: 2px solid var(--primary); text-align: center; cursor: pointer; transition: 0.2s; box-shadow: 0 10px 15px -3px rgba(67, 97, 238, 0.1); max-width: 400px; margin: 0 auto; }
+        .card-metric:hover { transform: translateY(-3px); box-shadow: 0 15px 20px -3px rgba(67, 97, 238, 0.2); }
+        .metric-val { font-size: 48px; font-weight: 800; color: var(--primary); }
+        .metric-label { font-size: 14px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+        .info-icon { cursor: help; color: var(--primary); font-weight: bold; margin-left: 6px; border: 1.5px solid var(--primary); border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; vertical-align: middle; }
+        .clickable-name { color: var(--primary); cursor: pointer; font-weight: 700; text-decoration: underline; }
+        .row-pausa-intervalo { background-color: #fff5f5 !important; color: #e71d36; font-weight: 600; }
+        #loader { display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index:2000; flex-direction:column; align-items:center; justify-content:center; }
+        .fila-scroll { border: 1px solid #dee2e6; border-radius: 8px; padding: 10px; max-height: 150px; overflow-y: auto; background: #fdfdfd; }
+        .status-pos { color: var(--success) !important; font-weight: 800; }
+        .status-neg { color: var(--danger) !important; font-weight: 800; }
+        .btn-db { font-size: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="loader">
+    <div class="spinner-border text-primary mb-2"></div>
+    <div class="fw-bold">Consolidando Dashboards...</div>
+</div>
+
+<div class="sidebar">
+    <h4 class="fw-bold mb-4">Produtividade <span class="text-primary">360º</span></h4>
+    
+    <div class="mb-3">
+        <label class="form-label fw-bold small">1. SELECIONE A DATA</label>
+        <input type="date" id="dataFiltro" class="form-control form-control-sm">
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-bold small">2. ARQUIVOS INTELIX</label>
+        <input type="file" id="csvFiles" class="form-control form-control-sm" multiple accept=".csv" onchange="processarUpload()">
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-bold small text-primary">3. FILTRAR POR FILAS</label>
+        <div id="containerFilas" class="fila-scroll"></div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-bold small">4. META DE OCUPAÇÃO (%)</label>
+        <input type="number" id="metaInput" class="form-control form-control-sm" value="85">
+    </div>
+
+    <button class="btn btn-primary w-100 fw-bold py-2 mb-3" onclick="gerarRelatorioFiltrado()">GERAR DASHBOARD</button>
+
+    <hr>
+    
+    <div class="d-grid gap-2">
+        <label class="fw-bold small text-muted">GERENCIAR BANCO LOCAL</label>
+        <button class="btn btn-outline-secondary btn-db" onclick="exportarBackup()">BAIXAR BACKUP (.JSON)</button>
+        <button class="btn btn-outline-info btn-db" onclick="document.getElementById('restoreInput').click()">RESTAURAR BACKUP</button>
+        <input type="file" id="restoreInput" hidden accept=".json" onchange="importarBackup(event)">
+        <button class="btn btn-outline-danger btn-db" onclick="limparBanco()">LIMPAR BANCO DE DADOS</button>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="d-flex flex-column align-items-center mb-5">
+        <div class="card-metric" onclick="abrirModalOcupacao()">
+            <div class="metric-label">Ocupação Média <span id="dataDisplay" class="badge bg-light text-dark ms-2">--/--/----</span></div>
+            <div class="metric-val" id="mOc">0%</div>
+            <div class="small text-muted mt-2">Clique para ver memória de cálculo</div>
+        </div>
+    </div>
+
+    <div class="table-res p-4 bg-white rounded-4 border">
+        <h6 class="fw-bold mb-4">Performance Individual (Taxa Base por Intervalo 10 min)</h6>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Atendente</th>
+                        <th class="text-center">Atendidas</th>
+                        <th class="text-center">Estimadas <span class="info-icon" title="Cálculo por Taxa Base (Chamadas / Online) em janelas de 10 minutos.">i</span></th>
+                        <th class="text-center">TMA</th>
+                        <th class="text-center">Ocupação %</th>
+                        <th class="text-center">Desvio Meta (%)</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaCorpo"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalDetalhe" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px;">
+            <div class="modal-header">
+                <h6 class="modal-title fw-bold" id="nomeAtendenteModal">Detalhamento por Intervalo (10 min)</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="max-height: 600px; overflow-y: auto;">
+                <table class="table table-sm text-center align-middle border">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Período</th>
+                            <th>Chamadas Atendidas</th>
+                            <th>Estimativa (Taxa Base)</th>
+                            <th>Tempo em Atendimento</th>
+                            <th>Status / Pausa</th>
+                            <th>Duração Pausa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoModal"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalOcupacao" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px;">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Memória de Cálculo Detalhada</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-hover align-middle border text-center">
+                    <thead class="table-dark small">
+                        <tr>
+                            <th>Atendente</th>
+                            <th>Jornada Líquida</th>
+                            <th>Tempo Falado</th>
+                            <th class="text-success">P. Produtivas</th>
+                            <th class="text-danger">P. Improdutivas</th>
+                            <th class="text-warning">Ocioso</th>
+                            <th>Ocupação Real</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoModalOcupacao"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let chamadasCache = [], eventosCache = [], dadosAtendentes = {}, intervalosGlobais = [];
+const P_PROD = ["FEEDBACK", "REGISTRO", "MESA DO ACERTO", "CANCELAMENTO DE PLANO", "TREINAMENTO"];
+const P_IMPROD = ["BANHEIRO", "AGUA", "PAUSA BANHEIRO", "PAUSA AGUA"];
+const P_DESC = ["ALMOÇO", "LANCHE", "PAUSA 10", "DESCANSO"];
+const HORA_INICIO = "06:00:00", HORA_FIM = "23:59:59";
+
+window.onload = () => { 
+    document.getElementById('dataFiltro').value = new Date().toISOString().split('T')[0]; 
+    carregarDoStorage();
+};
+
+// --- FUNÇÕES DE BANCO DE DADOS (LOCAL STORAGE) ---
+
+function salvarNoStorage() {
+    const data = {
+        chamadas: chamadasCache,
+        eventos: eventosCache
+    };
+    localStorage.setItem('prod360_db', JSON.stringify(data));
+    atualizarListaFilas();
+}
+
+function carregarDoStorage() {
+    const data = localStorage.getItem('prod360_db');
+    if (data) {
+        const parsed = JSON.parse(data);
+        chamadasCache = parsed.chamadas || [];
+        eventosCache = parsed.eventos || [];
+        atualizarListaFilas();
+    }
+}
+
+function limparBanco() {
+    if(confirm("Deseja realmente apagar todos os dados salvos?")) {
+        localStorage.removeItem('prod360_db');
+        chamadasCache = [];
+        eventosCache = [];
+        document.getElementById('containerFilas').innerHTML = "";
+        document.getElementById('tabelaCorpo').innerHTML = "";
+        document.getElementById('mOc').innerText = "0%";
+        alert("Banco de dados limpo!");
+    }
+}
+
+function exportarBackup() {
+    const data = localStorage.getItem('prod360_db');
+    if (!data) return alert("Não há dados para exportar.");
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_produtividade_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+}
+
+function importarBackup(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const json = JSON.parse(e.target.result);
+            chamadasCache = json.chamadas || [];
+            eventosCache = json.eventos || [];
+            salvarNoStorage();
+            alert("Backup restaurado com sucesso!");
+            location.reload();
+        } catch (err) {
+            alert("Erro ao ler arquivo de backup.");
+        }
+    };
+    reader.readAsText(file);
+}
+
+// --- FUNÇÕES DE CÁLCULO E LÓGICA (MANTIDAS) ---
+
+function hmsParaSegundos(hms) {
+    if(!hms) return 0;
+    let p = hms.replace(/"/g, '').split(':');
+    return (+p[0]) * 3600 + (+p[1]) * 60 + (+p[2]);
+}
+
+function segundosParaHms(seg) {
+    seg = Math.max(0, Math.round(seg));
+    return `${Math.floor(seg/3600).toString().padStart(2,'0')}:${Math.floor((seg%3600)/60).toString().padStart(2,'0')}:${(seg%60).toString().padStart(2,'0')}`;
+}
+
+function extrairTimestamp(dataStr) { return dataStr ? new Date(dataStr.replace(/-/g, '/')).getTime() : null; }
+
+function limparCsvIntelix(csvTexto) {
+    let linhas = csvTexto.split('\n');
+    let inicio = linhas.findIndex(l => l.toLowerCase().includes('idfila') || l.toLowerCase().includes('data;atendente;nomeatendente'));
+    return inicio !== -1 ? linhas.slice(inicio).join('\n') : csvTexto;
+}
+
+async function processarUpload() {
+    const input = document.getElementById('csvFiles');
+    for (let file of input.files) {
+        const text = await file.text();
+        const results = Papa.parse(limparCsvIntelix(text), { header: true, skipEmptyLines: true, delimiter: ";" });
+        results.data.forEach(row => {
+            if (row.idFila) { chamadasCache.push(row); }
+            else if (row.evento) { eventosCache.push(row); }
+        });
+    }
+    salvarNoStorage();
+}
+
+function atualizarListaFilas() {
+    const container = document.getElementById('containerFilas');
+    let filasDetectadas = new Set();
+    chamadasCache.forEach(row => {
+        let f = (row.nomeFila || "").replace(/"/g, '').trim();
+        if(f) filasDetectadas.add(f);
+    });
+    container.innerHTML = Array.from(filasDetectadas).sort().map(f => `
+        <div class="form-check"><input class="form-check-input check-fila" type="checkbox" value="${f}" id="f_${f}" checked>
+        <label class="form-check-label small" for="f_${f}">${f}</label></div>`).join('');
+}
+
+function gerarRelatorioFiltrado() {
+    const dataSel = document.getElementById('dataFiltro').value;
+    if(!dataSel) return alert("Por favor, selecione uma data.");
+    document.getElementById('loader').style.display = 'flex';
+    document.getElementById('dataDisplay').innerText = dataSel.split('-').reverse().join('/');
+    const filasSel = Array.from(document.querySelectorAll('.check-fila:checked')).map(el => el.value);
+    
+    dadosAtendentes = {};
+    intervalosGlobais = [];
+
+    chamadasCache.forEach(row => {
+        let d = row.data.includes('/') ? row.data.split('/').reverse().join('-') : row.data;
+        if(d !== dataSel) return;
+        let f = (row.nomeFila || "").replace(/"/g, '').trim();
+        if(!filasSel.includes(f)) return;
+        row.tsUnix = extrairTimestamp(row.data + " " + (row.horaAtendimento || row.horaEntradaPos));
+        
+        let n = (row.nomeAtendente || "Desconhecido").replace(/"/g, '');
+        if(!dadosAtendentes[n]) dadosAtendentes[n] = { nome: n, at: 0, totalSeg: 0, tProd: 0, tImprod: 0, tDesc: 0, login: Infinity, logoff: 0, estimativa: 0, chamadasLista: [], pausasLista: [] };
+        
+        if (row.tipo === "Atendida" || row.isAtendida === "1") {
+            dadosAtendentes[n].at++;
+            dadosAtendentes[n].totalSeg += hmsParaSegundos(row.tempoAtendimento);
+            dadosAtendentes[n].chamadasLista.push({ ts: row.tsUnix, dur: hmsParaSegundos(row.tempoAtendimento) });
+        }
+    });
+
+    eventosCache.forEach(row => {
+        let d = row.dataInicio.split(' ')[0];
+        let dConv = d.includes('/') ? d.split('/').reverse().join('-') : d;
+        if(dConv !== dataSel) return;
+        let n = (row.nomeAtendente || "").replace(/"/g, '');
+        if(!dadosAtendentes[n]) return;
+
+        let tsIn = Math.max(extrairTimestamp(row.dataInicio), extrairTimestamp(dConv + " " + HORA_INICIO));
+        let tsFim = Math.min(extrairTimestamp(row.dataFim), extrairTimestamp(dConv + " " + HORA_FIM));
+        if(tsFim <= tsIn) return;
+
+        if(row.evento === "Login") {
+            dadosAtendentes[n].login = Math.min(dadosAtendentes[n].login, tsIn);
+            dadosAtendentes[n].logoff = Math.max(dadosAtendentes[n].logoff, tsFim);
+        } else if(row.evento === "Pausa") {
+            let p = (row.nomePausa || "").toUpperCase();
+            let dur = (tsFim - tsIn) / 1000;
+            if (P_PROD.some(x => p.includes(x))) dadosAtendentes[n].tProd += dur;
+            else if (P_IMPROD.some(x => p.includes(x))) dadosAtendentes[n].tImprod += dur;
+            else if (P_DESC.some(x => p.includes(x))) dadosAtendentes[n].tDesc += dur;
+            dadosAtendentes[n].pausasLista.push({ tsIn, tsFim, nome: p });
+        }
+    });
+
+    const inicioDia = extrairTimestamp(dataSel + " " + HORA_INICIO);
+    const fimDia = extrairTimestamp(dataSel + " " + HORA_FIM);
+    
+    for (let t = inicioDia; t < fimDia; t += 600000) {
+        let tFim = t + 600000;
+        let calls = chamadasCache.filter(c => {
+            let d = c.data.includes('/') ? c.data.split('/').reverse().join('-') : c.data;
+            return d === dataSel && c.tsUnix >= t && c.tsUnix < tFim && filasSel.includes((c.nomeFila||"").replace(/"/g,'').trim());
+        }).length;
+        
+        let on = Object.values(dadosAtendentes).filter(a => a.login < tFim && a.logoff > t);
+        let taxaBase = (calls > 0 && on.length > 0) ? (calls / on.length) : 0;
+        
+        intervalosGlobais.push({ t, tFim, taxaBase });
+        on.forEach(a => { dadosAtendentes[a.nome].estimativa += taxaBase; });
+    }
+
+    renderizarDashboard();
+    document.getElementById('loader').style.display = 'none';
+}
+
+function renderizarDashboard() {
+    const tbody = document.getElementById('tabelaCorpo');
+    tbody.innerHTML = "";
+    let lista = Object.values(dadosAtendentes).filter(a => a.logoff > a.login);
+    let somaOcup = 0;
+    lista.sort((a,b) => b.at - a.at).forEach(a => {
+        let liquida = ((a.logoff - a.login) / 1000) - a.tDesc;
+        let ocup = liquida > 0 ? (((a.totalSeg + a.tProd + a.tImprod) / liquida) * 100).toFixed(1) : "0.0";
+        let estArredondada = Math.ceil(a.estimativa);
+        let desvio = estArredondada > 0 ? ((a.at / estArredondada) - 1) * 100 : 0;
+        somaOcup += parseFloat(ocup);
+        
+        tbody.innerHTML += `<tr>
+            <td><span class="clickable-name" onclick="abrirDrill('${a.nome}')">${a.nome}</span></td>
+            <td class="text-center">${a.at}</td>
+            <td class="text-center fw-bold text-primary">${estArredondada}</td>
+            <td class="text-center">${segundosParaHms(a.at > 0 ? a.totalSeg/a.at : 0)}</td>
+            <td class="text-center fw-bold">${ocup}%</td>
+            <td class="text-center ${desvio >= 0 ? 'status-pos' : 'status-neg'}">${desvio.toFixed(1)}%</td>
+        </tr>`;
+    });
+    document.getElementById('mOc').innerText = (somaOcup / (lista.length || 1)).toFixed(1) + "%";
+}
+
+function abrirDrill(nome) {
+    const a = dadosAtendentes[nome];
+    document.getElementById('nomeAtendenteModal').innerText = `Detalhamento 10min: ${nome}`;
+    const corpo = document.getElementById('corpoModal');
+    corpo.innerHTML = "";
+
+    intervalosGlobais.forEach(inter => {
+        if (a.login >= inter.tFim || a.logoff <= inter.t) return;
+        let chamadasNoInter = a.chamadasLista.filter(c => c.ts >= inter.t && c.ts < inter.tFim);
+        let tempoNoInter = chamadasNoInter.reduce((acc, curr) => acc + curr.dur, 0);
+        let pausasNoInter = a.pausasLista.filter(p => p.tsIn < inter.tFim && p.tsFim > inter.t);
+        let statusTexto = "Disponível / Atendimento";
+        let durPausaTexto = "-";
+        let classeLinha = "";
+
+        if (pausasNoInter.length > 0) {
+            statusTexto = pausasNoInter.map(p => p.nome).join(", ");
+            let durS = pausasNoInter.reduce((acc, p) => {
+                let start = Math.max(p.tsIn, inter.t);
+                let end = Math.min(p.tsFim, inter.tFim);
+                return acc + (end - start);
+            }, 0);
+            durPausaTexto = segundosParaHms(durS / 1000);
+            classeLinha = "row-pausa-intervalo";
+        }
+
+        let horaFormatada = new Date(inter.t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+        corpo.innerHTML += `
+            <tr class="${classeLinha}">
+                <td>${horaFormatada}</td>
+                <td>${chamadasNoInter.length}</td>
+                <td>${Math.ceil(inter.taxaBase)}</td>
+                <td>${segundosParaHms(tempoNoInter)}</td>
+                <td>${statusTexto}</td>
+                <td>${durPausaTexto}</td>
+            </tr>`;
+    });
+    new bootstrap.Modal(document.getElementById('modalDetalhe')).show();
+}
+
+function abrirModalOcupacao() {
+    const corpo = document.getElementById('corpoModalOcupacao');
+    corpo.innerHTML = Object.values(dadosAtendentes).filter(a => a.logoff > a.login).map(a => {
+        let liquida = ((a.logoff - a.login) / 1000) - a.tDesc;
+        let ocioso = Math.max(0, liquida - a.totalSeg - a.tProd - a.tImprod);
+        return `<tr><td class="fw-bold">${a.nome}</td><td>${segundosParaHms(liquida)}</td><td>${segundosParaHms(a.totalSeg)}</td>
+            <td class="text-success">${segundosParaHms(a.tProd)}</td><td class="text-danger">${segundosParaHms(a.tImprod)}</td>
+            <td class="text-warning fw-bold">${segundosParaHms(ocioso)}</td><td class="fw-bold text-primary">${liquida > 0 ? (((a.totalSeg + a.tProd + a.tImprod) / liquida) * 100).toFixed(1) : 0}%</td></tr>`;
+    }).join('');
+    new bootstrap.Modal(document.getElementById('modalOcupacao')).show();
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
