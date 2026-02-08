@@ -38,8 +38,15 @@
     <h4 class="fw-bold mb-4">Produtividade <span class="text-primary">360º</span></h4>
     
     <div class="mb-3">
-        <label class="form-label fw-bold small">1. SELECIONE A DATA</label>
-        <input type="date" id="dataFiltro" class="form-control form-control-sm">
+        <label class="form-label fw-bold small">1. SELECIONE O PERÍODO</label>
+        <div class="mb-2">
+            <small class="text-muted d-block mb-1">Início:</small>
+            <input type="date" id="dataInicio" class="form-control form-control-sm">
+        </div>
+        <div>
+            <small class="text-muted d-block mb-1">Fim:</small>
+            <input type="date" id="dataFim" class="form-control form-control-sm">
+        </div>
     </div>
 
     <div class="mb-3">
@@ -160,17 +167,15 @@ const P_DESC = ["ALMOÇO", "LANCHE", "PAUSA 10", "DESCANSO"];
 const HORA_INICIO = "06:00:00", HORA_FIM = "23:59:59";
 
 window.onload = () => { 
-    document.getElementById('dataFiltro').value = new Date().toISOString().split('T')[0]; 
+    const hoje = new Date().toISOString().split('T')[0];
+    document.getElementById('dataInicio').value = hoje;
+    document.getElementById('dataFim').value = hoje;
     carregarDoStorage();
 };
 
-// --- FUNÇÕES DE BANCO DE DADOS (LOCAL STORAGE) ---
-
+// --- FUNÇÕES DE BANCO DE DADOS ---
 function salvarNoStorage() {
-    const data = {
-        chamadas: chamadasCache,
-        eventos: eventosCache
-    };
+    const data = { chamadas: chamadasCache, eventos: eventosCache };
     localStorage.setItem('prod360_db', JSON.stringify(data));
     atualizarListaFilas();
 }
@@ -188,8 +193,7 @@ function carregarDoStorage() {
 function limparBanco() {
     if(confirm("Deseja realmente apagar todos os dados salvos?")) {
         localStorage.removeItem('prod360_db');
-        chamadasCache = [];
-        eventosCache = [];
+        chamadasCache = []; eventosCache = [];
         document.getElementById('containerFilas').innerHTML = "";
         document.getElementById('tabelaCorpo').innerHTML = "";
         document.getElementById('mOc').innerText = "0%";
@@ -220,15 +224,12 @@ function importarBackup(event) {
             salvarNoStorage();
             alert("Backup restaurado com sucesso!");
             location.reload();
-        } catch (err) {
-            alert("Erro ao ler arquivo de backup.");
-        }
+        } catch (err) { alert("Erro ao ler arquivo de backup."); }
     };
     reader.readAsText(file);
 }
 
-// --- FUNÇÕES DE CÁLCULO E LÓGICA (MANTIDAS) ---
-
+// --- UTILITÁRIOS ---
 function hmsParaSegundos(hms) {
     if(!hms) return 0;
     let p = hms.replace(/"/g, '').split(':');
@@ -273,24 +274,30 @@ function atualizarListaFilas() {
         <label class="form-check-label small" for="f_${f}">${f}</label></div>`).join('');
 }
 
+// --- LÓGICA PRINCIPAL (CORRIGIDA PARA PERÍODO) ---
 function gerarRelatorioFiltrado() {
-    const dataSel = document.getElementById('dataFiltro').value;
-    if(!dataSel) return alert("Por favor, selecione uma data.");
-    document.getElementById('loader').style.display = 'flex';
-    document.getElementById('dataDisplay').innerText = dataSel.split('-').reverse().join('/');
-    const filasSel = Array.from(document.querySelectorAll('.check-fila:checked')).map(el => el.value);
+    const dataInicio = document.getElementById('dataInicio').value;
+    const dataFim = document.getElementById('dataFim').value;
+    if(!dataInicio || !dataFim) return alert("Selecione o período completo.");
     
+    document.getElementById('loader').style.display = 'flex';
+    document.getElementById('dataDisplay').innerText = `${dataInicio.split('-').reverse().slice(0,2).join('/')} a ${dataFim.split('-').reverse().join('/')}`;
+    
+    const filasSel = Array.from(document.querySelectorAll('.check-fila:checked')).map(el => el.value);
     dadosAtendentes = {};
     intervalosGlobais = [];
 
+    // Processar Chamadas no período
     chamadasCache.forEach(row => {
         let d = row.data.includes('/') ? row.data.split('/').reverse().join('-') : row.data;
-        if(d !== dataSel) return;
+        if(d < dataInicio || d > dataFim) return;
+        
         let f = (row.nomeFila || "").replace(/"/g, '').trim();
         if(!filasSel.includes(f)) return;
-        row.tsUnix = extrairTimestamp(row.data + " " + (row.horaAtendimento || row.horaEntradaPos));
         
+        row.tsUnix = extrairTimestamp(row.data + " " + (row.horaAtendimento || row.horaEntradaPos));
         let n = (row.nomeAtendente || "Desconhecido").replace(/"/g, '');
+        
         if(!dadosAtendentes[n]) dadosAtendentes[n] = { nome: n, at: 0, totalSeg: 0, tProd: 0, tImprod: 0, tDesc: 0, login: Infinity, logoff: 0, estimativa: 0, chamadasLista: [], pausasLista: [] };
         
         if (row.tipo === "Atendida" || row.isAtendida === "1") {
@@ -300,15 +307,17 @@ function gerarRelatorioFiltrado() {
         }
     });
 
+    // Processar Eventos no período
     eventosCache.forEach(row => {
         let d = row.dataInicio.split(' ')[0];
         let dConv = d.includes('/') ? d.split('/').reverse().join('-') : d;
-        if(dConv !== dataSel) return;
+        if(dConv < dataInicio || dConv > dataFim) return;
+
         let n = (row.nomeAtendente || "").replace(/"/g, '');
         if(!dadosAtendentes[n]) return;
 
-        let tsIn = Math.max(extrairTimestamp(row.dataInicio), extrairTimestamp(dConv + " " + HORA_INICIO));
-        let tsFim = Math.min(extrairTimestamp(row.dataFim), extrairTimestamp(dConv + " " + HORA_FIM));
+        let tsIn = extrairTimestamp(row.dataInicio);
+        let tsFim = extrairTimestamp(row.dataFim);
         if(tsFim <= tsIn) return;
 
         if(row.evento === "Login") {
@@ -324,21 +333,29 @@ function gerarRelatorioFiltrado() {
         }
     });
 
-    const inicioDia = extrairTimestamp(dataSel + " " + HORA_INICIO);
-    const fimDia = extrairTimestamp(dataSel + " " + HORA_FIM);
-    
-    for (let t = inicioDia; t < fimDia; t += 600000) {
-        let tFim = t + 600000;
-        let calls = chamadasCache.filter(c => {
-            let d = c.data.includes('/') ? c.data.split('/').reverse().join('-') : c.data;
-            return d === dataSel && c.tsUnix >= t && c.tsUnix < tFim && filasSel.includes((c.nomeFila||"").replace(/"/g,'').trim());
-        }).length;
+    // Cálculo de Estimativa por Intervalos (Iterando por dias do período)
+    let dAtual = new Date(dataInicio + "T00:00:00");
+    const dFim = new Date(dataFim + "T00:00:00");
+
+    while(dAtual <= dFim) {
+        let diaStr = dAtual.toISOString().split('T')[0];
+        const inicioDia = extrairTimestamp(diaStr + " " + HORA_INICIO);
+        const fimDia = extrairTimestamp(diaStr + " " + HORA_FIM);
         
-        let on = Object.values(dadosAtendentes).filter(a => a.login < tFim && a.logoff > t);
-        let taxaBase = (calls > 0 && on.length > 0) ? (calls / on.length) : 0;
-        
-        intervalosGlobais.push({ t, tFim, taxaBase });
-        on.forEach(a => { dadosAtendentes[a.nome].estimativa += taxaBase; });
+        for (let t = inicioDia; t < fimDia; t += 600000) {
+            let tFim = t + 600000;
+            let calls = chamadasCache.filter(c => {
+                let d = c.data.includes('/') ? c.data.split('/').reverse().join('-') : c.data;
+                return d === diaStr && c.tsUnix >= t && c.tsUnix < tFim && filasSel.includes((c.nomeFila||"").replace(/"/g,'').trim());
+            }).length;
+            
+            let on = Object.values(dadosAtendentes).filter(a => a.login < tFim && a.logoff > t);
+            let taxaBase = (calls > 0 && on.length > 0) ? (calls / on.length) : 0;
+            
+            intervalosGlobais.push({ t, tFim, taxaBase });
+            on.forEach(a => { if(a.login < tFim && a.logoff > t) dadosAtendentes[a.nome].estimativa += taxaBase; });
+        }
+        dAtual.setDate(dAtual.getDate() + 1);
     }
 
     renderizarDashboard();
@@ -348,8 +365,9 @@ function gerarRelatorioFiltrado() {
 function renderizarDashboard() {
     const tbody = document.getElementById('tabelaCorpo');
     tbody.innerHTML = "";
-    let lista = Object.values(dadosAtendentes).filter(a => a.logoff > a.login);
+    let lista = Object.values(dadosAtendentes).filter(a => a.logoff > a.login && a.logoff !== Infinity);
     let somaOcup = 0;
+    
     lista.sort((a,b) => b.at - a.at).forEach(a => {
         let liquida = ((a.logoff - a.login) / 1000) - a.tDesc;
         let ocup = liquida > 0 ? (((a.totalSeg + a.tProd + a.tImprod) / liquida) * 100).toFixed(1) : "0.0";
@@ -371,16 +389,18 @@ function renderizarDashboard() {
 
 function abrirDrill(nome) {
     const a = dadosAtendentes[nome];
-    document.getElementById('nomeAtendenteModal').innerText = `Detalhamento 10min: ${nome}`;
+    document.getElementById('nomeAtendenteModal').innerText = `Detalhamento Período: ${nome}`;
     const corpo = document.getElementById('corpoModal');
     corpo.innerHTML = "";
 
     intervalosGlobais.forEach(inter => {
         if (a.login >= inter.tFim || a.logoff <= inter.t) return;
         let chamadasNoInter = a.chamadasLista.filter(c => c.ts >= inter.t && c.ts < inter.tFim);
+        if(chamadasNoInter.length === 0 && inter.taxaBase === 0) return; // Ocultar intervalos vazios em períodos longos
+
         let tempoNoInter = chamadasNoInter.reduce((acc, curr) => acc + curr.dur, 0);
         let pausasNoInter = a.pausasLista.filter(p => p.tsIn < inter.tFim && p.tsFim > inter.t);
-        let statusTexto = "Disponível / Atendimento";
+        let statusTexto = "Disponível";
         let durPausaTexto = "-";
         let classeLinha = "";
 
@@ -395,11 +415,11 @@ function abrirDrill(nome) {
             classeLinha = "row-pausa-intervalo";
         }
 
-        let horaFormatada = new Date(inter.t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        let dataHora = new Date(inter.t).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour: '2-digit', minute: '2-digit' });
 
         corpo.innerHTML += `
             <tr class="${classeLinha}">
-                <td>${horaFormatada}</td>
+                <td>${dataHora}</td>
                 <td>${chamadasNoInter.length}</td>
                 <td>${Math.ceil(inter.taxaBase)}</td>
                 <td>${segundosParaHms(tempoNoInter)}</td>
@@ -412,7 +432,7 @@ function abrirDrill(nome) {
 
 function abrirModalOcupacao() {
     const corpo = document.getElementById('corpoModalOcupacao');
-    corpo.innerHTML = Object.values(dadosAtendentes).filter(a => a.logoff > a.login).map(a => {
+    corpo.innerHTML = Object.values(dadosAtendentes).filter(a => a.logoff > a.login && a.logoff !== Infinity).map(a => {
         let liquida = ((a.logoff - a.login) / 1000) - a.tDesc;
         let ocioso = Math.max(0, liquida - a.totalSeg - a.tProd - a.tImprod);
         return `<tr><td class="fw-bold">${a.nome}</td><td>${segundosParaHms(liquida)}</td><td>${segundosParaHms(a.totalSeg)}</td>
