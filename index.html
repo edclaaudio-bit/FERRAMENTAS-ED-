@@ -13,6 +13,7 @@
         :root {
             --sidebar-bg: #ffffff;
             --accent: #3b82f6;
+            --accent-hover: #2563eb;
             --text-main: #1e293b;
             --text-muted: #64748b;
             --sidebar-width: 240px;
@@ -127,6 +128,7 @@
             flex-direction: column;
             min-width: 0;
             background: #fff;
+            position: relative;
         }
 
         .iframe-container {
@@ -153,6 +155,66 @@
             100% { left: 100%; }
         }
 
+        /* --- MODAL DE SELEÇÃO (CARDS) --- */
+        #selection-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1500;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .cards-container {
+            display: flex;
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .selection-card {
+            width: 220px;
+            padding: 30px 20px;
+            background: white;
+            border: 2px solid #f1f5f9;
+            border-radius: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .selection-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
+        }
+
+        .selection-card i {
+            font-size: 2.5rem;
+            color: var(--accent);
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .selection-card h3 {
+            font-size: 1.1rem;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .selection-card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
         @media (max-width: 768px) {
             #sidebar { position: fixed; left: -240px; height: 100%; }
             #sidebar.mobile-open { left: 0; width: 240px !important; box-shadow: 10px 0 30px rgba(0,0,0,0.1); }
@@ -166,6 +228,8 @@
                 align-items: center; justify-content: center; z-index: 999;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             }
+
+            .cards-container { flex-direction: column; }
         }
         @media (min-width: 769px) { .mobile-trigger { display: none; } }
     </style>
@@ -192,7 +256,7 @@
             <li class="nav-item" onclick="selectTool(this, 'PERFORMANCE DIÁRIA.html', 'Performance Diária')">
                 <i class="fas fa-bolt"></i><span class="nav-text">Performance Diária</span>
             </li>
-            <li class="nav-item" onclick="selectTool(this, 'Produtividade 360.html', 'Produtividade 360º')">
+            <li class="nav-item" id="nav-produtividade" onclick="showProdutividadeOptions(this)">
                 <i class="fas fa-chart-line"></i><span class="nav-text">Produtividade 360º</span>
             </li>
             <li class="nav-item" onclick="selectTool(this, 'OPERACIONAL 360.html', 'Operacional 360º')">
@@ -230,6 +294,23 @@
     </div>
 
     <div class="main-wrapper">
+        <div id="selection-overlay">
+            <h2 style="margin-bottom: 10px;">Selecione o modo de visualização</h2>
+            <p style="color: var(--text-muted);">Escolha como deseja visualizar os dados de produtividade</p>
+            <div class="cards-container">
+                <div class="selection-card" onclick="loadProdutividade('Produtividade 360.html')">
+                    <i class="fas fa-table"></i>
+                    <h3>Resumido</h3>
+                    <p>Produtividade 360º Padrão</p>
+                </div>
+                <div class="selection-card" onclick="loadProdutividade('IPAT.html')">
+                    <i class="fas fa-th-list"></i>
+                    <h3>Detalhado</h3>
+                    <p>Dashboard IPAT Completo</p>
+                </div>
+            </div>
+        </div>
+
         <main class="iframe-container">
             <iframe id="content-iframe" src="Bem_Vindo.html"></iframe>
         </main>
@@ -241,6 +322,7 @@
         const toggleIcon = document.getElementById('toggle-icon');
         const iframe = document.getElementById('content-iframe');
         const loader = document.getElementById('loader');
+        const selectionOverlay = document.getElementById('selection-overlay');
 
         function updateIcon() {
             if (sidebar.classList.contains('collapsed')) {
@@ -259,7 +341,41 @@
             sidebar.classList.toggle('mobile-open');
         }
 
+        // Função para mostrar os cards de produtividade
+        window.showProdutividadeOptions = function(el) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+            
+            // Esconde o iframe e mostra os cards
+            iframe.style.display = 'none';
+            selectionOverlay.style.display = 'flex';
+
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('mobile-open');
+            }
+        }
+
+        // Função para carregar a escolha final
+        window.loadProdutividade = function(file) {
+            selectionOverlay.style.display = 'none';
+            iframe.style.display = 'block';
+            
+            loader.style.display = 'block';
+            iframe.src = file;
+            
+            if (window.innerWidth > 768) {
+                sidebar.classList.add('collapsed');
+                updateIcon();
+            }
+            
+            iframe.onload = () => { loader.style.display = 'none'; };
+        }
+
         window.selectTool = function(el, file, title) {
+            // Se trocar de ferramenta, garante que o overlay suma
+            selectionOverlay.style.display = 'none';
+            iframe.style.display = 'block';
+
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             el.classList.add('active');
 
