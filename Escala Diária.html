@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planner Pro v8 | Leitura Inteligente</title>
+    <title>Planner Pro v9 | Almoço Separado</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
@@ -19,7 +19,7 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background-color: var(--bg-body); color: var(--text-main); padding: 20px; }
-        .container { max-width: 1250px; margin: 0 auto; }
+        .container { max-width: 1350px; margin: 0 auto; }
 
         .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; }
         .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 15px; display: flex; justify-content: space-between; }
@@ -28,12 +28,13 @@
         .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
         .field label { font-size: 11px; font-weight: 600; color: var(--text-main); }
         input { padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; }
-        input:focus { border-color: var(--primary); ring: 2px solid #4f46e522; }
+        input:focus { border-color: var(--primary); }
 
-        .btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        .btn-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         .btn { padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; font-size: 13px; }
-        .btn-primary { background: var(--primary); color: white; width: 100%; }
+        .btn-primary { background: var(--primary); color: white; }
         .btn-export { background: white; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-import { background: #f8fafc; border: 1px solid var(--primary); color: var(--primary); }
 
         .table-wrap { background: white; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 30px; }
         table { width: 100%; border-collapse: collapse; }
@@ -44,15 +45,9 @@
         .status-ok { background: #ecfdf5; color: #065f46; }
         .status-alert { background: #fef2f2; color: #991b1b; }
 
-        .status-pill:hover::after {
-            content: attr(data-reason);
-            position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%);
-            background: #1e293b; color: white; padding: 8px 12px; border-radius: 6px;
-            font-size: 11px; white-space: nowrap; z-index: 100;
-        }
-
         .scroll-box { max-height: 450px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; background: white; }
         .stats-badge { background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 99px; font-size: 10px; }
+        .hidden-input { display: none; }
     </style>
 </head>
 <body>
@@ -60,33 +55,38 @@
 <div class="container">
     <div class="card">
         <div class="card-title">
-            <span>⚙️ Parâmetros de Alta Precisão</span>
-            <span id="totalCallsInfo" class="stats-badge">Aguardando CSV...</span>
+            <span>⚙️ Gestão de Escala</span>
+            <span id="totalCallsInfo" class="stats-badge">Aguardando CSV Intelix...</span>
         </div>
         <div class="dashboard-grid">
             <div class="field-group">
-                <div class="field"><label>Abertura da Operação</label><input type="time" id="opOpen" value="07:00"></div>
-                <div class="field"><label>Fechamento da Operação</label><input type="time" id="opClose" value="19:00"></div>
+                <div class="field"><label>Abertura da Operação</label><input type="time" id="opOpen" value="07:00" onchange="salvarConfig()"></div>
+                <div class="field"><label>Fechamento da Operação</label><input type="time" id="opClose" value="19:00" onchange="salvarConfig()"></div>
             </div>
             <div class="field-group">
-                <div class="field"><label>TMA (hh:mm:ss)</label><input type="text" id="tmaInput" value="00:05:00"></div>
-                <div class="field"><label>Relatório Intelix (Detalhamento)</label><input type="file" id="csvFile" accept=".csv" onchange="processarCSV()"></div>
+                <div class="field"><label>TMA da Equipe (hh:mm:ss)</label><input type="text" id="tmaInput" value="00:05:00" onchange="salvarConfig()"></div>
+                <div class="field"><label>Relatório Intelix (Detalhamento de Chamadas)</label><input type="file" id="csvFile" accept=".csv" onchange="processarCSV()"></div>
             </div>
             <div class="field-group">
-                <div class="field"><label>Equipe (6h20 | 7h12)</label>
+                <div class="field"><label>Quantidade de Atendentes (6h20 | 7h12)</label>
                     <div style="display:flex; gap:5px;">
-                        <input type="number" id="qtd6h" value="2" style="width:50%">
-                        <input type="number" id="qtd7h" value="8" style="width:50%">
+                        <input type="number" id="qtd6h" value="2" style="width:50%" onchange="salvarConfig()">
+                        <input type="number" id="qtd7h" value="8" style="width:50%" onchange="salvarConfig()">
                     </div>
                 </div>
-                <button class="btn btn-primary" onclick="gerarEscalaMestra()">PROCESSAR DIMENSIONAMENTO</button>
+                <button class="btn btn-primary" onclick="gerarEscalaMestra()" style="width:100%">GERAR NOVA ESCALA</button>
             </div>
         </div>
     </div>
 
     <div class="btn-group">
         <button class="btn btn-export" onclick="exportarPNG()">🖼️ Salvar Imagem</button>
-        <button class="btn btn-export" onclick="exportarExcel()">📊 Exportar CSV</button>
+        <button class="btn btn-export" onclick="exportarExcel()">📊 Exportar Escala (CSV)</button>
+        <label class="btn btn-import">
+            📥 Importar Escala Salva
+            <input type="file" class="hidden-input" id="importEscala" accept=".csv" onchange="importarEscala(this)">
+        </label>
+        <button class="btn btn-export" onclick="limparMemoria()" style="color: var(--danger)">🗑️ Limpar Tudo</button>
     </div>
 
     <div class="section-header" style="margin-bottom:10px; font-weight:800;">📅 Escala de Atendentes</div>
@@ -94,19 +94,19 @@
         <table>
             <thead>
                 <tr>
-                    <th>Atendente</th><th>Jornada</th><th>Entrada</th><th>Pausa 1</th><th>Almoço</th><th>Pausa 2</th><th>Saída</th>
+                    <th>Atendente</th><th>Jornada</th><th>Entrada</th><th>Pausa 1</th><th>Saída Almoço</th><th>Retorno Almoço</th><th>Pausa 2</th><th>Saída</th>
                 </tr>
             </thead>
             <tbody id="corpoEscala"></tbody>
         </table>
     </div>
 
-    <div class="section-header" style="margin-bottom:10px; font-weight:800;">📊 Dimensionamento Detalhado (10 em 10 min)</div>
+    <div class="section-header" style="margin-bottom:10px; font-weight:800;">📊 Dimensionamento Detalhado</div>
     <div class="scroll-box">
         <table>
             <thead style="position: sticky; top: 0; z-index: 10; background: white;">
                 <tr>
-                    <th>Janela de Tempo</th><th>Chamadas</th><th>Logados</th><th>Equipe Necessária</th><th>Status</th>
+                    <th>Janela</th><th>Chamadas</th><th>Logados</th><th>Necessário</th><th>Status</th>
                 </tr>
             </thead>
             <tbody id="corpoCobertura"></tbody>
@@ -119,22 +119,52 @@
     let operadores = [];
     let diasUnicos = 1;
 
+    // --- MEMÓRIA ---
+    window.onload = () => {
+        const savedOps = localStorage.getItem('operadores_v9');
+        const savedConfig = localStorage.getItem('configEscala_v9');
+        if (savedConfig) {
+            const cfg = JSON.parse(savedConfig);
+            document.getElementById('opOpen').value = cfg.opOpen;
+            document.getElementById('opClose').value = cfg.opClose;
+            document.getElementById('tmaInput').value = cfg.tmaInput;
+            document.getElementById('qtd6h').value = cfg.qtd6h;
+            document.getElementById('qtd7h').value = cfg.qtd7h;
+        }
+        if (savedOps) {
+            operadores = JSON.parse(savedOps);
+            renderizar();
+        }
+    };
+
+    function salvarConfig() {
+        const config = {
+            opOpen: document.getElementById('opOpen').value,
+            opClose: document.getElementById('opClose').value,
+            tmaInput: document.getElementById('tmaInput').value,
+            qtd6h: document.getElementById('qtd6h').value,
+            qtd7h: document.getElementById('qtd7h').value
+        };
+        localStorage.setItem('configEscala_v9', JSON.stringify(config));
+    }
+
+    function limparMemoria() {
+        if(confirm("Deseja apagar todos os dados salvos?")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+
+    // --- TEMPO ---
     function hmsToSeg(hms) {
         const a = hms.split(':');
         return (+a[0]) * 3600 + (+a[1]) * 60 + (a[2] ? +a[2] : 0);
     }
 
-    // Função melhorada para limpar a hora do Intelix (remove o "(1)" ou "(2)")
-    function cleanIntelixTime(timeStr) {
-        if(!timeStr) return "";
-        return timeStr.replace(/\s*\(\d+\)/g, '').trim();
-    }
-
     function timeToMin(t) {
-        if(!t) return 0;
-        let clean = cleanIntelixTime(t);
-        const parts = clean.split(':');
-        return parts.length >= 2 ? (parseInt(parts[0]) * 60) + parseInt(parts[1]) : 0;
+        if(!t || !t.includes(':')) return 0;
+        const parts = t.replace(/\s*\(\d+\)/g, '').trim().split(':');
+        return (parseInt(parts[0]) * 60) + parseInt(parts[1]);
     }
 
     function minToTime(m) {
@@ -142,6 +172,7 @@
         return `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
     }
 
+    // --- PROCESSAMENTO ---
     function processarCSV() {
         const file = document.getElementById('csvFile').files[0];
         const reader = new FileReader();
@@ -150,19 +181,11 @@
             const acumulado = {};
             const dias = new Set();
             let totalLidas = 0;
-            
-            // Localiza em qual coluna está a "data" e a "horaEntradaPos"
-            let colData = 3;
-            let colHora = 9;
-
             for (let i = 0; i < lines.length; i++) {
                 const col = lines[i].split(';');
                 if (col.length < 10) continue;
-
-                // Tenta validar se a linha é de dados (Data no formato YYYY-MM-DD ou DD/MM/YYYY)
-                const dataRaw = col[colData]?.replace(/"/g, '').trim();
-                const horaRaw = col[colHora]?.replace(/"/g, '').trim();
-
+                const dataRaw = col[3]?.replace(/"/g, '').trim();
+                const horaRaw = col[9]?.replace(/"/g, '').trim();
                 if (dataRaw && horaRaw && horaRaw.includes(':')) {
                     dias.add(dataRaw);
                     const min = timeToMin(horaRaw);
@@ -170,17 +193,11 @@
                     totalLidas++;
                 }
             }
-            
             diasUnicos = dias.size || 1;
             mapaTrafego = {};
-            // Normaliza pela quantidade de dias no relatório
-            for (let m in acumulado) {
-                mapaTrafego[m] = acumulado[m] / diasUnicos;
-            }
-
-            document.getElementById('totalCallsInfo').innerText = `📊 ${totalLidas} chamadas identificadas em ${diasUnicos} dia(s)`;
-            alert(`Leitura concluída!\nTotal de chamadas: ${totalLidas}\nMédia por dia: ${(totalLidas/diasUnicos).toFixed(1)}`);
-            if(operadores.length > 0) recalculaAnalise();
+            for (let m in acumulado) mapaTrafego[m] = acumulado[m] / diasUnicos;
+            document.getElementById('totalCallsInfo').innerText = `📊 ${totalLidas} chamadas | ${diasUnicos} dia(s)`;
+            recalculaAnalise();
         };
         reader.readAsText(file, 'ISO-8859-1');
     }
@@ -199,19 +216,22 @@
             const tipo = i < q6 ? '06:20' : '07:12';
             const duracao = tipo === '06:20' ? 380 : 492;
             const dAlm = tipo === '06:20' ? 20 : 60;
-
-            let start;
-            if (i === 0) start = open;
-            else if (i === total - 1) start = close - duracao;
-            else start = open + (i * (close - duracao - open) / (total - 1));
+            let start = open + (i * (close - duracao - open) / (total - 1 || 1));
 
             operadores.push({
-                id: i, nome: `Atendente ${i+1}`, tipo, in: Math.round(start),
-                p1: Math.round(start + 90), alm: Math.round(start + 180), dAlm: dAlm,
-                p2: Math.round(start + 300), out: Math.round(start + duracao)
+                id: Date.now() + i, 
+                nome: `Atendente ${i+1}`, 
+                tipo, 
+                in: Math.round(start),
+                p1: Math.round(start + 90), 
+                almIn: Math.round(start + 180), 
+                almOut: Math.round(start + 180 + dAlm),
+                p2: Math.round(start + 300), 
+                out: Math.round(start + duracao)
             });
         }
         renderizar();
+        salvarConfig();
     }
 
     function renderizar() {
@@ -222,18 +242,21 @@
                 <td>${op.tipo}</td>
                 <td contenteditable="true" onblur="syncTime(${op.id}, 'in', this.innerText)">${minToTime(op.in)}</td>
                 <td contenteditable="true" onblur="syncTime(${op.id}, 'p1', this.innerText)">${minToTime(op.p1)}</td>
-                <td contenteditable="true" onblur="syncAlm(${op.id}, this.innerText)">${minToTime(op.alm)} - ${minToTime(op.alm+op.dAlm)}</td>
+                <td contenteditable="true" onblur="syncTime(${op.id}, 'almIn', this.innerText)">${minToTime(op.almIn)}</td>
+                <td contenteditable="true" onblur="syncTime(${op.id}, 'almOut', this.innerText)">${minToTime(op.almOut)}</td>
                 <td contenteditable="true" onblur="syncTime(${op.id}, 'p2', this.innerText)">${minToTime(op.p2)}</td>
                 <td contenteditable="true" onblur="syncTime(${op.id}, 'out', this.innerText)">${minToTime(op.out)}</td>
             </tr>`;
         });
         document.getElementById('corpoEscala').innerHTML = htmlEscala;
+        localStorage.setItem('operadores_v9', JSON.stringify(operadores));
         recalculaAnalise();
     }
 
     function sync(id, key, val) { 
         let o = operadores.find(x => x.id === id); 
         o[key] = val; 
+        localStorage.setItem('operadores_v9', JSON.stringify(operadores));
         recalculaAnalise(); 
     }
 
@@ -243,55 +266,64 @@
         renderizar(); 
     }
 
-    function syncAlm(id, val) { 
-        let o = operadores.find(x => x.id === id); 
-        const h = val.split('-')[0].trim();
-        o.alm = timeToMin(h); 
-        renderizar(); 
-    }
-
     function recalculaAnalise() {
         const tmaSeg = hmsToSeg(document.getElementById('tmaInput').value) || 300;
         const open = timeToMin(document.getElementById('opOpen').value);
         const close = timeToMin(document.getElementById('opClose').value);
         let htmlCobertura = '';
-
         for (let h = open; h < close; h += 10) {
             let prev10 = 0;
             for(let m = h; m < h + 10; m++) prev10 += (mapaTrafego[m] || 0);
-            
             let equipeNec = Math.ceil((prev10 * tmaSeg) / 600);
-
             let logados = operadores.filter(op => {
                 const emTurno = h >= op.in && h < op.out;
                 const emP1 = h >= op.p1 && h < op.p1 + 10;
-                const emAlm = h >= op.alm && h < op.alm + op.dAlm;
+                const emAlm = h >= op.almIn && h < op.almOut;
                 const emP2 = h >= op.p2 && h < op.p2 + 10;
                 return emTurno && !emP1 && !emAlm && !emP2;
             }).length;
-
             let gap = logados < equipeNec;
-            let status = gap ? (logados === 0 ? 'SEM COBERTURA' : 'GAP') : 'OK';
-            let reason = gap ? `Necessário: ${equipeNec} | Logados: ${logados}. Faltam ${equipeNec - logados} pessoas.` : 'Equipe suficiente.';
-
             htmlCobertura += `<tr style="${logados === 0 && equipeNec > 0 ? 'background:#fff1f2' : ''}">
                 <td>${minToTime(h)} - ${minToTime(h+10)}</td>
                 <td>${prev10.toFixed(1)}</td>
                 <td style="${gap ? 'color:var(--danger); font-weight:800;' : ''}">${logados}</td>
                 <td><b>${equipeNec}</b></td>
-                <td><span class="status-pill ${gap ? 'status-alert' : 'status-ok'}" data-reason="${reason}">${status}</span></td>
+                <td><span class="status-pill ${gap ? 'status-alert' : 'status-ok'}" data-reason="Nec: ${equipeNec} | Log: ${logados}">${gap ? 'GAP' : 'OK'}</span></td>
             </tr>`;
         }
         document.getElementById('corpoCobertura').innerHTML = htmlCobertura;
     }
 
     function exportarExcel() {
-        let csv = "\uFEFFAtendente;Entrada;Saida\n";
-        operadores.forEach(o => { csv += `${o.nome};${minToTime(o.in)};${minToTime(o.out)}\n`; });
+        let csv = "\uFEFFAtendente;Jornada;Entrada;Pausa 1;Saida Almoco;Retorno Almoco;Pausa 2;Saida\n";
+        operadores.forEach(o => { 
+            csv += `${o.nome};${o.tipo};${minToTime(o.in)};${minToTime(o.p1)};${minToTime(o.almIn)};${minToTime(o.almOut)};${minToTime(o.p2)};${minToTime(o.out)}\n`; 
+        });
         const link = document.createElement('a');
-        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-        link.download = 'Planejamento_Escala.csv';
+        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+        link.download = `Escala_Completa.csv`;
         link.click();
+    }
+
+    function importarEscala(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const lines = e.target.result.split('\n');
+            const novos = [];
+            for (let i = 1; i < lines.length; i++) {
+                const col = lines[i].split(';');
+                if (col.length < 8) continue;
+                novos.push({
+                    id: Date.now() + i, nome: col[0], tipo: col[1], in: timeToMin(col[2]),
+                    p1: timeToMin(col[3]), almIn: timeToMin(col[4]), almOut: timeToMin(col[5]),
+                    p2: timeToMin(col[6]), out: timeToMin(col[7])
+                });
+            }
+            if(novos.length > 0) { operadores = novos; renderizar(); }
+        };
+        reader.readAsText(file, 'UTF-8');
     }
 
     function exportarPNG() {
