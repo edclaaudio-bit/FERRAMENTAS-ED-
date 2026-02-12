@@ -256,7 +256,7 @@
             <li class="nav-item" onclick="selectTool(this, 'PERFORMANCE DIÁRIA.html', 'Performance Diária')">
                 <i class="fas fa-bolt"></i><span class="nav-text">Performance Diária</span>
             </li>
-            <li class="nav-item" id="nav-produtividade" onclick="showProdutividadeOptions(this)">
+            <li class="nav-item" id="nav-produtividade" onclick="showOptions(this, 'produtividade')">
                 <i class="fas fa-chart-line"></i><span class="nav-text">Produtividade 360º</span>
             </li>
             <li class="nav-item" onclick="selectTool(this, 'OPERACIONAL 360.html', 'Operacional 360º')">
@@ -268,7 +268,7 @@
             <li class="nav-item" onclick="selectTool(this, 'ACOMPANHAMENTO DE METAS.html', 'Metas')">
                 <i class="fas fa-bullseye"></i><span class="nav-text">Metas</span>
             </li>
-            <li class="nav-item" onclick="selectTool(this, 'AJUSTE DE PONTO.html', 'Ajuste de Ponto')">
+            <li class="nav-item" id="nav-ponto" onclick="showOptions(this, 'ponto')">
                 <i class="fas fa-user-clock"></i><span class="nav-text">Ajuste de Ponto</span>
             </li>
             <li class="nav-item" onclick="selectTool(this, 'FECHAMENTO.html', 'Fechamento DG')">
@@ -295,20 +295,11 @@
 
     <div class="main-wrapper">
         <div id="selection-overlay">
-            <h2 style="margin-bottom: 10px;">Selecione o modo de visualização</h2>
-            <p style="color: var(--text-muted);">Escolha como deseja visualizar os dados de produtividade</p>
-            <div class="cards-container">
-                <div class="selection-card" onclick="loadProdutividade('Produtividade 360.html')">
-                    <i class="fas fa-table"></i>
-                    <h3>Resumido</h3>
-                    <p>Produtividade 360º Padrão</p>
+            <h2 id="overlay-title" style="margin-bottom: 10px;">Selecione o modo de visualização</h2>
+            <p id="overlay-desc" style="color: var(--text-muted); margin-bottom: 20px;">Escolha uma das opções abaixo</p>
+            
+            <div id="cards-wrapper" class="cards-container">
                 </div>
-                <div class="selection-card" onclick="loadProdutividade('IPAT.html')">
-                    <i class="fas fa-th-list"></i>
-                    <h3>Detalhado</h3>
-                    <p>Dashboard IPAT Completo</p>
-                </div>
-            </div>
         </div>
 
         <main class="iframe-container">
@@ -323,6 +314,9 @@
         const iframe = document.getElementById('content-iframe');
         const loader = document.getElementById('loader');
         const selectionOverlay = document.getElementById('selection-overlay');
+        const cardsWrapper = document.getElementById('cards-wrapper');
+        const overlayTitle = document.getElementById('overlay-title');
+        const overlayDesc = document.getElementById('overlay-desc');
 
         function updateIcon() {
             if (sidebar.classList.contains('collapsed')) {
@@ -341,12 +335,28 @@
             sidebar.classList.toggle('mobile-open');
         }
 
-        // Função para mostrar os cards de produtividade
-        window.showProdutividadeOptions = function(el) {
+        // Função Genérica para mostrar opções (Produtividade ou Ponto)
+        window.showOptions = function(el, type) {
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             el.classList.add('active');
             
-            // Esconde o iframe e mostra os cards
+            cardsWrapper.innerHTML = '';
+            
+            if (type === 'produtividade') {
+                overlayTitle.innerText = "Produtividade 360º";
+                overlayDesc.innerText = "Escolha como deseja visualizar os dados de produtividade";
+                
+                addCard('fas fa-table', 'Resumido', 'Produtividade 360º Padrão', 'Produtividade 360.html');
+                addCard('fas fa-th-list', 'Detalhado', 'Dashboard IPAT Completo', 'IPAT.html');
+            } 
+            else if (type === 'ponto') {
+                overlayTitle.innerText = "Gestão de Ponto";
+                overlayDesc.innerText = "Selecione a ferramenta de ajuste ou conferência";
+                
+                addCard('fas fa-user-edit', 'Inconsistências', 'Ajuste de Ponto Operacional', 'AJUSTE DE PONTO.html');
+                addCard('fas fa-exchange-alt', 'Ponto x Intelix', 'Relatório de Inconsistências', 'ponto vs intelix.html');
+            }
+
             iframe.style.display = 'none';
             selectionOverlay.style.display = 'flex';
 
@@ -355,8 +365,19 @@
             }
         }
 
-        // Função para carregar a escolha final
-        window.loadProdutividade = function(file) {
+        function addCard(icon, title, desc, file) {
+            const card = document.createElement('div');
+            card.className = 'selection-card';
+            card.onclick = () => loadTool(file);
+            card.innerHTML = `
+                <i class="${icon}"></i>
+                <h3>${title}</h3>
+                <p>${desc}</p>
+            `;
+            cardsWrapper.appendChild(card);
+        }
+
+        window.loadTool = function(file) {
             selectionOverlay.style.display = 'none';
             iframe.style.display = 'block';
             
@@ -372,7 +393,6 @@
         }
 
         window.selectTool = function(el, file, title) {
-            // Se trocar de ferramenta, garante que o overlay suma
             selectionOverlay.style.display = 'none';
             iframe.style.display = 'block';
 
