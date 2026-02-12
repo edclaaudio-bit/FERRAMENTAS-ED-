@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planner Pro v7 | Precisão 10min</title>
+    <title>Planner Pro v8 | Leitura Inteligente</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
-            --bg-body: #f8fafc;
+            --bg-body: #f1f5f9;
             --bg-card: #ffffff;
             --primary: #4f46e5;
             --text-main: #1e293b;
@@ -21,37 +21,26 @@
         body { background-color: var(--bg-body); color: var(--text-main); padding: 20px; }
         .container { max-width: 1250px; margin: 0 auto; }
 
-        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 15px; letter-spacing: 0.5px; }
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 15px; display: flex; justify-content: space-between; }
 
         .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
         .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
-        .field label { font-size: 11px; font-weight: 600; }
-        input { padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; transition: 0.2s; }
-        input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1); }
+        .field label { font-size: 11px; font-weight: 600; color: var(--text-main); }
+        input { padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; }
+        input:focus { border-color: var(--primary); ring: 2px solid #4f46e522; }
 
         .btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
         .btn { padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; font-size: 13px; }
         .btn-primary { background: var(--primary); color: white; width: 100%; }
         .btn-export { background: white; border: 1px solid var(--border); color: var(--text-main); }
-        .btn:hover { opacity: 0.9; }
 
-        .table-wrap { background: white; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 30px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .table-wrap { background: white; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 30px; }
         table { width: 100%; border-collapse: collapse; }
         th { background: #f8fafc; padding: 12px; font-size: 10px; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border); text-align: left; }
         td { padding: 8px 12px; font-size: 13px; border-bottom: 1px solid var(--border); }
         
-        [contenteditable="true"] { background: #fffcf0; border-radius: 4px; padding: 2px 4px; transition: 0.2s; }
-        [contenteditable="true"]:focus { background: #fff; outline: 2px solid var(--primary); }
-
-        .status-pill { 
-            padding: 4px 8px; 
-            border-radius: 6px; 
-            font-weight: 700; 
-            font-size: 10px; 
-            cursor: help;
-            position: relative;
-        }
+        .status-pill { padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 10px; cursor: help; position: relative; display: inline-block; }
         .status-ok { background: #ecfdf5; color: #065f46; }
         .status-alert { background: #fef2f2; color: #991b1b; }
 
@@ -59,18 +48,21 @@
             content: attr(data-reason);
             position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%);
             background: #1e293b; color: white; padding: 8px 12px; border-radius: 6px;
-            font-size: 11px; white-space: nowrap; z-index: 100; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2);
+            font-size: 11px; white-space: nowrap; z-index: 100;
         }
 
-        .section-header { margin: 25px 0 10px; font-weight: 800; font-size: 18px; color: #0f172a; }
-        .scroll-box { max-height: 500px; overflow-y: auto; }
+        .scroll-box { max-height: 450px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; background: white; }
+        .stats-badge { background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 99px; font-size: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="card">
-        <div class="card-title">⚙️ Parâmetros de Alta Precisão</div>
+        <div class="card-title">
+            <span>⚙️ Parâmetros de Alta Precisão</span>
+            <span id="totalCallsInfo" class="stats-badge">Aguardando CSV...</span>
+        </div>
         <div class="dashboard-grid">
             <div class="field-group">
                 <div class="field"><label>Abertura da Operação</label><input type="time" id="opOpen" value="07:00"></div>
@@ -78,7 +70,7 @@
             </div>
             <div class="field-group">
                 <div class="field"><label>TMA (hh:mm:ss)</label><input type="text" id="tmaInput" value="00:05:00"></div>
-                <div class="field"><label>Relatório Intelix (Detalhamento de Chamadas)</label><input type="file" id="csvFile" accept=".csv" onchange="processarCSV()"></div>
+                <div class="field"><label>Relatório Intelix (Detalhamento)</label><input type="file" id="csvFile" accept=".csv" onchange="processarCSV()"></div>
             </div>
             <div class="field-group">
                 <div class="field"><label>Equipe (6h20 | 7h12)</label>
@@ -97,7 +89,7 @@
         <button class="btn btn-export" onclick="exportarExcel()">📊 Exportar CSV</button>
     </div>
 
-    <div class="section-header">📅 Escala de Atendentes</div>
+    <div class="section-header" style="margin-bottom:10px; font-weight:800;">📅 Escala de Atendentes</div>
     <div class="table-wrap">
         <table>
             <thead>
@@ -109,12 +101,12 @@
         </table>
     </div>
 
-    <div class="section-header">📊 Dimensionamento Detalhado (A cada 10 min)</div>
-    <div class="table-wrap scroll-box">
+    <div class="section-header" style="margin-bottom:10px; font-weight:800;">📊 Dimensionamento Detalhado (10 em 10 min)</div>
+    <div class="scroll-box">
         <table>
-            <thead style="position: sticky; top: 0; z-index: 10;">
+            <thead style="position: sticky; top: 0; z-index: 10; background: white;">
                 <tr>
-                    <th>Janela de Tempo</th><th>Chamadas (Média)</th><th>Logados</th><th>Equipe Necessária</th><th>Status</th>
+                    <th>Janela de Tempo</th><th>Chamadas</th><th>Logados</th><th>Equipe Necessária</th><th>Status</th>
                 </tr>
             </thead>
             <tbody id="corpoCobertura"></tbody>
@@ -132,9 +124,15 @@
         return (+a[0]) * 3600 + (+a[1]) * 60 + (a[2] ? +a[2] : 0);
     }
 
+    // Função melhorada para limpar a hora do Intelix (remove o "(1)" ou "(2)")
+    function cleanIntelixTime(timeStr) {
+        if(!timeStr) return "";
+        return timeStr.replace(/\s*\(\d+\)/g, '').trim();
+    }
+
     function timeToMin(t) {
         if(!t) return 0;
-        let clean = t.replace(/"/g, '').split(' ')[0];
+        let clean = cleanIntelixTime(t);
         const parts = clean.split(':');
         return parts.length >= 2 ? (parseInt(parts[0]) * 60) + parseInt(parts[1]) : 0;
     }
@@ -151,21 +149,38 @@
             const lines = e.target.result.split('\n');
             const acumulado = {};
             const dias = new Set();
-            for (let i = 5; i < lines.length; i++) {
+            let totalLidas = 0;
+            
+            // Localiza em qual coluna está a "data" e a "horaEntradaPos"
+            let colData = 3;
+            let colHora = 9;
+
+            for (let i = 0; i < lines.length; i++) {
                 const col = lines[i].split(';');
                 if (col.length < 10) continue;
-                const data = col[3]?.replace(/"/g, '');
-                const hora = col[9]?.replace(/"/g, '');
-                if (data && data.includes('-') && hora.includes(':')) {
-                    dias.add(data);
-                    const min = timeToMin(hora);
+
+                // Tenta validar se a linha é de dados (Data no formato YYYY-MM-DD ou DD/MM/YYYY)
+                const dataRaw = col[colData]?.replace(/"/g, '').trim();
+                const horaRaw = col[colHora]?.replace(/"/g, '').trim();
+
+                if (dataRaw && horaRaw && horaRaw.includes(':')) {
+                    dias.add(dataRaw);
+                    const min = timeToMin(horaRaw);
                     acumulado[min] = (acumulado[min] || 0) + 1;
+                    totalLidas++;
                 }
             }
+            
             diasUnicos = dias.size || 1;
             mapaTrafego = {};
-            for (let m in acumulado) mapaTrafego[m] = acumulado[m] / diasUnicos;
-            alert("Base Intelix carregada! Período de " + diasUnicos + " dia(s).");
+            // Normaliza pela quantidade de dias no relatório
+            for (let m in acumulado) {
+                mapaTrafego[m] = acumulado[m] / diasUnicos;
+            }
+
+            document.getElementById('totalCallsInfo').innerText = `📊 ${totalLidas} chamadas identificadas em ${diasUnicos} dia(s)`;
+            alert(`Leitura concluída!\nTotal de chamadas: ${totalLidas}\nMédia por dia: ${(totalLidas/diasUnicos).toFixed(1)}`);
+            if(operadores.length > 0) recalculaAnalise();
         };
         reader.readAsText(file, 'ISO-8859-1');
     }
@@ -177,7 +192,7 @@
         const q7 = parseInt(document.getElementById('qtd7h').value) || 0;
         const total = q6 + q7;
 
-        if (total === 0) return alert("Insira a quantidade de atendentes.");
+        if (total === 0) return alert("Defina o headcount.");
 
         operadores = [];
         for (let i = 0; i < total; i++) {
@@ -216,11 +231,22 @@
         recalculaAnalise();
     }
 
-    function sync(id, key, val) { let o = operadores.find(x => x.id === id); o[key] = val; recalculaAnalise(); }
-    function syncTime(id, key, val) { let o = operadores.find(x => x.id === id); o[key] = timeToMin(val); renderizar(); }
+    function sync(id, key, val) { 
+        let o = operadores.find(x => x.id === id); 
+        o[key] = val; 
+        recalculaAnalise(); 
+    }
+
+    function syncTime(id, key, val) { 
+        let o = operadores.find(x => x.id === id); 
+        o[key] = timeToMin(val); 
+        renderizar(); 
+    }
+
     function syncAlm(id, val) { 
         let o = operadores.find(x => x.id === id); 
-        o.alm = timeToMin(val.split('-')[0].trim()); 
+        const h = val.split('-')[0].trim();
+        o.alm = timeToMin(h); 
         renderizar(); 
     }
 
@@ -230,13 +256,10 @@
         const close = timeToMin(document.getElementById('opClose').value);
         let htmlCobertura = '';
 
-        // LOOP DE 10 EM 10 MINUTOS
         for (let h = open; h < close; h += 10) {
             let prev10 = 0;
             for(let m = h; m < h + 10; m++) prev10 += (mapaTrafego[m] || 0);
             
-            // Equipe necessária para cobrir o volume destes 10 minutos
-            // (Chamadas * TMA) / 600 segundos (que são 10 minutos)
             let equipeNec = Math.ceil((prev10 * tmaSeg) / 600);
 
             let logados = operadores.filter(op => {
@@ -249,12 +272,12 @@
 
             let gap = logados < equipeNec;
             let status = gap ? (logados === 0 ? 'SEM COBERTURA' : 'GAP') : 'OK';
-            let reason = gap ? `Faltam ${equipeNec - logados} atendentes para suprir ${prev10.toFixed(1)} chamadas nesta janela.` : 'Cobertura suficiente.';
+            let reason = gap ? `Necessário: ${equipeNec} | Logados: ${logados}. Faltam ${equipeNec - logados} pessoas.` : 'Equipe suficiente.';
 
-            htmlCobertura += `<tr>
+            htmlCobertura += `<tr style="${logados === 0 && equipeNec > 0 ? 'background:#fff1f2' : ''}">
                 <td>${minToTime(h)} - ${minToTime(h+10)}</td>
                 <td>${prev10.toFixed(1)}</td>
-                <td style="${gap ? 'color:red; font-weight:800;' : ''}">${logados}</td>
+                <td style="${gap ? 'color:var(--danger); font-weight:800;' : ''}">${logados}</td>
                 <td><b>${equipeNec}</b></td>
                 <td><span class="status-pill ${gap ? 'status-alert' : 'status-ok'}" data-reason="${reason}">${status}</span></td>
             </tr>`;
@@ -263,18 +286,18 @@
     }
 
     function exportarExcel() {
-        let csv = "\uFEFFAtendente;Entrada;Pausa 1;Almoco;Pausa 2;Saida\n";
-        operadores.forEach(o => { csv += `${o.nome};${minToTime(o.in)};${minToTime(o.p1)};${minToTime(o.alm)}-${minToTime(o.alm+o.dAlm)};${minToTime(o.p2)};${minToTime(o.out)}\n`; });
+        let csv = "\uFEFFAtendente;Entrada;Saida\n";
+        operadores.forEach(o => { csv += `${o.nome};${minToTime(o.in)};${minToTime(o.out)}\n`; });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-        link.download = 'Escala_10min.csv';
+        link.download = 'Planejamento_Escala.csv';
         link.click();
     }
 
     function exportarPNG() {
         html2canvas(document.body).then(canvas => {
             const link = document.createElement('a');
-            link.download = 'Dimensionamento_10min.png';
+            link.download = 'Dashboard_Escala.png';
             link.href = canvas.toDataURL();
             link.click();
         });
