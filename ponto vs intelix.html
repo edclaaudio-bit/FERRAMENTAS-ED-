@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Ponto (Multibatidas)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+    <style>
+        body { background-color: #f4f6f9; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; border-radius: 10px; }
+        .header-title { color: #2c3e50; font-weight: 700; margin-top: 30px; }
+        .btn-custom { background-color: #2c3e50; color: white; border-radius: 8px; }
+        .btn-custom:hover { background-color: #1a252f; color: white; }
+        .error-tag { 
+            background-color: #ffebee; color: #c62828; 
+            padding: 2px 6px; border-radius: 4px; 
+            font-size: 0.85em; margin-bottom: 2px; display: inline-block; border: 1px solid #ffcdd2;
+        }
+        .timeline-col { border-right: 1px solid #e9ecef; }
+        .modal-header { background-color: #2c3e50; color: white; }
+        
+        .badge-login { background-color: #e3f2fd; color: #0d47a1; border: 1px solid #bbdefb; }
+        .badge-pausa { background-color: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; }
+        .badge-lanche { background-color: #f3e5f5; color: #4a148c; border: 1px solid #e1bee7; }
+        
+        .watermark {
+            position: 
+            bottom: 10px;
+            left: 10px;
+            font-size: 8px;
+            color: rgba(0, 0, 0, 0.3);
+            font-weight: bold;
+            z-index: 1000;
+            pointer-events: none;
+            border: 1px solid rgba(0,0,0,0.1);
+            padding: 5px 10px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body>
+
+<div class="watermark">Criado por Natan Moreira em 12/02/2025</div>
+
+<div class="container-fluid" style="max-width: 1400px;">
+    <div class="text-center mb-4">
+        <h2 class="header-title">Relatório de Inconsistências</h2>
+        <p class="text-muted"></p>
+    </div>
+
+    <div class="card p-4">
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="p-3 border rounded bg-white">
+                    <label class="form-label fw-bold text-primary">1. Relatório de Jornada</label>
+                    <input type="file" class="form-control" id="fileEspelho" accept=".xlsx, .xls, .csv">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="p-3 border rounded bg-white">
+                    <label class="form-label fw-bold text-success">2. Relatório de Eventos</label>
+                    <input type="file" class="form-control" id="fileEventos" accept=".csv">
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4 align-items-end">
+            <div class="col-md-6">
+                <div id="divFiltros" style="display:none;" class="row g-2">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small">📅 Filtrar Data:</label>
+                        <select class="form-select" id="filtroData" onchange="aplicarFiltro()">
+                            <option value="TODAS">Todas</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small">👥 Filtrar Equipe:</label>
+                        <select class="form-select" id="filtroEquipe" onchange="aplicarFiltro()">
+                            <option value="TODAS">Todas</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 text-end">
+                <button class="btn btn-custom btn-lg px-4" onclick="processarArquivos()">
+                    <span id="btnText">Processar Arquivos</span>
+                    <span id="loading" class="spinner-border spinner-border-sm ms-2" style="display:none;"></span>
+                </button>
+                <button class="btn btn-outline-secondary btn-lg px-4 ms-2" onclick="downloadCSV()" id="btnDownload" disabled>
+                    📥 Baixar CSV
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="resultadoArea" style="display:none;">
+        <div class="card">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-danger fw-bold">⚠️ Inconsistências Encontradas</h5>
+                <span class="badge bg-secondary" id="contadorRegistros">0 registros</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Data</th>
+                                <th>Nome</th>
+                                <th>Equipe (Col D)</th>
+                                <th>Inconsistências</th>
+                                <th class="text-center">Detalhes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaCorpo">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detalheModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="modalTitulo">Detalhes do Colaborador</h5>
+                    <small id="modalSubtitulo" class="text-light opacity-75"></small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body bg-light">
+                <div class="row">
+                    <div class="col-md-5 timeline-col bg-white p-3 rounded mx-2 shadow-sm">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">📍 Espelho de Ponto (Completo)</h6>
+                        <ul class="list-group list-group-flush small" id="listaEspelho"></ul>
+                    </div>
+                    <div class="col-md-6 bg-white p-3 rounded mx-2 shadow-sm">
+                        <h6 class="text-success border-bottom pb-2 mb-3">💻 Eventos do Sistema</h6>
+                        <div id="resumoEventos" class="mb-3 p-2 bg-light rounded border text-center fw-bold text-secondary"></div>
+                        <ul class="list-group list-group-flush small" id="listaEventos"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let todosDadosProcessados = [];
+    let dadosVisualizados = [];
+    let dadosTempDetalhes = {};
+
+    function timeToMinutes(timeStr) {
+        if (!timeStr || typeof timeStr !== 'string') return null;
+        const parts = timeStr.trim().split(':');
+        if (parts.length < 2) return 0;
+        return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
+
+    function diffMinutes(start, end) {
+        const s = timeToMinutes(start);
+        const e = timeToMinutes(end);
+        if (s === null || e === null) return 0;
+        return e - s;
+    }
+
+    function cleanDate(dateStr) {
+        if (!dateStr) return "";
+        if (dateStr instanceof Date) return dateStr.toLocaleDateString('pt-BR');
+        const match = dateStr.match(/(\d{2}\/\d{2}\/\d{4})/);
+        return match ? match[1] : dateStr.trim();
+    }
+
+    function lerArquivo(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array', cellDates: false });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+                resolve(jsonData);
+            };
+            reader.onerror = reject;
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    async function processarArquivos() {
+        const fileEspelho = document.getElementById('fileEspelho').files[0];
+        const fileEventos = document.getElementById('fileEventos').files[0];
+
+        if (!fileEspelho || !fileEventos) {
+            alert("Por favor, selecione ambos os arquivos.");
+            return;
+        }
+
+        const btnText = document.getElementById('btnText');
+        const loading = document.getElementById('loading');
+        btnText.innerText = "Processando...";
+        loading.style.display = 'inline-block';
+        document.getElementById('resultadoArea').style.display = 'none';
+        
+        todosDadosProcessados = [];
+        dadosTempDetalhes = {};
+
+        try {
+            const rawEspelho = await lerArquivo(fileEspelho);
+            const rawEventos = await lerArquivo(fileEventos);
+
+            // === 1. PROCESSAR ESPELHO ===
+            const headerRowIndex = 3;
+            if (rawEspelho.length <= headerRowIndex) throw new Error("Arquivo de jornada inválido.");
+
+            const headerEspelho = rawEspelho[headerRowIndex].map(c => c ? c.toString().trim().toUpperCase() : "");
+            const getIdx = (patterns) => headerEspelho.findIndex(h => patterns.some(p => h === p || h.includes(p)));
+
+            // Índices Fixos e Dinâmicos
+            const idx = {
+                data: getIdx(["DATA"]),
+                nome: getIdx(["NOME"]),
+                equipe: 3, // Forçado Coluna D
+                p1: getIdx(["1ª PAUSA"]),
+                r1: getIdx(["1ª RETORNO"]),
+                p2: getIdx(["2ª PAUSA"]),
+                r2: getIdx(["2ª RETORNO"]),
+                obs: getIdx(["MOTIVO", "OBSERVAÇÃO", "OBSERVACAO"])
+            };
+
+            // CAPTURA DINÂMICA DE COLUNAS DE JORNADA (1ª Entrada, 1ª Saída, 2ª Entrada... 3ª Entrada...)
+            // Ignora Pausa/Retorno
+            const colunasJornada = [];
+            headerEspelho.forEach((h, i) => {
+                if ((h.includes("ENTRADA") || h.includes("SAÍDA") || h.includes("SAIDA")) && 
+                    !h.includes("PAUSA") && !h.includes("RETORNO")) {
+                    colunasJornada.push({ nome: h, index: i });
+                }
+            });
+
+            const mapEspelho = {};
+
+            for (let i = headerRowIndex + 1; i < rawEspelho.length; i++) {
+                const row = rawEspelho[i];
+                if (!row[idx.nome]) continue;
+
+                const rawDate = row[idx.data];
+                const nome = row[idx.nome].toString().trim().toUpperCase();
+                
+                if (nome === "NOME" || nome.includes("TOTAIS") || nome.includes("COLABORADOR")) continue;
+
+                const dataFormatada = cleanDate(rawDate);
+                const obs = row[idx.obs] ? row[idx.obs].toString().toLowerCase() : "";
+
+                if (obs.match(/folga|atestado|feriado|falta injustificada|afastamento/)) continue;
+
+                // Equipe
+                let equipeRaw = row[3] ? row[3].toString().trim() : "Sem Equipe";
+                let equipe = equipeRaw;
+                if (equipeRaw.length > 4 && !isNaN(parseInt(equipeRaw.substring(0, 1))) && equipeRaw.includes("-")) {
+                     equipe = equipeRaw.substring(4).trim();
+                }
+
+                const erros = [];
+                const log = [];
+
+                // 1. Coletar TODAS as batidas de jornada (ignora vazios)
+                let batidasJornada = [];
+                colunasJornada.forEach(col => {
+                    let val = row[col.index];
+                    if (val) {
+                        batidasJornada.push({ horario: val, tipo: col.nome });
+                    }
+                });
+
+                // Validação de Ímpares/Pares (Jornada)
+                if (batidasJornada.length % 2 !== 0) {
+                    erros.push(`Batidas de jornada ímpares (${batidasJornada.length} registros)`);
+                }
+
+                // Validação de Intervalo entre Turnos (<15min)
+                // Percorre pares: Saída 1 -> Entrada 2, Saída 2 -> Entrada 3
+                // batidasJornada = [E1, S1, E2, S2, E3, S3...]
+                // Indices de saída: 1, 3, 5... Indices de entrada seguinte: 2, 4, 6...
+                for (let k = 1; k < batidasJornada.length - 1; k += 2) {
+                    let saida = batidasJornada[k].horario;
+                    let entradaSeguinte = batidasJornada[k+1].horario;
+                    
+                    if (diffMinutes(saida, entradaSeguinte) < 15) {
+                        erros.push(`Intervalo curto (<15min) entre ${saida} e ${entradaSeguinte}`);
+                    }
+                }
+
+                // Log para exibir
+                let logStr = batidasJornada.map(b => `${b.tipo}: ${b.horario}`).join(" | ");
+                if(logStr) log.push(logStr);
+
+                // Pausas (Mantém lógica anterior)
+                let p1 = row[idx.p1], r1 = row[idx.r1];
+                let p2 = row[idx.p2], r2 = row[idx.r2];
+
+                if (p1 || r1) {
+                    if (p1 && r1) log.push(`Pausa 1: ${p1} - ${r1}`);
+                    else erros.push("Registro incorreto de Pausa 1");
+                }
+                if (p2 || r2) {
+                    if (p2 && r2) log.push(`Pausa 2: ${p2} - ${r2}`);
+                    else erros.push("Registro incorreto de Pausa 2");
+                }
+
+                if (erros.length > 0) {
+                    const chave = `${nome}|${dataFormatada}`;
+                    mapEspelho[chave] = {
+                        nome, data: dataFormatada, equipe, erros, log, 
+                        batidasJornada, p1, r1, p2, r2
+                    };
+                }
+            }
+
+            // === 2. PROCESSAR EVENTOS (Inalterado) ===
+            const headerRowEvt = 6;
+            const headerEventos = rawEventos[headerRowEvt].map(c => c ? c.toString().trim().toUpperCase() : "");
+            
+            const idxE = {
+                nome: headerEventos.findIndex(h => h.includes("NOME")),
+                evento: headerEventos.findIndex(h => h.includes("EVENTO")),
+                inicio: headerEventos.findIndex(h => h.includes("INÍCIO") || h.includes("INICIO")),
+                fim: headerEventos.findIndex(h => h.includes("FIM")),
+                duracao: headerEventos.findIndex(h => h.includes("DURAÇÃO") || h.includes("DURACAO"))
+            };
+
+            const mapEventos = {};
+
+            for (let i = headerRowEvt + 1; i < rawEventos.length; i++) {
+                const row = rawEventos[i];
+                if (!row[idxE.nome]) continue;
+
+                const inicioFull = row[idxE.inicio] || "";
+                if (!inicioFull) continue;
+                const [dataEvt, horaIni] = inicioFull.split(' ');
+                const fimFull = row[idxE.fim] || "";
+                const horaFim = fimFull.split(' ')[1] || "";
+                const nome = row[idxE.nome].toString().trim().toUpperCase();
+                const eventoDesc = row[idxE.evento] ? row[idxE.evento].toString().toLowerCase() : "";
+                const chave = `${nome}|${dataEvt}`;
+
+                if (!mapEventos[chave]) mapEventos[chave] = { logins: [], lanches: [], pausas: [], outros: [] };
+                const item = { start: horaIni, end: horaFim, dur: row[idxE.duracao] };
+
+                if (eventoDesc.includes("login")) mapEventos[chave].logins.push(item);
+                else if (eventoDesc.includes("lanche")) mapEventos[chave].lanches.push(item);
+                else if (eventoDesc.includes("pausa 10") || eventoDesc.includes("pausa (10")) mapEventos[chave].pausas.push(item);
+                else mapEventos[chave].outros.push({ tipo: eventoDesc, ...item });
+            }
+
+            Object.keys(mapEventos).forEach(k => {
+                const d = mapEventos[k];
+                let calcStr = "N/A";
+                if (d.logins.length > 0) {
+                    d.logins.sort((a,b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+                    const primeiroLogin = timeToMinutes(d.logins[0].start);
+                    let ultimoLogout = 0;
+                    d.logins.forEach(l => {
+                        const m = timeToMinutes(l.end);
+                        if (m && m > ultimoLogout) ultimoLogout = m;
+                    });
+                    if (ultimoLogout > 0) {
+                        const tempoBruto = ultimoLogout - primeiroLogin;
+                        let descontoLanche = 0;
+                        d.lanches.forEach(l => { descontoLanche += timeToMinutes(l.dur); });
+                        const liquido = tempoBruto - descontoLanche;
+                        const h = Math.floor(liquido / 60);
+                        const m = liquido % 60;
+                        calcStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+                    } else { calcStr = "Login s/ Logout"; }
+                } else { calcStr = "Sem Login"; }
+                d.jornadaLiquida = calcStr;
+            });
+
+            // === 3. UNIFICAR ===
+            Object.keys(mapEspelho).forEach(chave => {
+                const espelho = mapEspelho[chave];
+                const evento = mapEventos[chave] || { jornadaLiquida: "Sem Eventos", logins:[], lanches:[], pausas:[] };
+                dadosTempDetalhes[chave] = { espelho, evento };
+                todosDadosProcessados.push({
+                    id: chave,
+                    data: espelho.data,
+                    nome: espelho.nome,
+                    equipe: espelho.equipe,
+                    erros: espelho.erros,
+                    jornada: evento.jornadaLiquida
+                });
+            });
+
+            setupFiltros();
+            aplicarFiltro();
+            document.getElementById('resultadoArea').style.display = 'block';
+            document.getElementById('btnDownload').disabled = false;
+            document.getElementById('divFiltros').style.display = 'flex';
+
+        } catch (err) {
+            console.error(err);
+            alert("Erro ao processar: " + err.message);
+        } finally {
+            btnText.innerText = "Processar Arquivos";
+            loading.style.display = 'none';
+        }
+    }
+
+    function setupFiltros() {
+        const selData = document.getElementById('filtroData');
+        const selEquipe = document.getElementById('filtroEquipe');
+        selData.length = 1; 
+        selEquipe.length = 1;
+        
+        const datasUnicas = [...new Set(todosDadosProcessados.map(item => item.data))].sort((a, b) => {
+            const da = a.split('/').reverse().join('-');
+            const db = b.split('/').reverse().join('-');
+            return da.localeCompare(db);
+        });
+        datasUnicas.forEach(d => selData.add(new Option(d, d)));
+
+        const equipesUnicas = [...new Set(todosDadosProcessados.map(item => item.equipe))].sort();
+        equipesUnicas.forEach(e => selEquipe.add(new Option(e, e)));
+    }
+
+    function aplicarFiltro() {
+        const dataSel = document.getElementById('filtroData').value;
+        const equipeSel = document.getElementById('filtroEquipe').value;
+        const tbody = document.getElementById('tabelaCorpo');
+        const contador = document.getElementById('contadorRegistros');
+        
+        tbody.innerHTML = "";
+        dadosVisualizados = todosDadosProcessados.filter(item => {
+            const matchData = (dataSel === "TODAS") || (item.data === dataSel);
+            const matchEquipe = (equipeSel === "TODAS") || (item.equipe === equipeSel);
+            return matchData && matchEquipe;
+        });
+
+        contador.innerText = `${dadosVisualizados.length} registros`;
+
+        if (dadosVisualizados.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">Nenhum registro encontrado.</td></tr>`;
+            return;
+        }
+
+        dadosVisualizados.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="fw-bold text-secondary">${item.data}</td>
+                <td>${item.nome}</td>
+                <td><span class="badge bg-light text-dark border">${item.equipe}</span></td>
+                <td>${item.erros.map(e => `<span class="error-tag">${e}</span>`).join(" ")}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-primary" onclick="abrirModal('${item.id}')">🔍 Detalhes</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function abrirModal(chave) {
+        const dados = dadosTempDetalhes[chave];
+        const espelho = dados.espelho;
+        const evento = dados.evento;
+
+        document.getElementById('modalTitulo').innerText = espelho.nome;
+        document.getElementById('modalSubtitulo').innerText = `Data: ${espelho.data} | Equipe: ${espelho.equipe}`;
+
+        const listaE = document.getElementById('listaEspelho');
+        listaE.innerHTML = "";
+        
+        // Exibir batidas dinâmicas
+        const liBatidas = document.createElement('li');
+        liBatidas.className = "list-group-item bg-transparent";
+        
+        let batidasHtml = "<strong>Jornada (Entradas/Saídas):</strong><br>";
+        if(espelho.batidasJornada && espelho.batidasJornada.length > 0) {
+            batidasHtml += espelho.batidasJornada.map(b => `${b.tipo}: ${b.horario}`).join("<br>");
+        } else {
+            batidasHtml += "Sem registro de jornada";
+        }
+        
+        batidasHtml += "<br><br><strong>Pausas:</strong><br>";
+        batidasHtml += `Pausa 1: ${espelho.p1||'--'} / ${espelho.r1||'--'}<br>`;
+        batidasHtml += `Pausa 2: ${espelho.p2||'--'} / ${espelho.r2||'--'}`;
+        
+        liBatidas.innerHTML = batidasHtml;
+        listaE.appendChild(liBatidas);
+
+        espelho.erros.forEach(err => {
+            const li = document.createElement('li');
+            li.className = "list-group-item list-group-item-danger";
+            li.innerHTML = `🚨 ${err}`;
+            listaE.appendChild(li);
+        });
+
+        const listaEv = document.getElementById('listaEventos');
+        const resumoEv = document.getElementById('resumoEventos');
+        listaEv.innerHTML = "";
+
+        if (evento) {
+            resumoEv.innerHTML = `Jornada Líquida: ${evento.jornadaLiquida}`;
+            let timeline = [];
+            evento.logins.forEach(x => timeline.push({ t: 'LOGIN', ...x, cls: 'badge-login' }));
+            evento.lanches.forEach(x => timeline.push({ t: 'LANCHE', ...x, cls: 'badge-lanche' }));
+            evento.pausas.forEach(x => timeline.push({ t: 'PAUSA 10', ...x, cls: 'badge-pausa' }));
+            
+            timeline.sort((a,b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+
+            if(timeline.length === 0) listaEv.innerHTML = "<li class='list-group-item text-muted text-center'>Nenhum evento registrado.</li>";
+            
+            timeline.forEach(item => {
+                const li = document.createElement('li');
+                li.className = "list-group-item d-flex justify-content-between align-items-center";
+                li.innerHTML = `
+                    <div>
+                        <span class="badge ${item.cls} me-2" style="width:80px">${item.t}</span>
+                        <span class="fw-bold text-dark">${item.start}</span> <span class="text-muted">às</span> <span class="fw-bold text-dark">${item.end || '...'}</span>
+                    </div>
+                    ${item.dur ? `<span class="badge bg-secondary rounded-pill">${item.dur}</span>` : ''}
+                `;
+                listaEv.appendChild(li);
+            });
+        } else {
+            resumoEv.innerHTML = "Sem dados no sistema de eventos.";
+            listaEv.innerHTML = "<li class='list-group-item'>Nenhum registro encontrado.</li>";
+        }
+
+        new bootstrap.Modal(document.getElementById('detalheModal')).show();
+    }
+
+    function downloadCSV() {
+        if (!dadosVisualizados.length) {
+            alert("Nenhum dado disponível para download.");
+            return;
+        }
+        
+        let csv = "\uFEFFData;Nome;Equipe;Inconsistencias;Jornada Liquida Calc\n";
+        dadosVisualizados.forEach(row => {
+            csv += `${row.data};${row.nome};${row.equipe};${row.erros.join("; ")};${row.jornada}\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "Relatorio_Inconsistencias.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
