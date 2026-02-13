@@ -12,7 +12,7 @@
         :root { --primary: #4361ee; --success: #2ec4b6; --danger: #e71d36; --warning: #f7b731; --bg: #f8fafc; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); font-size: 13px; margin: 0; }
         .sidebar { width: 320px; height: 100vh; position: fixed; background: white; border-right: 1px solid #eef2f7; padding: 25px; z-index: 1000; display: flex; flex-direction: column; overflow-y: auto; }
-        .main-content { margin-left: 320px; padding: 30px; }
+        .main-content { margin-left: 320px; padding: 30px; padding-bottom: 60px; }
         .card-metric { background: white; border-radius: 16px; padding: 30px; border: 2px solid var(--primary); text-align: center; cursor: pointer; transition: 0.2s; box-shadow: 0 10px 15px -3px rgba(67, 97, 238, 0.1); max-width: 400px; margin: 0 auto; }
         .card-metric:hover { transform: translateY(-3px); box-shadow: 0 15px 20px -3px rgba(67, 97, 238, 0.2); }
         .metric-val { font-size: 48px; font-weight: 800; color: var(--primary); }
@@ -25,6 +25,11 @@
         .status-pos { color: var(--success) !important; font-weight: 800; }
         .status-neg { color: var(--danger) !important; font-weight: 800; }
         .btn-db { font-size: 10px; font-weight: bold; }
+        #searchFila { margin-bottom: 8px; border-radius: 20px; padding-left: 15px; }
+        .btn-toggle-filas { font-size: 9px; padding: 2px 8px; margin-bottom: 5px; }
+        
+        /* Estilo do Rodapé */
+        .footer-dev { position: fixed; bottom: 15px; right: 20px; font-size: 11px; color: #94a3b8; font-weight: 600; pointer-events: none; z-index: 1001; }
     </style>
 </head>
 <body>
@@ -56,6 +61,11 @@
 
     <div class="mb-3">
         <label class="form-label fw-bold small text-primary">3. FILTRAR POR FILAS</label>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary btn-toggle-filas flex-fill" onclick="toggleSelecaoFilas(true)">MARCAR TUDO</button>
+            <button class="btn btn-outline-secondary btn-toggle-filas flex-fill" onclick="toggleSelecaoFilas(false)">DESMARCAR TUDO</button>
+        </div>
+        <input type="text" id="searchFila" class="form-control form-control-sm" placeholder="🔍 Pesquisar fila..." onkeyup="filtrarListaFilas()">
         <div id="containerFilas" class="fila-scroll"></div>
     </div>
 
@@ -105,6 +115,8 @@
         </div>
     </div>
 </div>
+
+<div class="footer-dev">Desenvolvido por Claudio Carvalho</div>
 
 <div class="modal fade" id="modalDetalhe" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -270,24 +282,45 @@ function atualizarListaFilas() {
         if(f) filasDetectadas.add(f);
     });
     container.innerHTML = Array.from(filasDetectadas).sort().map(f => `
-        <div class="form-check"><input class="form-check-input check-fila" type="checkbox" value="${f}" id="f_${f}" checked>
-        <label class="form-check-label small" for="f_${f}">${f}</label></div>`).join('');
+        <div class="form-check fila-item" data-nome="${f.toLowerCase()}">
+            <input class="form-check-input check-fila" type="checkbox" value="${f}" id="f_${f}">
+            <label class="form-check-label small" for="f_${f}">${f}</label>
+        </div>`).join('');
 }
 
-// --- LÓGICA PRINCIPAL (CORRIGIDA PARA PERÍODO) ---
+function filtrarListaFilas() {
+    const termo = document.getElementById('searchFila').value.toLowerCase();
+    const itens = document.querySelectorAll('.fila-item');
+    itens.forEach(item => {
+        const nome = item.getAttribute('data-nome');
+        item.style.display = nome.includes(termo) ? 'block' : 'none';
+    });
+}
+
+function toggleSelecaoFilas(marcar) {
+    const checkboxes = document.querySelectorAll('.check-fila');
+    checkboxes.forEach(cb => {
+        if(cb.closest('.fila-item').style.display !== 'none') {
+            cb.checked = marcar;
+        }
+    });
+}
+
+// --- LÓGICA PRINCIPAL ---
 function gerarRelatorioFiltrado() {
     const dataInicio = document.getElementById('dataInicio').value;
     const dataFim = document.getElementById('dataFim').value;
     if(!dataInicio || !dataFim) return alert("Selecione o período completo.");
     
+    const filasSel = Array.from(document.querySelectorAll('.check-fila:checked')).map(el => el.value);
+    if(filasSel.length === 0) return alert("Selecione ao menos uma fila para gerar o dashboard.");
+
     document.getElementById('loader').style.display = 'flex';
     document.getElementById('dataDisplay').innerText = `${dataInicio.split('-').reverse().slice(0,2).join('/')} a ${dataFim.split('-').reverse().join('/')}`;
     
-    const filasSel = Array.from(document.querySelectorAll('.check-fila:checked')).map(el => el.value);
     dadosAtendentes = {};
     intervalosGlobais = [];
 
-    // Processar Chamadas no período
     chamadasCache.forEach(row => {
         let d = row.data.includes('/') ? row.data.split('/').reverse().join('-') : row.data;
         if(d < dataInicio || d > dataFim) return;
@@ -307,7 +340,6 @@ function gerarRelatorioFiltrado() {
         }
     });
 
-    // Processar Eventos no período
     eventosCache.forEach(row => {
         let d = row.dataInicio.split(' ')[0];
         let dConv = d.includes('/') ? d.split('/').reverse().join('-') : d;
@@ -333,11 +365,10 @@ function gerarRelatorioFiltrado() {
         }
     });
 
-    // Cálculo de Estimativa por Intervalos (Iterando por dias do período)
     let dAtual = new Date(dataInicio + "T00:00:00");
-    const dFim = new Date(dataFim + "T00:00:00");
+    const dFimDate = new Date(dataFim + "T00:00:00");
 
-    while(dAtual <= dFim) {
+    while(dAtual <= dFimDate) {
         let diaStr = dAtual.toISOString().split('T')[0];
         const inicioDia = extrairTimestamp(diaStr + " " + HORA_INICIO);
         const fimDia = extrairTimestamp(diaStr + " " + HORA_FIM);
@@ -396,7 +427,7 @@ function abrirDrill(nome) {
     intervalosGlobais.forEach(inter => {
         if (a.login >= inter.tFim || a.logoff <= inter.t) return;
         let chamadasNoInter = a.chamadasLista.filter(c => c.ts >= inter.t && c.ts < inter.tFim);
-        if(chamadasNoInter.length === 0 && inter.taxaBase === 0) return; // Ocultar intervalos vazios em períodos longos
+        if(chamadasNoInter.length === 0 && inter.taxaBase === 0) return;
 
         let tempoNoInter = chamadasNoInter.reduce((acc, curr) => acc + curr.dur, 0);
         let pausasNoInter = a.pausasLista.filter(p => p.tsIn < inter.tFim && p.tsFim > inter.t);
