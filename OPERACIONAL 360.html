@@ -126,6 +126,54 @@
         .bg-promotor { background: #d1fae5; color: #065f46; }
         .bg-neutro { background: #fef3c7; color: #92400e; }
         .bg-detrator { background: #fee2e2; color: #991b1b; }
+
+        /* Estilo Novo e Elegante para o Ícone de Informação */
+        .info-icon {
+            cursor: help;
+            color: #94a3b8;
+            font-size: 10px;
+            margin-left: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 15px;
+            height: 15px;
+            border: 1.5px solid #94a3b8;
+            border-radius: 50%;
+            font-weight: 800;
+            transition: all 0.2s ease;
+            vertical-align: middle;
+            font-style: normal;
+        }
+        .info-icon:hover {
+            color: var(--primary);
+            border-color: var(--primary);
+            background: rgba(0, 180, 216, 0.05);
+            transform: scale(1.1);
+        }
+
+        /* Estilização Customizada do Popover */
+        .popover {
+            border: none;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .popover-header {
+            background-color: #f8fafc;
+            border-bottom: 1px solid #f1f5f9;
+            font-weight: 700;
+            font-size: 12px;
+            color: var(--dark-blue);
+            padding: 10px 15px;
+            border-radius: 12px 12px 0 0;
+        }
+        .popover-body {
+            font-size: 11px;
+            color: #475569;
+            line-height: 1.6;
+            padding: 12px 15px;
+        }
     </style>
 </head>
 <body>
@@ -141,7 +189,15 @@
     
     <div class="sidebar-scrollable-content">
         <div class="mb-4">
-            <label class="small fw-bold text-muted mb-2">IMPORTAR DADOS</label>
+            <label class="small fw-bold text-muted mb-2 d-flex align-items-center">
+                IMPORTAR DADOS 
+                <i class="info-icon" 
+                   data-bs-toggle="popover" 
+                   data-bs-trigger="hover focus" 
+                   data-bs-html="true" 
+                   title="Relatórios Obrigatórios" 
+                   data-bs-content="1. Detalhamento de Chamadas - CSV Completo<br>2. Eventos de Atendentes - CSV Completo<br>3. Pesquisa de Satisfação - CSV Completo">i</i>
+            </label>
             <input type="file" id="csvFiles" class="form-control form-control-sm mb-2" multiple>
             <button class="btn btn-info btn-sm w-100 text-white" onclick="importarParaBanco()">Alimentar Base</button>
         </div>
@@ -292,14 +348,24 @@ let db;
 let cacheGlobal = {};
 let cacheNPS = [];
 let cacheCSATCounts = { 1:0, 2:0, 3:0, 4:0, 5:0 };
-let cacheP2LimeiraCounts = { 1:0, 2:0, 3:0, 4:0, 5:0 }; // Novo cache para Limeira
+let cacheP2LimeiraCounts = { 1:0, 2:0, 3:0, 4:0, 5:0 }; 
 let cacheNSData = { dentro: 0, fora: 0, total: 0, imediato: 0, ate20s: 0 }; 
 let cacheAbandonoData = { real: 0, curto: 0, total: 0 };
 let cacheAtendidasPorFila = {}; 
-let modoLimeiraAtivo = false; // Flag para identificar modo ULI
+let modoLimeiraAtivo = false;
 
 let chartObjEvol = null;
 let chartObjPizza = null;
+
+// Inicialização dos Popovers com configurações extras de visual
+document.addEventListener('DOMContentLoaded', function () {
+    var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+    var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+        return new bootstrap.Popover(popoverTriggerEl, {
+            offset: [0, 8] // Pequeno afastamento para não colar no ícone
+        })
+    });
+});
 
 const request = indexedDB.open("Unimed360_Final_v3", 1);
 request.onupgradeneeded = (e) => {
@@ -460,7 +526,6 @@ async function importarParaBanco() {
     finally { document.getElementById('loader').style.display = 'none'; }
 }
 
-// Lógica de clique do card NPS/CSAT P2
 function gerenciarCliqueNPS() {
     if(modoLimeiraAtivo) {
         [1,2,3,4,5].forEach(v => document.getElementById(`csatP2_${v}`).innerText = cacheP2LimeiraCounts[v]);
@@ -479,7 +544,6 @@ async function consultarRelatorio() {
     if(!dIni || !dFim) return alert("Selecione as datas.");
     if(filasSelecionadas.length === 0) return alert("Selecione ao menos uma fila.");
     
-    // Verifica se existem filas ULI selecionadas
     modoLimeiraAtivo = filasSelecionadas.some(f => f.startsWith("ULI"));
     document.getElementById('labelNPS').innerText = modoLimeiraAtivo ? "CSAT (P2)" : "NPS";
 
@@ -536,15 +600,12 @@ async function consultarRelatorio() {
                         if(cacheCSATCounts[nota] !== undefined) cacheCSATCounts[nota]++;
                     }
 
-                    // Processamento da Pergunta 2 (NPS ou CSAT P2)
                     if(nps !== null) {
                         g.npsTotal++;
                         if(modoLimeiraAtivo) {
-                            // Se Limeira, trata P2 como CSAT
                             if(nps >= 4) g.limeiraCSAT++;
                             if(cacheP2LimeiraCounts[nps] !== undefined) cacheP2LimeiraCounts[nps]++;
                         } else {
-                            // Se Geral, trata P2 como NPS
                             let status = "";
                             if(nps >= 9) { g.prom++; status = "Promotor"; }
                             else if(nps >= 7) { g.neut++; status = "Neutro"; }
@@ -562,7 +623,6 @@ async function consultarRelatorio() {
             }
         });
 
-        // Eventos e Pausas
         for(let f in cacheAtendidasPorFila) {
             let o = cacheAtendidasPorFila[f];
             Object.values(o.ids).forEach(qtd => {
@@ -590,7 +650,6 @@ function renderizarTudo(g, stats) {
     const abandPerc = totalChamadasEntrantes > 0 ? (g.abandReal / totalChamadasEntrantes) * 100 : 0;
     const pesqPerc = (g.pq/g.atend)*100 || 0;
     
-    // Cálculo condicional do NPS / CSAT P2
     let valorNPSFinal = 0;
     if(modoLimeiraAtivo) {
         valorNPSFinal = g.npsTotal > 0 ? (g.limeiraCSAT / g.npsTotal) * 100 : 0;
@@ -608,7 +667,6 @@ function renderizarTudo(g, stats) {
     document.getElementById('kPesq').innerText = pesqPerc.toFixed(1) + "%";
     document.getElementById('kSat').innerText = ((g.csat/g.pq)*100 || 0).toFixed(1) + "%";
     
-    // Formatação do Card de NPS/CSAT P2
     const npsEl = document.getElementById('kNPS');
     npsEl.innerText = modoLimeiraAtivo ? valorNPSFinal.toFixed(1) + "%" : valorNPSFinal.toFixed(0);
     if(modoLimeiraAtivo) {
@@ -656,7 +714,6 @@ function renderizarTudo(g, stats) {
     });
 }
 
-// Funções de Modal originais
 function abrirModalAtendidas() {
     let html = "";
     for(let fila in cacheAtendidasPorFila) {
