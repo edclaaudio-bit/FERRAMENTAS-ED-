@@ -57,6 +57,55 @@
   .search-bar { margin-bottom: 15px; display: flex; gap: 10px; align-items: center; }
   .search-bar input { flex-grow: 1; }
 
+  /* Tooltip Melhorado para Visibilidade */
+  .info-wrapper { display: inline-flex; align-items: center; gap: 5px; }
+  
+  .info-icon {
+    background: var(--primary);
+    color: white;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: help;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    font-style: normal;
+  }
+
+  .tooltip-content {
+    visibility: hidden;
+    position: absolute;
+    z-index: 9999;
+    bottom: 30px; /* Posicionado acima do ícone */
+    left: 0;
+    background-color: white;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2), 0 10px 10px -5px rgba(0,0,0,0.1);
+    border: 1px solid var(--border);
+    width: 800px; /* Largura grande para ver detalhes */
+    opacity: 0;
+    transition: all 0.2s ease-in-out;
+    pointer-events: none;
+  }
+
+  .tooltip-content img {
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+    border: 1px solid #eee;
+  }
+
+  .info-icon:hover .tooltip-content {
+    visibility: visible;
+    opacity: 1;
+    bottom: 35px;
+  }
+
   footer { margin-top: 40px; text-align: center; font-size: 0.8rem; color: var(--text-sub); padding-bottom: 20px; border-top: 1px solid var(--border); padding-top: 20px; }
 </style>
 </head>
@@ -79,7 +128,19 @@
       <div class="control-group">
         <label>Cargo Alvo (Exato)</label>
         <input type="text" id="targetJob" value="OPERADOR DE TELEMARKETING I">
-        <label style="margin-top:15px">Arquivo do Pontomais</label>
+        
+        <label style="margin-top:15px;">
+            <div class="info-wrapper">
+                Arquivo do Pontomais
+                <div class="info-icon">
+                    i
+                    <div class="tooltip-content">
+                        <strong style="display:block; margin-bottom:10px; color:var(--primary);">Instruções para extração no Pontomais:</strong>
+                        <img src="https://i.imgur.com/9zN8xF9.png" alt="Guia de Filtros">
+                    </div>
+                </div>
+            </div>
+        </label>
         <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
       </div>
       <div class="control-group">
@@ -101,10 +162,11 @@
     </div>
   </div>
 
-  <footer>Desenvolvido por Claudio Carvalho
+  <footer>Desenvolvido por Claudio Carvalho</footer>
 </div>
 
 <script>
+// Mantendo a lógica original do script conforme solicitado
 const CONFIG = { CABECALHO_INDEX: 3, PONTOS_ESPERADOS: 4, PAUSAS_ESPERADAS: 4 };
 let MAPPED_COLUMNS = { DATA: -1, NOME: -1, CARGO: -1, P_INI: -1, P_FIM: -1, PAU_INI: -1, PAU_FIM: -1, MOT_IGN: -1, MOT_OBS: -1 };
 let GLOBAL_DATA = [];
@@ -189,7 +251,6 @@ function renderTable() {
     let html = `<table id="inconsistencyTable"><thead><tr>
         <th>Data</th><th>Colaborador</th>`;
     
-    // Cabeçalhos Dinâmicos de Batida
     for(let i = MAPPED_COLUMNS.P_INI; i <= MAPPED_COLUMNS.P_FIM; i++) html += `<th>${GLOBAL_HEADER[i]}</th>`;
     for(let i = MAPPED_COLUMNS.PAU_INI; i <= MAPPED_COLUMNS.PAU_FIM; i++) html += `<th>${GLOBAL_HEADER[i]}</th>`;
     
@@ -200,13 +261,11 @@ function renderTable() {
             <td>${r.data}</td>
             <td style="text-align:left"><strong>${r.nome}</strong></td>`;
         
-        // Renderiza células de ponto
         r.pontos.forEach(v => {
             const isMissing = !v || v === '00:00';
             html += `<td><span class="ponto-cell ${isMissing ? 'missing' : 'correct'}">${isMissing ? 'VAZIO' : v}</span></td>`;
         });
 
-        // Renderiza células de pausa
         r.pausas.forEach(v => {
             const isMissing = !v || v === '00:00';
             html += `<td><span class="ponto-cell ${isMissing ? 'missing' : 'correct'}">${isMissing ? 'VAZIO' : v}</span></td>`;
@@ -249,6 +308,3 @@ function exportarParaExcel() {
 </script>
 </body>
 </html>
-
-
-
