@@ -190,7 +190,7 @@
         <div class="col"><div class="card-kpi" onclick="abrirModalAbandono()"><div class="kpi-label">Abandono</div><div class="kpi-value" id="kAband">0%</div></div></div>
         <div class="col"><div class="card-kpi"><div class="kpi-label">Pesquisa</div><div class="kpi-value" id="kPesq">0%</div></div></div>
         <div class="col"><div class="card-kpi" onclick="abrirModalCSAT()"><div class="kpi-label">CSAT</div><div class="kpi-value" id="kSat">0%</div></div></div>
-        <div class="col"><div class="card-kpi" onclick="abrirModalNPS()"><div class="kpi-label">NPS</div><div class="kpi-value" id="kNPS">0</div></div></div>
+        <div class="col"><div class="card-kpi" id="cardNPSContainer" onclick="gerenciarCliqueNPS()"><div class="kpi-label" id="labelNPS">NPS</div><div class="kpi-value" id="kNPS">0</div></div></div>
     </div>
 
     <div class="row g-4 mb-5">
@@ -222,112 +222,6 @@
     </div>
 </div>
 
-<div class="modal fade" id="modalAtendidas" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content" style="border-radius: 20px;">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold">Volumetria de Contatos por Fila</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="table-responsive">
-                    <table class="table table-sm text-center">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="text-start">Fila</th>
-                                <th>1 Contato</th>
-                                <th>2 Contatos</th>
-                                <th>3+ Contatos</th>
-                                <th class="fw-bold">Total Atendidas</th>
-                            </tr>
-                        </thead>
-                        <tbody id="atendidasFilaBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalNS" tabindex="-1">
-    <div class="modal-dialog modal-md">
-        <div class="modal-content" style="border-radius: 20px;">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold">Detalhamento Nível de Serviço</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="list-group list-group-flush">
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <span>Atendidas em até 60s</span>
-                        <span class="badge bg-success rounded-pill" id="nsDentro">0</span>
-                    </div>
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <span>Atendidas após 60s</span>
-                        <span class="badge bg-danger rounded-pill" id="nsFora">0</span>
-                    </div>
-                    <div class="list-group-item d-flex justify-content-between align-items-center list-group-item-success">
-                        <span>Atendimento Imediato (Espera 0s)</span>
-                        <span class="badge bg-primary rounded-pill" id="nsImediato">0</span>
-                    </div>
-                    <div class="list-group-item d-flex justify-content-between align-items-center list-group-item-info">
-                        <span>Chamadas até 20s (Duração)</span>
-                        <span class="badge bg-secondary rounded-pill" id="nsAte20s">0</span>
-                    </div>
-                    <div class="list-group-item d-flex justify-content-between align-items-center fw-bold">
-                        <span>Total de Chamadas Atendidas</span>
-                        <span id="nsTotal">0</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalAbandono" tabindex="-1">
-    <div class="modal-dialog modal-md">
-        <div class="modal-content" style="border-radius: 20px;">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold">Detalhamento de Abandono</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="list-group list-group-flush">
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <span>Abandonadas Reais (Espera > 60s)</span>
-                        <span class="badge bg-danger rounded-pill" id="abReal">0</span>
-                    </div>
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <span>Desligadas Curtas (Espera <= 60s)</span>
-                        <span class="badge bg-warning rounded-pill" id="abCurto">0</span>
-                    </div>
-                    <div class="list-group-item d-flex justify-content-between align-items-center fw-bold">
-                        <span>Total de Chamadas Abandonadas</span>
-                        <span id="abTotal">0</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalDrill" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content" style="border-radius: 20px;">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold" id="drillNome">Detalhes</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <table class="table table-sm">
-                    <thead><tr><th>ID</th><th>Data</th><th>Fila</th><th>Espera</th><th>Atend.</th><th>Nota</th></tr></thead>
-                    <tbody id="drillBody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div class="modal fade" id="modalNPS" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content" style="border-radius: 20px;">
@@ -352,34 +246,34 @@
     </div>
 </div>
 
-<div class="modal fade" id="modalCSAT" tabindex="-1">
+<div class="modal fade" id="modalCSATP2" tabindex="-1">
     <div class="modal-dialog modal-md">
         <div class="modal-content" style="border-radius: 20px;">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold">Volume de Notas CSAT</h5>
+                <h5 class="modal-title fw-bold">Volume de Notas CSAT (Pergunta 2)</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="list-group list-group-flush">
                     <div class="list-group-item d-flex justify-content-between align-items-center">
                         <div><span class="badge bg-success me-2">Nota 5</span> Excelente</div>
-                        <span class="fw-bold h5 mb-0" id="csat5">0</span>
+                        <span class="fw-bold h5 mb-0" id="csatP2_5">0</span>
                     </div>
                     <div class="list-group-item d-flex justify-content-between align-items-center">
                         <div><span class="badge bg-info me-2">Nota 4</span> Bom</div>
-                        <span class="fw-bold h5 mb-0" id="csat4">0</span>
+                        <span class="fw-bold h5 mb-0" id="csatP2_4">0</span>
                     </div>
                     <div class="list-group-item d-flex justify-content-between align-items-center">
                         <div><span class="badge bg-warning me-2">Nota 3</span> Regular</div>
-                        <span class="fw-bold h5 mb-0" id="csat3">0</span>
+                        <span class="fw-bold h5 mb-0" id="csatP2_3">0</span>
                     </div>
                     <div class="list-group-item d-flex justify-content-between align-items-center">
                         <div><span class="badge bg-danger me-2">Nota 2</span> Ruim</div>
-                        <span class="fw-bold h5 mb-0" id="csat2">0</span>
+                        <span class="fw-bold h5 mb-0" id="csatP2_2">0</span>
                     </div>
                     <div class="list-group-item d-flex justify-content-between align-items-center">
                         <div><span class="badge bg-dark me-2">Nota 1</span> Muito Ruim</div>
-                        <span class="fw-bold h5 mb-0" id="csat1">0</span>
+                        <span class="fw-bold h5 mb-0" id="csatP2_1">0</span>
                     </div>
                 </div>
             </div>
@@ -387,14 +281,22 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalAtendidas" tabindex="-1"><div class="modal-dialog modal-xl"><div class="modal-content" style="border-radius: 20px;"><div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold">Volumetria de Contatos por Fila</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="table-responsive"><table class="table table-sm text-center"><thead class="table-light"><tr><th class="text-start">Fila</th><th>1 Contato</th><th>2 Contatos</th><th>3+ Contatos</th><th class="fw-bold">Total Atendidas</th></tr></thead><tbody id="atendidasFilaBody"></tbody></table></div></div></div></div></div>
+<div class="modal fade" id="modalNS" tabindex="-1"><div class="modal-dialog modal-md"><div class="modal-content" style="border-radius: 20px;"><div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold">Detalhamento Nível de Serviço</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="list-group list-group-flush"><div class="list-group-item d-flex justify-content-between align-items-center"><span>Atendidas em até 60s</span><span class="badge bg-success rounded-pill" id="nsDentro">0</span></div><div class="list-group-item d-flex justify-content-between align-items-center"><span>Atendidas após 60s</span><span class="badge bg-danger rounded-pill" id="nsFora">0</span></div><div class="list-group-item d-flex justify-content-between align-items-center list-group-item-success"><span>Atendimento Imediato (Espera 0s)</span><span class="badge bg-primary rounded-pill" id="nsImediato">0</span></div><div class="list-group-item d-flex justify-content-between align-items-center list-group-item-info"><span>Chamadas até 20s (Duração)</span><span class="badge bg-secondary rounded-pill" id="nsAte20s">0</span></div><div class="list-group-item d-flex justify-content-between align-items-center fw-bold"><span>Total de Chamadas Atendidas</span><span id="nsTotal">0</span></div></div></div></div></div></div>
+<div class="modal fade" id="modalAbandono" tabindex="-1"><div class="modal-dialog modal-md"><div class="modal-content" style="border-radius: 20px;"><div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold">Detalhamento de Abandono</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="list-group list-group-flush"><div class="list-group-item d-flex justify-content-between align-items-center"><span>Abandonadas Reais (Espera > 60s)</span><span class="badge bg-danger rounded-pill" id="abReal">0</span></div><div class="list-group-item d-flex justify-content-between align-items-center"><span>Desligadas Curtas (Espera <= 60s)</span><span class="badge bg-warning rounded-pill" id="abCurto">0</span></div><div class="list-group-item d-flex justify-content-between align-items-center fw-bold"><span>Total de Chamadas Abandonadas</span><span id="abTotal">0</span></div></div></div></div></div></div>
+<div class="modal fade" id="modalCSAT" tabindex="-1"><div class="modal-dialog modal-md"><div class="modal-content" style="border-radius: 20px;"><div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold">Volume de Notas CSAT</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="list-group list-group-flush"><div class="list-group-item d-flex justify-content-between align-items-center"><div><span class="badge bg-success me-2">Nota 5</span> Excelente</div><span class="fw-bold h5 mb-0" id="csat5">0</span></div><div class="list-group-item d-flex justify-content-between align-items-center"><div><span class="badge bg-info me-2">Nota 4</span> Bom</div><span class="fw-bold h5 mb-0" id="csat4">0</span></div><div class="list-group-item d-flex justify-content-between align-items-center"><div><span class="badge bg-warning me-2">Nota 3</span> Regular</div><span class="fw-bold h5 mb-0" id="csat3">0</span></div><div class="list-group-item d-flex justify-content-between align-items-center"><div><span class="badge bg-danger me-2">Nota 2</span> Ruim</div><span class="fw-bold h5 mb-0" id="csat2">0</span></div><div class="list-group-item d-flex justify-content-between align-items-center"><div><span class="badge bg-dark me-2">Nota 1</span> Muito Ruim</div><span class="fw-bold h5 mb-0" id="csat1">0</span></div></div></div></div></div></div>
+<div class="modal fade" id="modalDrill" tabindex="-1"><div class="modal-dialog modal-xl"><div class="modal-content" style="border-radius: 20px;"><div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold" id="drillNome">Detalhes</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><table class="table table-sm"><thead><tr><th>ID</th><th>Data</th><th>Fila</th><th>Espera</th><th>Atend.</th><th>Nota</th></tr></thead><tbody id="drillBody"></tbody></table></div></div></div></div>
+
 <script>
 let db;
 let cacheGlobal = {};
 let cacheNPS = [];
 let cacheCSATCounts = { 1:0, 2:0, 3:0, 4:0, 5:0 };
+let cacheP2LimeiraCounts = { 1:0, 2:0, 3:0, 4:0, 5:0 }; // Novo cache para Limeira
 let cacheNSData = { dentro: 0, fora: 0, total: 0, imediato: 0, ate20s: 0 }; 
 let cacheAbandonoData = { real: 0, curto: 0, total: 0 };
 let cacheAtendidasPorFila = {}; 
+let modoLimeiraAtivo = false; // Flag para identificar modo ULI
 
 let chartObjEvol = null;
 let chartObjPizza = null;
@@ -431,7 +333,6 @@ async function atualizarDataUltimaCarga() {
     const tx = db.transaction("chamadas", "readonly");
     const store = tx.objectStore("chamadas");
     let maiorData = "";
-    
     store.openCursor().onsuccess = (e) => {
         const cursor = e.target.result;
         if (cursor) {
@@ -559,13 +460,29 @@ async function importarParaBanco() {
     finally { document.getElementById('loader').style.display = 'none'; }
 }
 
+// Lógica de clique do card NPS/CSAT P2
+function gerenciarCliqueNPS() {
+    if(modoLimeiraAtivo) {
+        [1,2,3,4,5].forEach(v => document.getElementById(`csatP2_${v}`).innerText = cacheP2LimeiraCounts[v]);
+        new bootstrap.Modal(document.getElementById('modalCSATP2')).show();
+    } else {
+        abrirModalNPS();
+    }
+}
+
 async function consultarRelatorio() {
     const dIni = document.getElementById('dateIni').value;
     const dFim = document.getElementById('dateFim').value;
     const duracaoMinima = parseInt(document.getElementById('minDuracao').value) || 0;
     const filasSelecionadas = Array.from(document.querySelectorAll('#boxFilas input:checked')).map(i => i.value);
+    
     if(!dIni || !dFim) return alert("Selecione as datas.");
     if(filasSelecionadas.length === 0) return alert("Selecione ao menos uma fila.");
+    
+    // Verifica se existem filas ULI selecionadas
+    modoLimeiraAtivo = filasSelecionadas.some(f => f.startsWith("ULI"));
+    document.getElementById('labelNPS').innerText = modoLimeiraAtivo ? "CSAT (P2)" : "NPS";
+
     document.getElementById('loader').style.display = 'flex';
     try {
         const tx = db.transaction(["chamadas", "satisfacao", "eventos"], "readonly");
@@ -574,12 +491,17 @@ async function consultarRelatorio() {
             new Promise(r => tx.objectStore("satisfacao").getAll().onsuccess = e => r(e.target.result)),
             new Promise(r => tx.objectStore("eventos").getAll().onsuccess = e => r(e.target.result))
         ]);
-        let stats = {}, g = { atend:0, abandReal:0, abandTotal:0, ns:0, tma:0, tme:0, pq:0, csat:0, uni:{}, prom:0, neut:0, detr:0, npsTotal:0 };
-        cacheNPS = []; cacheCSATCounts = { 1:0, 2:0, 3:0, 4:0, 5:0 };
+        
+        let stats = {}, g = { atend:0, abandReal:0, abandTotal:0, ns:0, tma:0, tme:0, pq:0, csat:0, uni:{}, prom:0, neut:0, detr:0, npsTotal:0, limeiraCSAT: 0 };
+        cacheNPS = []; 
+        cacheCSATCounts = { 1:0, 2:0, 3:0, 4:0, 5:0 };
+        cacheP2LimeiraCounts = { 1:0, 2:0, 3:0, 4:0, 5:0 };
         cacheNSData = { dentro: 0, fora: 0, total: 0, imediato: 0, ate20s: 0 };
         cacheAbandonoData = { real: 0, curto: 0, total: 0 };
         cacheAtendidasPorFila = {};
+
         const filtradas = cRaw.filter(c => c.data >= dIni && c.data <= dFim && filasSelecionadas.includes(c.nomeFila.toUpperCase()));
+        
         filtradas.forEach(c => {
             const filaKey = c.nomeFila.toUpperCase();
             if(!cacheAtendidasPorFila[filaKey]) cacheAtendidasPorFila[filaKey] = { c1:0, c2:0, c3:0, total:0, ids:{} };
@@ -588,36 +510,47 @@ async function consultarRelatorio() {
                 if (c.atend >= duracaoMinima) {
                     g.atend++; 
                     g.tme += c.espera;
-
                     cacheNSData.total++;
                     if(c.espera <= 60) { g.ns++; cacheNSData.dentro++; } else { cacheNSData.fora++; }
-                    
                     if(c.espera === 0) cacheNSData.imediato++;
                     if(c.atend <= 20) cacheNSData.ate20s++;
 
                     let cid = c.contactID || c.uniqueID;
                     cacheAtendidasPorFila[filaKey].total++;
                     cacheAtendidasPorFila[filaKey].ids[cid] = (cacheAtendidasPorFila[filaKey].ids[cid] || 0) + 1;
+                    
                     const id = c.numeroAtendente;
                     if(!stats[id]) stats[id] = { nome: c.nomeAtendente, at:0, ns:0, tma:0, pq:0, csat:0, reg:0, dig:0, ban:0, agu:0, calls:[] };
+                    
                     let notaObj = sRaw.find(s => s.uniqueID === c.uniqueID);
                     let nota = notaObj ? notaObj.nota : null;
                     let nps = (notaObj && notaObj.notaNps !== undefined) ? notaObj.notaNps : null;
+
                     stats[id].at++;
                     if(c.espera <= 60) { stats[id].ns++; }
                     stats[id].tma += c.atend; g.tma += c.atend;
+                    
                     if(nota) { 
                         g.pq++; stats[id].pq++; 
                         if(nota >= 4) { g.csat++; stats[id].csat++; }
                         if(cacheCSATCounts[nota] !== undefined) cacheCSATCounts[nota]++;
                     }
+
+                    // Processamento da Pergunta 2 (NPS ou CSAT P2)
                     if(nps !== null) {
                         g.npsTotal++;
-                        let status = "";
-                        if(nps >= 9) { g.prom++; status = "Promotor"; }
-                        else if(nps >= 7) { g.neut++; status = "Neutro"; }
-                        else { g.detr++; status = "Detrator"; }
-                        cacheNPS.push({ atendente: c.nomeAtendente, data: c.data, nota: nps, status: status });
+                        if(modoLimeiraAtivo) {
+                            // Se Limeira, trata P2 como CSAT
+                            if(nps >= 4) g.limeiraCSAT++;
+                            if(cacheP2LimeiraCounts[nps] !== undefined) cacheP2LimeiraCounts[nps]++;
+                        } else {
+                            // Se Geral, trata P2 como NPS
+                            let status = "";
+                            if(nps >= 9) { g.prom++; status = "Promotor"; }
+                            else if(nps >= 7) { g.neut++; status = "Neutro"; }
+                            else { g.detr++; status = "Detrator"; }
+                            cacheNPS.push({ atendente: c.nomeAtendente, data: c.data, nota: nps, status: status });
+                        }
                     }
                     stats[id].calls.push({...c, nota: nota || '-'});
                     g.uni[filaKey] = (g.uni[filaKey] || 0) + 1;
@@ -625,14 +558,11 @@ async function consultarRelatorio() {
             } else if(c.tipo === "Abandonada") {
                 g.abandTotal++;
                 cacheAbandonoData.total++;
-                if(c.espera > 60) { 
-                    g.abandReal++; 
-                    cacheAbandonoData.real++; 
-                } else { 
-                    cacheAbandonoData.curto++; 
-                }
+                if(c.espera > 60) { g.abandReal++; cacheAbandonoData.real++; } else { cacheAbandonoData.curto++; }
             }
         });
+
+        // Eventos e Pausas
         for(let f in cacheAtendidasPorFila) {
             let o = cacheAtendidasPorFila[f];
             Object.values(o.ids).forEach(qtd => {
@@ -648,6 +578,7 @@ async function consultarRelatorio() {
                 else if(p.includes("AGUA")) stats[e.numeroAtendente].agu += e.duracao;
             }
         });
+
         renderizarTudo(g, stats);
     } catch (e) { console.error(e); }
     finally { document.getElementById('loader').style.display = 'none'; }
@@ -655,28 +586,36 @@ async function consultarRelatorio() {
 
 function renderizarTudo(g, stats) {
     const nsPerc = (g.ns/g.atend)*100 || 0;
-    
-    // NOVA FÓRMULA SOLICITADA:
-    // Taxa = Abandonadas > 60s / (Atendidas + Total Abandonadas)
     const totalChamadasEntrantes = (g.atend + g.abandTotal);
     const abandPerc = totalChamadasEntrantes > 0 ? (g.abandReal / totalChamadasEntrantes) * 100 : 0;
-    
     const pesqPerc = (g.pq/g.atend)*100 || 0;
-    const npsFinal = g.npsTotal > 0 ? ((g.prom - g.detr) / g.npsTotal) * 100 : 0;
+    
+    // Cálculo condicional do NPS / CSAT P2
+    let valorNPSFinal = 0;
+    if(modoLimeiraAtivo) {
+        valorNPSFinal = g.npsTotal > 0 ? (g.limeiraCSAT / g.npsTotal) * 100 : 0;
+    } else {
+        valorNPSFinal = g.npsTotal > 0 ? ((g.prom - g.detr) / g.npsTotal) * 100 : 0;
+    }
     
     document.getElementById('kAt').innerText = g.atend;
     document.getElementById('kNS').innerText = nsPerc.toFixed(1) + "%";
     document.getElementById('kNS').className = "kpi-value " + (nsPerc >= 85 ? "meta-good" : "meta-bad");
     document.getElementById('kTMA').innerText = toHms(Math.round(g.atend > 0 ? g.tma/g.atend : 0));
     document.getElementById('kTME').innerText = toHms(Math.round(g.atend > 0 ? g.tme/g.atend : 0));
-    
     document.getElementById('kAband').innerText = abandPerc.toFixed(2) + "%";
     document.getElementById('kAband').className = "kpi-value " + (abandPerc <= 5 ? "meta-good" : "meta-bad");
-    
     document.getElementById('kPesq').innerText = pesqPerc.toFixed(1) + "%";
     document.getElementById('kSat').innerText = ((g.csat/g.pq)*100 || 0).toFixed(1) + "%";
-    document.getElementById('kNPS').innerText = npsFinal.toFixed(0);
-    document.getElementById('kNPS').className = "kpi-value " + (npsFinal >= 70 ? "meta-good" : npsFinal < 40 ? "meta-bad" : "text-warning");
+    
+    // Formatação do Card de NPS/CSAT P2
+    const npsEl = document.getElementById('kNPS');
+    npsEl.innerText = modoLimeiraAtivo ? valorNPSFinal.toFixed(1) + "%" : valorNPSFinal.toFixed(0);
+    if(modoLimeiraAtivo) {
+        npsEl.className = "kpi-value " + (valorNPSFinal >= 85 ? "meta-good" : "meta-bad");
+    } else {
+        npsEl.className = "kpi-value " + (valorNPSFinal >= 70 ? "meta-good" : valorNPSFinal < 40 ? "meta-bad" : "text-warning");
+    }
     
     document.getElementById('npsCountProm').innerText = g.prom;
     document.getElementById('npsCountNeut').innerText = g.neut;
@@ -705,7 +644,7 @@ function renderizarTudo(g, stats) {
     if(chartObjEvol) chartObjEvol.destroy();
     chartObjEvol = new Chart(document.getElementById('chartEvol'), {
         type: 'bar',
-        data: { labels: ['NS %', 'Pesquisa %', 'CSAT %', 'NPS'], datasets: [{ data: [nsPerc, pesqPerc, (g.csat/g.pq*100), npsFinal], backgroundColor: ['#00b4d8', '#0077b6', '#00b894', '#03045e'], borderRadius: 8 }] },
+        data: { labels: ['NS %', 'Pesquisa %', 'CSAT %', modoLimeiraAtivo ? 'CSAT P2 %' : 'NPS'], datasets: [{ data: [nsPerc, pesqPerc, (g.csat/g.pq*100), valorNPSFinal], backgroundColor: ['#00b4d8', '#0077b6', '#00b894', '#03045e'], borderRadius: 8 }] },
         options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
     });
     
@@ -717,20 +656,16 @@ function renderizarTudo(g, stats) {
     });
 }
 
+// Funções de Modal originais
 function abrirModalAtendidas() {
     let html = "";
     for(let fila in cacheAtendidasPorFila) {
         let d = cacheAtendidasPorFila[fila];
-        html += `<tr>
-            <td class="text-start fw-bold">${fila}</td>
-            <td>${d.c1}</td><td>${d.c2}</td><td>${d.c3}</td>
-            <td class="fw-bold">${d.total}</td>
-        </tr>`;
+        html += `<tr><td class="text-start fw-bold">${fila}</td><td>${d.c1}</td><td>${d.c2}</td><td>${d.c3}</td><td class="fw-bold">${d.total}</td></tr>`;
     }
     document.getElementById('atendidasFilaBody').innerHTML = html || '<tr><td colspan="5">Sem dados</td></tr>';
     new bootstrap.Modal(document.getElementById('modalAtendidas')).show();
 }
-
 function abrirModalNS() { new bootstrap.Modal(document.getElementById('modalNS')).show(); }
 function abrirModalAbandono() { new bootstrap.Modal(document.getElementById('modalAbandono')).show(); }
 function abrirModalNPS() {
@@ -751,6 +686,7 @@ function abrirDrill(nome) {
     document.getElementById('drillBody').innerHTML = at.calls.map(c => `<tr><td>${c.uniqueID}</td><td>${c.data}</td><td>${c.nomeFila}</td><td>${toHms(c.espera)}</td><td>${toHms(c.atend)}</td><td>${c.nota}</td></tr>`).join('');
     new bootstrap.Modal(document.getElementById('modalDrill')).show();
 }
+
 async function exportarBackup() {
     const tx = db.transaction(["chamadas", "satisfacao", "eventos"], "readonly");
     const data = {
