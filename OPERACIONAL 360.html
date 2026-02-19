@@ -6,6 +6,7 @@
     <title>Operacional 360º | Intelligence</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     
@@ -127,7 +128,6 @@
         .bg-neutro { background: #fef3c7; color: #92400e; }
         .bg-detrator { background: #fee2e2; color: #991b1b; }
 
-        /* Estilo Novo e Elegante para o Ícone de Informação */
         .info-icon {
             cursor: help;
             color: #94a3b8;
@@ -152,7 +152,6 @@
             transform: scale(1.1);
         }
 
-        /* Estilização Customizada do Popover */
         .popover {
             border: none;
             box-shadow: 0 10px 20px rgba(0,0,0,0.1);
@@ -173,6 +172,22 @@
             color: #475569;
             line-height: 1.6;
             padding: 12px 15px;
+        }
+
+        /* Estilo para o botão de Excel */
+        .btn-excel {
+            background-color: #fff;
+            color: #1d6f42;
+            border: 1px solid #1d6f42;
+            padding: 5px 12px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-excel:hover {
+            background-color: #1d6f42;
+            color: #fff;
         }
     </style>
 </head>
@@ -255,7 +270,16 @@
     </div>
 
     <div class="table-res">
-        <h6 class="fw-bold mb-4">Performance Individual</h6>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h6 class="fw-bold mb-0">Performance Individual</h6>
+            <button class="btn btn-excel btn-sm" onclick="exportarExcelPerformance()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+                    <path d="M4.5 12a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm0-2a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm0-2a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm0-2a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5z"/>
+                </svg>
+                Exportar Excel
+            </button>
+        </div>
         <div class="table-responsive">
             <table class="table align-middle text-center" style="font-size: 11px;">
                 <thead class="table-light">
@@ -357,12 +381,11 @@ let modoLimeiraAtivo = false;
 let chartObjEvol = null;
 let chartObjPizza = null;
 
-// Inicialização dos Popovers com configurações extras de visual
 document.addEventListener('DOMContentLoaded', function () {
     var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
     var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
         return new bootstrap.Popover(popoverTriggerEl, {
-            offset: [0, 8] // Pequeno afastamento para não colar no ícone
+            offset: [0, 8]
         })
     });
 });
@@ -712,6 +735,56 @@ function renderizarTudo(g, stats) {
         data: { labels: Object.keys(g.uni), datasets: [{ data: Object.values(g.uni), backgroundColor: ['#03045e', '#0077b6', '#00b4d8', '#90e0ef', '#caf0f8'] }] },
         options: { maintainAspectRatio: false }
     });
+}
+
+// NOVA FUNÇÃO: EXPORTAR EXCEL PROFISSIONAL
+function exportarExcelPerformance() {
+    if (Object.keys(cacheGlobal).length === 0) return alert("Gere o dashboard primeiro!");
+    
+    const rowsResumo = [];
+    const rowsDetalhado = [];
+    
+    // 1. Montar Dados do Resumo (Aba 1)
+    Object.values(cacheGlobal).sort((a,b) => b.at - a.at).forEach(d => {
+        const ns = (d.ns/d.at)*100 || 0;
+        const sat = d.pq > 0 ? (d.csat/d.pq)*100 : 0;
+        const tma = Math.round(d.at > 0 ? d.tma/d.at : 0);
+        
+        rowsResumo.push({
+            "Atendente": d.nome,
+            "Atendidas": d.at,
+            "NS %": ns.toFixed(1) + "%",
+            "TMA": toHms(tma),
+            "Registro": toHms(d.reg),
+            "Digital": toHms(d.dig),
+            "Banheiro": toHms(d.ban),
+            "Água": toHms(d.agu),
+            "Pesquisa %": ((d.pq/d.at)*100).toFixed(1) + "%",
+            "CSAT %": d.pq > 0 ? sat.toFixed(1) + "%" : "-"
+        });
+
+        // 2. Montar Detalhado de Ligações (Aba 2) - Para todos os atendentes do filtro
+        d.calls.forEach(c => {
+            rowsDetalhado.push({
+                "Atendente": d.nome,
+                "ID Chamada": c.uniqueID,
+                "Data": c.data,
+                "Fila": c.nomeFila,
+                "Tempo Espera": toHms(c.espera),
+                "Tempo Atendimento": toHms(c.atend),
+                "Nota CSAT": c.nota
+            });
+        });
+    });
+
+    const wb = XLSX.utils.book_new();
+    const wsResumo = XLSX.utils.json_to_sheet(rowsResumo);
+    const wsDetalhado = XLSX.utils.json_to_sheet(rowsDetalhado);
+
+    XLSX.utils.book_append_sheet(wb, wsResumo, "Performance Individual");
+    XLSX.utils.book_append_sheet(wb, wsDetalhado, "Detalhamento de Chamadas");
+
+    XLSX.writeFile(wb, `Performance_Operacional_360.xlsx`);
 }
 
 function abrirModalAtendidas() {
